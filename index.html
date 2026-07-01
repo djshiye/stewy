@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stewy — The Enchanted Cocktail Cauldron</title>
+  <meta name="description" content="Drag reagents into an enchanted cauldron and brew balanced cocktails. A wizardly mixology playground." />
+  <meta name="theme-color" content="#0a0812" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ================= HEADER ================= -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" id="brandMark"></span>
+      <span class="brand-text">
+        <span class="brand-name">Stewy</span>
+        <span class="brand-tag">the enchanted cocktail cauldron</span>
+      </span>
+    </div>
+
+    <div class="topbar-controls">
+      <div class="unit-toggle" id="unitToggle" role="group" aria-label="Measure unit"></div>
+
+      <div class="menu-wrap">
+        <button class="btn btn-primary" id="recipesBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="btn-ico">📜</span> Recipes
+        </button>
+        <div class="recipes-menu" id="recipesMenu" hidden>
+          <div class="menu-title">✦ Grimoire of Classics ✦</div>
+        </div>
+      </div>
+
+      <button class="btn btn-ghost" id="clearBtn" title="Empty the cauldron">
+        <span class="btn-ico">🧹</span> <span class="btn-label">Empty</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN ================= -->
+  <main class="layout">
+
+    <!-- LEFT: brew sheet -->
+    <aside class="panel panel-left">
+      <div class="panel-head">
+        <h2>Your Brew</h2>
+        <span class="pill" id="ingCount">0 reagents</span>
+      </div>
+
+      <ul class="brew-list" id="brewList"></ul>
+      <p class="brew-empty" id="brewEmpty">The cauldron is empty. Drag a reagent in from the right, or load a recipe from the Grimoire.</p>
+
+      <div class="totals">
+        <div class="total-item"><span class="total-label">Volume</span><span class="total-val" id="totalVol">0 ml</span></div>
+        <div class="total-item"><span class="total-label">Potency</span><span class="total-val" id="totalAbv">0% ABV</span></div>
+      </div>
+
+      <div class="harmony-card">
+        <div class="harmony-top">
+          <svg class="score-ring" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="ring-bg" cx="32" cy="32" r="27" />
+            <circle class="ring-fg" id="ringFg" cx="32" cy="32" r="27" />
+          </svg>
+          <div class="score-center">
+            <span class="score-value" id="scoreValue">—</span>
+            <span class="score-unit">/100</span>
+          </div>
+          <div class="harmony-meta">
+            <span class="harmony-label">Harmony</span>
+            <span class="harmony-verdict" id="verdictText">Awaiting reagents</span>
+          </div>
+        </div>
+        <ul class="suggestions" id="suggestions"></ul>
+      </div>
+    </aside>
+
+    <!-- CENTER: the cauldron -->
+    <section class="stage">
+      <input class="cocktail-name" id="cocktailName" value="Untitled Brew" spellcheck="false"
+             aria-label="Cocktail name" maxlength="40" />
+      <div class="verdict-pill" id="verdictPill" data-tier="none">Awaiting reagents</div>
+
+      <div class="cauldron" id="cauldron">
+        <div class="magic-circle" id="magicCircle" aria-hidden="true"></div>
+        <div class="cauldron-glow"></div>
+        <div class="cauldron-fire" aria-hidden="true">
+          <span class="flame f1"></span>
+          <span class="flame f2"></span>
+          <span class="flame f3"></span>
+          <span class="ember" style="--ex:-24px;--ed:0s;--et:3.4s"></span>
+          <span class="ember" style="--ex:12px;--ed:1.1s;--et:2.8s"></span>
+          <span class="ember" style="--ex:30px;--ed:2s;--et:3.1s"></span>
+          <span class="ember" style="--ex:-8px;--ed:.6s;--et:3.7s"></span>
+        </div>
+
+        <svg class="cauldron-svg" viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="interiorClip">
+              <path d="M62 90 C44 150 62 226 114 239 C142 246 178 246 206 239 C258 226 276 150 258 90 Z" />
+            </clipPath>
+            <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="rgba(220,255,240,0.20)" />
+              <stop offset="1" stop-color="rgba(160,140,220,0.05)" />
+            </linearGradient>
+            <linearGradient id="interiorShadow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="rgba(8,6,16,0.66)" />
+              <stop offset="1" stop-color="rgba(8,6,16,0.12)" />
+            </linearGradient>
+          </defs>
+
+          <!-- feet -->
+          <g fill="#241c14" stroke="#0c0805" stroke-width="1.5">
+            <path d="M100 242 l-9 26 q-1 6 6 6 h12 q6 0 5 -6 l-4 -26 Z" />
+            <path d="M220 242 l9 26 q1 6 -6 6 h-12 q-6 0 -5 -6 l4 -26 Z" />
+            <path d="M150 250 l-5 30 q-1 6 6 6 h18 q7 0 6 -6 l-5 -30 Z" />
+          </g>
+
+          <!-- side handles -->
+          <g fill="none" stroke="#3a2f22" stroke-width="7" stroke-linecap="round">
+            <path d="M54 148 q-30 8 -26 42 q2 18 22 22" />
+            <path d="M266 148 q30 8 26 42 q-2 18 -22 22" />
+          </g>
+
+          <!-- glass body -->
+          <path class="cauldron-body"
+                d="M52 84 C30 150 52 232 110 246 C140 253 180 253 210 246 C268 232 290 150 268 84 Z"
+                fill="url(#glassGrad)" stroke="rgba(217,178,94,0.4)" stroke-width="2" />
+
+          <!-- interior + liquid -->
+          <g clip-path="url(#interiorClip)">
+            <rect x="30" y="82" width="260" height="180" fill="url(#interiorShadow)" />
+            <rect id="liquid" x="30" y="252" width="260" height="0" fill="#22304a" fill-opacity="0" />
+            <ellipse id="liquidSurface" cx="160" cy="252" rx="0" ry="7" fill="#33456a" fill-opacity="0" />
+            <ellipse id="liquidShine" class="liquid-shine" cx="160" cy="252" rx="0" ry="5" fill="rgba(255,255,255,0.35)" fill-opacity="0" />
+            <g id="bubbles" opacity="0" fill="rgba(255,255,255,0.7)">
+              <circle class="bubble" cx="128" cy="236" r="3" style="--d:0s;--t:3.2s" />
+              <circle class="bubble" cx="150" cy="238" r="2.2" style="--d:.7s;--t:2.7s" />
+              <circle class="bubble" cx="172" cy="236" r="3.4" style="--d:1.4s;--t:3.6s" />
+              <circle class="bubble" cx="192" cy="238" r="2" style="--d:.4s;--t:2.9s" />
+              <circle class="bubble" cx="140" cy="240" r="2.6" style="--d:2.1s;--t:3.3s" />
+              <circle class="bubble" cx="182" cy="240" r="2.4" style="--d:1.1s;--t:2.5s" />
+              <circle class="bubble" cx="160" cy="242" r="3" style="--d:1.8s;--t:3.8s" />
+            </g>
+          </g>
+
+          <!-- glass shine over everything -->
+          <path class="glass-shine" d="M74 102 C62 150 72 208 100 230"
+                stroke="rgba(255,255,255,0.5)" stroke-width="5" fill="none" stroke-linecap="round" />
+          <!-- iron rim (stroke only, so the surface shows) -->
+          <ellipse cx="160" cy="84" rx="112" ry="20" fill="none" stroke="#3a2f22" stroke-width="9" />
+          <ellipse cx="160" cy="84" rx="112" ry="20" fill="none" stroke="rgba(217,178,94,0.55)" stroke-width="1.6" />
+          <!-- gold rivets -->
+          <g fill="#d9b25e">
+            <circle cx="160" cy="64.2" r="2.4" /><circle cx="160" cy="103.8" r="2.4" />
+            <circle cx="48.5" cy="84" r="2.4" /><circle cx="271.5" cy="84" r="2.4" />
+            <circle cx="90" cy="70" r="1.8" /><circle cx="230" cy="70" r="1.8" />
+            <circle cx="90" cy="98" r="1.8" /><circle cx="230" cy="98" r="1.8" />
+          </g>
+        </svg>
+
+        <div class="cauldron-fx" id="cauldronFx"></div>
+        <div class="drop-hint" id="dropHint">release to add</div>
+      </div>
+
+      <p class="stage-tip">Drag a reagent onto the cauldron — or tap it — to choose a measure.</p>
+    </section>
+
+    <!-- RIGHT: reagent shelf -->
+    <aside class="panel panel-right">
+      <div class="panel-head">
+        <h2>Ingredients</h2>
+      </div>
+      <div class="search-wrap">
+        <input class="search" id="ingSearch" type="search" placeholder="Search reagents…" spellcheck="false" />
+      </div>
+      <div class="group-tabs" id="groupTabs"></div>
+      <div class="fit-legend" id="fitLegend">
+        <span>clashes</span>
+        <span class="legend-bar"></span>
+        <span>pairs well</span>
+      </div>
+      <div class="ing-list" id="ingList"></div>
+    </aside>
+  </main>
+
+  <!-- ================= AMOUNT POPUP ================= -->
+  <div class="pop-backdrop" id="popBackdrop" hidden></div>
+  <div class="popup" id="popup" hidden role="dialog" aria-label="Choose amount">
+    <button class="pop-close" id="popClose" aria-label="Close">×</button>
+    <div class="pop-head">
+      <span class="pop-icon" id="popIcon"></span>
+      <div>
+        <div class="pop-name" id="popName">Ingredient</div>
+        <div class="pop-desc" id="popDesc"></div>
+      </div>
+    </div>
+
+    <div class="pop-amount">
+      <button class="step" id="popMinus" aria-label="Less">−</button>
+      <div class="amount-display">
+        <span class="amount-value" id="popValue">1.5</span>
+        <span class="amount-unit" id="popUnit">oz</span>
+      </div>
+      <button class="step" id="popPlus" aria-label="More">+</button>
+    </div>
+
+    <div class="pop-chips" id="popChips"></div>
+    <button class="btn btn-primary btn-block" id="popAdd">Add to cauldron</button>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- scripts: plain globals, no build step -->
+  <script src="js/icons.js"></script>
+  <script src="js/ingredients.js"></script>
+  <script src="js/recipes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

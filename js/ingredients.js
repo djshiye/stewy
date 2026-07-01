@@ -1,0 +1,157 @@
+/* Stewy — ingredient database
+   Each ingredient carries:
+     id        unique key (used by recipes + brew state)
+     name      display name
+     group     sidebar grouping / filter tab
+     icon      which icon factory renders it (see icons.js)
+     color     liquid color as hex (drives cauldron mixing)
+     opacity   0..1 how opaque the liquid is (soda ~clear, cream ~opaque)
+     abv       alcohol % by volume (for strength estimate)
+     unit      default measure ('ml' volumes; 'dash' / 'piece' for small items)
+     amt       default amount to add, in ml (pieces stored as ~ml of impact)
+     tags      flavor profile, each 0..3, used for the harmony engine
+   Flavor dimensions:
+     boozy sweet sour bitter herbal fruity citrus smoky spicy floral
+     creamy aromatic fresh nutty coffee
+*/
+window.INGREDIENTS = [
+  // ---------------- Base spirits ----------------
+  { id: 'vodka', name: 'Vodka', group: 'Spirits', icon: 'bottle', color: '#f6f7fb', opacity: 0.14, abv: 40, amt: 45, cap: '#8a8f98',
+    tags: { boozy: 3 } },
+  { id: 'gin', name: 'Gin', group: 'Spirits', icon: 'bottle', color: '#eef6f2', opacity: 0.13, abv: 42, amt: 45, cap: '#3f6b57',
+    tags: { boozy: 3, herbal: 2, floral: 1, aromatic: 1, fresh: 1 } },
+  { id: 'white_rum', name: 'White Rum', group: 'Spirits', icon: 'bottle', color: '#f7f4e9', opacity: 0.14, abv: 40, amt: 45, cap: '#c9b06a',
+    tags: { boozy: 3, sweet: 1 } },
+  { id: 'dark_rum', name: 'Dark Rum', group: 'Spirits', icon: 'bottle', color: '#7a3b12', opacity: 0.7, abv: 40, amt: 30, cap: '#3a2110',
+    tags: { boozy: 3, sweet: 1, aromatic: 1, nutty: 1 } },
+  { id: 'spiced_rum', name: 'Spiced Rum', group: 'Spirits', icon: 'bottle', color: '#9c5a24', opacity: 0.62, abv: 38, amt: 45, cap: '#3a2110',
+    tags: { boozy: 3, spicy: 2, sweet: 1, aromatic: 1 } },
+  { id: 'tequila', name: 'Tequila Blanco', group: 'Spirits', icon: 'bottle', color: '#f3f0df', opacity: 0.14, abv: 40, amt: 45, cap: '#c9b06a',
+    tags: { boozy: 3, herbal: 1, spicy: 1, fresh: 1 } },
+  { id: 'mezcal', name: 'Mezcal', group: 'Spirits', icon: 'bottle', color: '#f0ecdc', opacity: 0.14, abv: 43, amt: 45, cap: '#6b5334',
+    tags: { boozy: 3, smoky: 3, herbal: 1 } },
+  { id: 'bourbon', name: 'Bourbon', group: 'Spirits', icon: 'bottle', color: '#b5641e', opacity: 0.58, abv: 45, amt: 45, cap: '#3a2110',
+    tags: { boozy: 3, sweet: 1, aromatic: 1, spicy: 1 } },
+  { id: 'rye', name: 'Rye Whiskey', group: 'Spirits', icon: 'bottle', color: '#a85a1c', opacity: 0.58, abv: 46, amt: 45, cap: '#3a2110',
+    tags: { boozy: 3, spicy: 2, aromatic: 1 } },
+  { id: 'scotch', name: 'Scotch', group: 'Spirits', icon: 'bottle', color: '#9a5620', opacity: 0.58, abv: 43, amt: 45, cap: '#3a2110',
+    tags: { boozy: 3, smoky: 2, aromatic: 1 } },
+  { id: 'cognac', name: 'Cognac', group: 'Spirits', icon: 'bottle', color: '#8a3d12', opacity: 0.6, abv: 40, amt: 45, cap: '#3a2110',
+    tags: { boozy: 3, sweet: 1, fruity: 1, aromatic: 1 } },
+  { id: 'cachaca', name: 'Cachaça', group: 'Spirits', icon: 'bottle', color: '#f4f1e6', opacity: 0.14, abv: 40, amt: 45, cap: '#6f9a4a',
+    tags: { boozy: 3, herbal: 1, fresh: 1 } },
+  { id: 'absinthe', name: 'Absinthe', group: 'Spirits', icon: 'bottle', color: '#8fbf5a', opacity: 0.4, abv: 68, amt: 5, cap: '#4f6b28',
+    tags: { boozy: 3, herbal: 3, aromatic: 2 } },
+
+  // ---------------- Liqueurs & fortified ----------------
+  { id: 'triple_sec', name: 'Triple Sec', group: 'Liqueurs', icon: 'bottle', color: '#f7a83a', opacity: 0.32, abv: 30, amt: 20, cap: '#c98418',
+    tags: { sweet: 2, citrus: 3, boozy: 1 } },
+  { id: 'grand_marnier', name: 'Grand Marnier', group: 'Liqueurs', icon: 'bottle', color: '#b9631d', opacity: 0.5, abv: 40, amt: 20, cap: '#c9302c',
+    tags: { sweet: 2, citrus: 2, aromatic: 1, boozy: 1 } },
+  { id: 'campari', name: 'Campari', group: 'Liqueurs', icon: 'bottle', color: '#c8102e', opacity: 0.52, abv: 25, amt: 30, cap: '#7a0c1e',
+    tags: { bitter: 3, citrus: 1, sweet: 1, aromatic: 1 } },
+  { id: 'aperol', name: 'Aperol', group: 'Liqueurs', icon: 'bottle', color: '#e8531f', opacity: 0.48, abv: 11, amt: 45, cap: '#b23a12',
+    tags: { bitter: 2, citrus: 2, sweet: 2 } },
+  { id: 'sweet_vermouth', name: 'Sweet Vermouth', group: 'Liqueurs', icon: 'bottle', color: '#6e2a1c', opacity: 0.55, abv: 16, amt: 30, cap: '#4a1c12',
+    tags: { sweet: 2, herbal: 2, bitter: 1, aromatic: 2 } },
+  { id: 'dry_vermouth', name: 'Dry Vermouth', group: 'Liqueurs', icon: 'bottle', color: '#ece7cf', opacity: 0.28, abv: 17, amt: 15, cap: '#b8ab74',
+    tags: { herbal: 2, floral: 1, aromatic: 1, bitter: 1 } },
+  { id: 'amaretto', name: 'Amaretto', group: 'Liqueurs', icon: 'bottle', color: '#8a3f1c', opacity: 0.55, abv: 24, amt: 20, cap: '#5a2810',
+    tags: { sweet: 3, nutty: 3, aromatic: 1 } },
+  { id: 'coffee_liqueur', name: 'Coffee Liqueur', group: 'Liqueurs', icon: 'bottle', color: '#2a1408', opacity: 0.85, abv: 20, amt: 20, cap: '#1a0d05',
+    tags: { sweet: 2, coffee: 3, boozy: 1 } },
+  { id: 'irish_cream', name: 'Irish Cream', group: 'Liqueurs', icon: 'bottle', color: '#b99a6b', opacity: 0.9, abv: 17, amt: 30, cap: '#5a4326',
+    tags: { sweet: 2, creamy: 3, coffee: 1, nutty: 1 } },
+  { id: 'blue_curacao', name: 'Blue Curaçao', group: 'Liqueurs', icon: 'bottle', color: '#0f8bd6', opacity: 0.5, abv: 25, amt: 20, cap: '#0a5e91',
+    tags: { sweet: 2, citrus: 3 } },
+  { id: 'elderflower', name: 'Elderflower Liqueur', group: 'Liqueurs', icon: 'bottle', color: '#f0ead0', opacity: 0.3, abv: 20, amt: 20, cap: '#c9b46a',
+    tags: { sweet: 2, floral: 3, fruity: 1 } },
+  { id: 'maraschino', name: 'Maraschino Liqueur', group: 'Liqueurs', icon: 'bottle', color: '#efe9dc', opacity: 0.28, abv: 30, amt: 15, cap: '#9e2a2a',
+    tags: { sweet: 2, fruity: 2, floral: 1, nutty: 1 } },
+  { id: 'chartreuse', name: 'Green Chartreuse', group: 'Liqueurs', icon: 'bottle', color: '#9dbb3a', opacity: 0.45, abv: 55, amt: 15, cap: '#5f7322',
+    tags: { herbal: 3, sweet: 1, spicy: 1, aromatic: 2, boozy: 2 } },
+  { id: 'peach_schnapps', name: 'Peach Schnapps', group: 'Liqueurs', icon: 'bottle', color: '#f6c65a', opacity: 0.34, abv: 20, amt: 20, cap: '#d19b12',
+    tags: { sweet: 3, fruity: 3 } },
+
+  // ---------------- Juices ----------------
+  { id: 'lime_juice', name: 'Lime Juice', group: 'Juices', icon: 'citrus', color: '#cbe36a', rind: '#4f9d3f', opacity: 0.4, abv: 0, amt: 25,
+    tags: { sour: 3, citrus: 2, fresh: 1 } },
+  { id: 'lemon_juice', name: 'Lemon Juice', group: 'Juices', icon: 'citrus', color: '#f2e35a', rind: '#d9b310', opacity: 0.4, abv: 0, amt: 25,
+    tags: { sour: 3, citrus: 2 } },
+  { id: 'orange_juice', name: 'Orange Juice', group: 'Juices', icon: 'citrus', color: '#f6971f', rind: '#c96a10', opacity: 0.6, abv: 0, amt: 60,
+    tags: { sweet: 1, citrus: 2, fruity: 1, sour: 1 } },
+  { id: 'pineapple_juice', name: 'Pineapple Juice', group: 'Juices', icon: 'pineapple', color: '#f4c430', opacity: 0.6, abv: 0, amt: 60,
+    tags: { sweet: 2, fruity: 3, sour: 1 } },
+  { id: 'cranberry_juice', name: 'Cranberry Juice', group: 'Juices', icon: 'cranberry', color: '#a01235', opacity: 0.6, abv: 0, amt: 45,
+    tags: { sour: 2, fruity: 2, bitter: 1 } },
+  { id: 'grapefruit_juice', name: 'Grapefruit Juice', group: 'Juices', icon: 'citrus', color: '#f0785a', rind: '#c94a2e', opacity: 0.55, abv: 0, amt: 45,
+    tags: { sour: 2, citrus: 2, bitter: 1 } },
+  { id: 'tomato_juice', name: 'Tomato Juice', group: 'Juices', icon: 'tomato', color: '#c0281e', opacity: 0.82, abv: 0, amt: 90,
+    tags: { sour: 1, fruity: 1, aromatic: 1 } },
+  { id: 'coconut_cream', name: 'Coconut Cream', group: 'Juices', icon: 'coconut', color: '#f4f1ea', opacity: 0.95, abv: 0, amt: 30,
+    tags: { creamy: 3, sweet: 2, nutty: 1 } },
+
+  // ---------------- Mixers ----------------
+  { id: 'soda_water', name: 'Soda Water', group: 'Mixers', icon: 'fizz', color: '#eef6ff', opacity: 0.07, abv: 0, amt: 60,
+    tags: {} },
+  { id: 'tonic_water', name: 'Tonic Water', group: 'Mixers', icon: 'fizz', color: '#eaf3f2', opacity: 0.11, abv: 0, amt: 120,
+    tags: { bitter: 1, sweet: 1 } },
+  { id: 'cola', name: 'Cola', group: 'Mixers', icon: 'fizz', color: '#3a1e10', opacity: 0.7, abv: 0, amt: 120,
+    tags: { sweet: 2, aromatic: 1, spicy: 1 } },
+  { id: 'ginger_beer', name: 'Ginger Beer', group: 'Mixers', icon: 'fizz', color: '#e8c46a', opacity: 0.35, abv: 0, amt: 120,
+    tags: { spicy: 2, sweet: 1, aromatic: 1 } },
+  { id: 'ginger_ale', name: 'Ginger Ale', group: 'Mixers', icon: 'fizz', color: '#ecd98f', opacity: 0.22, abv: 0, amt: 120,
+    tags: { spicy: 1, sweet: 1 } },
+  { id: 'lemon_lime_soda', name: 'Lemon-Lime Soda', group: 'Mixers', icon: 'fizz', color: '#eaf6d8', opacity: 0.14, abv: 0, amt: 90,
+    tags: { sweet: 2, citrus: 1 } },
+  { id: 'prosecco', name: 'Prosecco', group: 'Mixers', icon: 'flute', color: '#f2e9b0', opacity: 0.2, abv: 11, amt: 90,
+    tags: { boozy: 1, fruity: 1, sour: 1, floral: 1 } },
+
+  // ---------------- Syrups & sweeteners ----------------
+  { id: 'simple_syrup', name: 'Simple Syrup', group: 'Syrups', icon: 'syrup', color: '#efefe6', opacity: 0.3, abv: 0, amt: 15,
+    tags: { sweet: 3 } },
+  { id: 'grenadine', name: 'Grenadine', group: 'Syrups', icon: 'syrup', color: '#a4122c', opacity: 0.7, abv: 0, amt: 10,
+    tags: { sweet: 3, fruity: 2 } },
+  { id: 'orgeat', name: 'Orgeat', group: 'Syrups', icon: 'syrup', color: '#efe6d2', opacity: 0.5, abv: 0, amt: 15,
+    tags: { sweet: 3, nutty: 3 } },
+  { id: 'honey_syrup', name: 'Honey Syrup', group: 'Syrups', icon: 'syrup', color: '#d99a26', opacity: 0.6, abv: 0, amt: 15,
+    tags: { sweet: 3, floral: 1, aromatic: 1 } },
+  { id: 'agave', name: 'Agave Nectar', group: 'Syrups', icon: 'syrup', color: '#c98a3a', opacity: 0.55, abv: 0, amt: 15,
+    tags: { sweet: 3, aromatic: 1 } },
+
+  // ---------------- Bitters & aromatics ----------------
+  { id: 'angostura', name: 'Angostura Bitters', group: 'Bitters', icon: 'dropper', color: '#5a2a1e', opacity: 0.6, abv: 44, amt: 1, unit: 'dash',
+    tags: { bitter: 3, spicy: 2, aromatic: 3 } },
+  { id: 'orange_bitters', name: 'Orange Bitters', group: 'Bitters', icon: 'dropper', color: '#b5641e', opacity: 0.5, abv: 40, amt: 1, unit: 'dash',
+    tags: { bitter: 2, citrus: 3, aromatic: 2 } },
+
+  // ---------------- Extras (dairy / egg / coffee) & Garnish ----------------
+  { id: 'egg_white', name: 'Egg White', group: 'Extras', icon: 'egg', color: '#f3f1e6', opacity: 0.55, abv: 0, amt: 20,
+    tags: { creamy: 1 } },
+  { id: 'heavy_cream', name: 'Heavy Cream', group: 'Extras', icon: 'cream', color: '#f6f3ea', opacity: 0.95, abv: 0, amt: 30,
+    tags: { creamy: 3, sweet: 1 } },
+  { id: 'milk', name: 'Milk', group: 'Extras', icon: 'cream', color: '#f7f5ef', opacity: 0.9, abv: 0, amt: 45,
+    tags: { creamy: 2 } },
+  { id: 'espresso', name: 'Espresso', group: 'Extras', icon: 'coffee', color: '#2b1a0e', opacity: 0.85, abv: 0, amt: 30,
+    tags: { coffee: 3, bitter: 2, aromatic: 1 } },
+  { id: 'mint', name: 'Fresh Mint', group: 'Garnish', icon: 'mint', color: '#6fbf73', opacity: 0.2, abv: 0, amt: 6, unit: 'piece',
+    tags: { fresh: 3, herbal: 2 } },
+  { id: 'cucumber', name: 'Cucumber', group: 'Garnish', icon: 'cucumber', color: '#cfe8b0', opacity: 0.2, abv: 0, amt: 10, unit: 'piece',
+    tags: { fresh: 3, herbal: 1 } },
+  { id: 'sugar_cube', name: 'Sugar Cube', group: 'Syrups', icon: 'sugar', color: '#ffffff', opacity: 0.3, abv: 0, amt: 5, unit: 'piece',
+    tags: { sweet: 3 } },
+  { id: 'salt', name: 'Salt Rim', group: 'Garnish', icon: 'shaker', color: '#ffffff', opacity: 0.2, abv: 0, amt: 1, unit: 'piece',
+    tags: {} },
+  { id: 'cherry', name: 'Maraschino Cherry', group: 'Garnish', icon: 'cherry', color: '#b01a34', opacity: 0.5, abv: 0, amt: 3, unit: 'piece',
+    tags: { sweet: 1, fruity: 1 } },
+  { id: 'orange_slice', name: 'Orange Slice', group: 'Garnish', icon: 'citrus', color: '#f6971f', rind: '#c96a10', opacity: 0.3, abv: 0, amt: 3, unit: 'piece',
+    tags: { citrus: 1, fruity: 1 } },
+  { id: 'olive', name: 'Olive', group: 'Garnish', icon: 'olive', color: '#7d8a2e', opacity: 0.3, abv: 0, amt: 3, unit: 'piece',
+    tags: { aromatic: 1 } },
+];
+
+// group order for the sidebar tabs
+window.INGREDIENT_GROUPS = ['Spirits', 'Liqueurs', 'Juices', 'Mixers', 'Syrups', 'Bitters', 'Extras', 'Garnish'];
+
+// fast lookup by id
+window.ING_BY_ID = window.INGREDIENTS.reduce((m, i) => { m[i.id] = i; return m; }, {});
