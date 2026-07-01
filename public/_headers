@@ -6,10 +6,6 @@
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
-# hashless static assets — cache a day, revalidate
-/css/*
-  Cache-Control: public, max-age=86400, must-revalidate
-/js/*
-  Cache-Control: public, max-age=86400, must-revalidate
+# Vite emits content-hashed files under /assets — cache forever
 /assets/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=31536000, immutable

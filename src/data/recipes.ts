@@ -1,8 +1,7 @@
-/* Stewy — classic cocktail templates
-   Each recipe lists ingredient ids with amounts in ml (internal unit).
-   `glass` and `note` are informational; `build` is loaded straight into the
-   cauldron when a template is picked from the top bar. */
-window.RECIPES = [
+/* Stewy — classic cocktail templates. Amounts in ml (internal unit). */
+import type { Recipe } from './types';
+
+export const RECIPES: Recipe[] = [
   { id: 'margarita', name: 'Margarita', emoji: '🍸', glass: 'Coupe',
     note: 'Tequila, orange, lime — salt the rim.',
     build: [['tequila', 50], ['triple_sec', 20], ['lime_juice', 25], ['salt', 1]] },
@@ -76,4 +75,6 @@ window.RECIPES = [
     build: [['vodka', 45], ['peach_schnapps', 15], ['pineapple_juice', 45]] },
 ];
 
-window.RECIPE_BY_ID = window.RECIPES.reduce((m, r) => { m[r.id] = r; return m; }, {});
+export const RECIPE_BY_ID: Record<string, Recipe> = Object.fromEntries(
+  RECIPES.map((r) => [r.id, r]),
+);

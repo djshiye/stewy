@@ -1,69 +1,86 @@
 # 🔮 Stewy — The Enchanted Cocktail Cauldron
 
-A reactive, wizardly mixology playground. Drag reagents into a see-through
-cauldron set over a rotating summoning circle and a flickering hearth-fire,
-choose your measures, and watch a live **harmony engine** judge your brew — as
-the cauldron changes colour like a real potion.
+A reactive, wizardly mixology playground — now a modern **React + TypeScript SPA**.
+Drag reagents into a see-through cauldron set over a rotating summoning circle
+and a flickering hearth-fire, choose your measures, and watch a live **harmony
+engine** judge your brew — as the cauldron changes colour like a real potion.
 
-![Stewy](assets/logo.svg)
+![Stewy](public/logo.svg)
 
 ## Features
 
-- **Drag-and-drop cauldron** — drag any reagent from the shelf onto the cauldron
-  (or tap it) and pick a measure from the popup. Splashes, ripples and arcane
-  sparkles on every pour.
+- **Drag-and-drop cauldron** — pointer-based drag (mouse & pen) with a floating
+  ghost icon, or tap any reagent to pick a measure. Splashes, ripples and
+  arcane sparkles on every pour. On touch screens, tapping is the flow.
 - **Live colour mixing** — the liquid blends the colours of everything you add,
-  weighted by volume and opacity, and fills up as you pour, lit from beneath.
+  weighted by volume and pigment opacity, fills as you pour, glows from
+  beneath, bubbles, and breathes tinted steam.
 - **Harmony engine** — a 15-dimension flavour-affinity model scores the drink
   0–100 with a themed verdict (*Legendary Elixir → Cursed Sludge*) and
   actionable suggestions ("reads sweet — add citrus", "cream + citrus can curdle").
+- **Flavour radar** — a live arcane radar chart of the brew's normalised
+  flavour profile.
+- **Classic detection** — the engine recognises when your brew resembles one
+  of the 18 classics ("✦ resembles 🍸 Margarita").
 - **Red → green reagent hints** — every reagent on the shelf recolours to show
   how well it fits the current mix (legend included).
-- **Toggleable measures** — switch the whole app between **ml / cl / oz / parts**;
-  bitters and garnishes count in dashes / pieces.
+- **Toggleable measures** — switch the whole app between **ml / cl / oz /
+  parts**; bitters and garnishes count in dashes / pieces.
 - **Grimoire of Classics** — load 18 classic recipes (Margarita, Negroni,
   Espresso Martini, Mai Tai…) straight into the cauldron.
-- **Fully responsive** — 3-column desktop layout collapses cleanly to a single
-  column on tablet/mobile, with the recipe menu becoming a bottom sheet.
-- **Auto-saved** — your brew persists in the browser between visits.
+- **Fully responsive** — 3-column desktop layout collapses to a single-column
+  mobile flow (cauldron hero → shelf → brew sheet); the recipe menu becomes a
+  bottom sheet.
+- **Auto-saved** — your brew persists in the browser between visits (saves
+  from the old vanilla version migrate automatically).
+
+## Tech
+
+- **React 19 + TypeScript + Vite** — strict types, pure-function engine
+  modules ([harmony.ts](src/lib/harmony.ts), [color.ts](src/lib/color.ts),
+  [units.ts](src/lib/units.ts)) fully separated from the UI.
+- Zero runtime dependencies beyond React — all art is parametric inline SVG
+  ([Icons.tsx](src/icons/Icons.tsx)) and hand-tuned CSS animation.
+
+```
+index.html              Vite entry
+public/                 favicon, logo, Cloudflare _headers
+src/
+  main.tsx              bootstrap
+  App.tsx               composition root: state, drag system, dialog, toasts
+  store.ts              reducer + localStorage persistence
+  data/                 ingredient & recipe databases (typed)
+  lib/                  harmony engine, colour mixing, unit logic
+  icons/Icons.tsx       parametric SVG icon factories, brand mark, circle
+  components/           Header, BrewPanel, HarmonyCard, FlavorRadar,
+                        Stage, Cauldron, Shelf, AmountDialog, StarField
+  styles.css            medieval/arcane design system
+```
 
 ## Run it
 
-Zero-build static site — no install step.
+```bash
+npm install
+npm run dev        # http://localhost:5173
+```
 
-- **Just open it:** double-click `index.html`.
-- **Or serve it** (recommended):
+Production build (type-checks first, outputs `dist/`):
 
-  ```bash
-  python -m http.server 5178
-  # then open http://localhost:5178
-  ```
+```bash
+npm run build
+npm run preview    # serve the built bundle locally
+```
 
 ## Deploy to Cloudflare Pages
 
-This repo is deploy-ready for **Cloudflare Pages** with no build step:
-
 1. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
-2. Pick this repo. Set **Framework preset: None**, **Build command: (empty)**,
-   **Build output directory: `/`**.
+2. Pick this repo. **Framework preset: Vite**, **Build command: `npm run build`**,
+   **Build output directory: `dist`**.
 3. Deploy.
 
-The included [`_headers`](./_headers) file adds sensible security headers
-(CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`) and cache rules, which
-Cloudflare Pages applies automatically.
-
-## Project layout
-
-```
-index.html          markup + the cauldron SVG
-css/styles.css      medieval/arcane theme, cauldron + fire effects
-js/icons.js         parametric SVG icon factories, brand mark, summoning circle
-js/ingredients.js   reagent database (colours + flavour profiles)
-js/recipes.js       classic cocktail templates
-js/app.js           state, drag-drop, scoring, colour mixing, UI
-assets/             logo + favicon
-_headers            Cloudflare Pages security + cache headers
-```
+[`public/_headers`](public/_headers) ships with the build and adds security
+headers (CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`) plus immutable
+caching for Vite's content-hashed assets.
 
 ## How the harmony score works
 

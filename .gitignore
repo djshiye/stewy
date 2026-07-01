@@ -8,5 +8,6 @@ desktop.ini
 .vscode/
 .idea/
 
-# node (not used, but just in case)
+# node / build output
 node_modules/
+dist/

@@ -1,5 +1,5 @@
 /* ======================================================================
-   Stewy — the enchanted cocktail cauldron
+   Stewy — the enchanted cocktail cauldron (React edition)
    Theme: medieval / wizardly. Night-violet stone, aged gold gilding,
    emerald potion glow, arcane amethyst. Cinzel display type.
    ====================================================================== */
@@ -38,7 +38,6 @@
 }
 
 * { box-sizing: border-box; }
-[hidden] { display: none !important; }
 html, body { height: 100%; }
 
 body {
@@ -63,6 +62,34 @@ h2 {
   letter-spacing: 1.2px; text-transform: uppercase; color: var(--gold-bright);
 }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+
+/* ---------------- Ambient sky ---------------- */
+.starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.star {
+  position: absolute; border-radius: 50%; background: #efe9f8;
+  box-shadow: 0 0 4px rgba(239, 233, 248, 0.8);
+  animation: twinkle 3s ease-in-out infinite;
+}
+.star.dim { opacity: 0.4; box-shadow: none; }
+@keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.9; } }
+.aurora {
+  position: absolute; width: 55vw; height: 55vw; border-radius: 50%;
+  filter: blur(90px); opacity: 0.16; will-change: transform;
+}
+.aurora-a {
+  left: -12vw; top: -18vw;
+  background: radial-gradient(circle, var(--amethyst), transparent 65%);
+  animation: drift-a 46s ease-in-out infinite alternate;
+}
+.aurora-b {
+  right: -14vw; bottom: -22vw;
+  background: radial-gradient(circle, var(--emerald), transparent 65%);
+  animation: drift-b 58s ease-in-out infinite alternate;
+}
+@keyframes drift-a { to { transform: translate(9vw, 7vh) scale(1.15); } }
+@keyframes drift-b { to { transform: translate(-8vw, -6vh) scale(1.12); } }
+
+.app { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; }
 
 /* ---------------- Header ---------------- */
 .topbar {
@@ -128,7 +155,9 @@ h2 {
   background: var(--panel-2); border: 1px solid var(--gold-dim);
   border-radius: var(--radius); box-shadow: var(--shadow);
   padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px;
+  animation: menuIn 0.16s ease;
 }
+@keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
 .menu-title {
   grid-column: 1 / -1; text-align: center; font-family: var(--font-head);
   font-size: 12px; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase;
@@ -136,22 +165,23 @@ h2 {
 }
 .recipe-item {
   text-align: left; border: 1px solid var(--line-soft); background: rgba(255, 255, 255, 0.03);
-  border-radius: 10px; padding: 9px 11px; cursor: pointer; color: var(--ink);
+  border-radius: 10px; padding: 9px 11px; cursor: pointer; color: var(--ink); font: inherit;
   transition: background 0.14s, border-color 0.14s, transform 0.1s;
 }
 .recipe-item:hover { background: rgba(154, 123, 245, 0.14); border-color: var(--amethyst); transform: translateY(-1px); }
 .recipe-item .r-name { display: flex; align-items: center; gap: 7px; font-family: var(--font-head); font-weight: 600; font-size: 13px; color: var(--gold-bright); }
-.recipe-item .r-note { font-size: 12px; color: var(--ink-faint); margin-top: 3px; line-height: 1.35; }
+.recipe-item .r-note { display: block; font-size: 12px; color: var(--ink-faint); margin-top: 3px; line-height: 1.35; }
 
 /* ---------------- Layout ---------------- */
 .layout {
-  display: grid; grid-template-columns: 300px 1fr 322px; gap: 16px;
-  padding: 16px 20px; height: calc(100vh - 63px);
+  display: grid; grid-template-columns: 306px 1fr 322px; gap: 16px;
+  padding: 16px 20px; flex: 1; min-height: 0;
 }
 .panel {
   position: relative; background: var(--panel); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow);
   display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  backdrop-filter: blur(6px);
 }
 /* inner gilded frame — illuminated-manuscript feel */
 .panel::before {
@@ -170,7 +200,7 @@ h2 {
 
 /* ---------------- Left: brew list ---------------- */
 .brew-list { list-style: none; margin: 0; padding: 8px; overflow-y: auto; flex: 1; min-height: 40px; }
-.brew-empty { color: var(--ink-faint); font-size: 13px; padding: 4px 18px 14px; line-height: 1.55; font-style: italic; }
+.brew-empty { color: var(--ink-faint); font-size: 13px; padding: 12px 18px; line-height: 1.55; font-style: italic; flex: 1; }
 .brew-row {
   display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px;
   padding: 8px; border-radius: 10px; animation: rowIn 0.25s ease;
@@ -178,9 +208,9 @@ h2 {
 .brew-row:hover { background: rgba(255, 255, 255, 0.045); }
 .brew-row .br-icon { width: 30px; height: 30px; }
 .brew-row .br-icon svg { width: 100%; height: 100%; }
-.brew-row .br-mid { min-width: 0; }
+.brew-row .br-mid { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .brew-row .br-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.brew-row .br-amt { font-size: 12px; color: var(--emerald); font-variant-numeric: tabular-nums; margin-left: 6px; }
+.brew-row .br-amt { font-size: 12px; color: var(--emerald); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .brew-row .br-ctrls { display: flex; align-items: center; gap: 4px; }
 .br-btn {
   width: 25px; height: 25px; border-radius: 7px; border: 1px solid var(--line-soft);
@@ -197,22 +227,30 @@ h2 {
 .total-val { display: block; font-size: 17px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; color: var(--gold-bright); }
 
 /* harmony card */
-.harmony-card { padding: 14px; border-top: 1px solid var(--line); background: rgba(0, 0, 0, 0.2); }
+.harmony-card { padding: 14px; border-top: 1px solid var(--line); background: rgba(0, 0, 0, 0.2); overflow-y: auto; }
 .harmony-top { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; position: relative; }
 .score-ring { width: 64px; height: 64px; transform: rotate(-90deg); }
 .ring-bg { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 6; }
 .ring-fg {
-  fill: none; stroke: var(--emerald); stroke-width: 6; stroke-linecap: round;
-  stroke-dasharray: 169.6; stroke-dashoffset: 169.6;
+  fill: none; stroke-width: 6; stroke-linecap: round;
   transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), stroke 0.4s;
   filter: drop-shadow(0 0 4px currentColor);
 }
 .score-center { position: absolute; left: 0; top: 0; width: 64px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .score-value { font-family: var(--font-head); font-size: 21px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .score-unit { font-size: 9px; color: var(--ink-faint); }
-.harmony-meta { display: flex; flex-direction: column; }
+.harmony-meta { display: flex; flex-direction: column; min-width: 0; }
 .harmony-label { font-family: var(--font-head); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); }
 .harmony-verdict { font-family: var(--font-head); font-size: 15px; font-weight: 600; margin-top: 2px; color: var(--gold-bright); }
+.harmony-match {
+  margin-top: 4px; font-size: 11.5px; color: var(--rune); font-style: italic;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: rowIn 0.3s ease;
+}
+
+.flavor-radar { display: flex; justify-content: center; margin: 8px 0 0; }
+.flavor-radar svg { width: 176px; height: auto; }
+.radar-label { font-family: var(--font-head); font-size: 7.5px; letter-spacing: 0.4px; fill: var(--ink-faint); }
 
 .suggestions { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .suggestions li {
@@ -224,11 +262,11 @@ h2 {
 .suggestions li.bad { border-left-color: var(--red); }
 
 /* ---------------- Center: stage + cauldron ---------------- */
-.stage { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; padding-top: 6px; min-height: 0; position: relative; }
+.stage { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; padding-top: 6px; min-height: 0; position: relative; min-width: 0; }
 .cocktail-name {
   background: transparent; border: 0; border-bottom: 1px dashed transparent; color: var(--gold-bright);
   font-family: var(--font-display); font-size: 30px; font-weight: 700; text-align: center;
-  width: min(520px, 82%); padding: 4px 6px; letter-spacing: 0.5px;
+  width: min(520px, 92%); padding: 4px 6px; letter-spacing: 0.5px;
 }
 .cocktail-name:hover { border-bottom-color: var(--gold-dim); }
 .cocktail-name:focus { outline: none; border-bottom-color: var(--gold); }
@@ -256,6 +294,7 @@ h2 {
   z-index: 0; pointer-events: none; opacity: 0.5;
   animation: spin 60s linear infinite;
   will-change: transform;
+  transition: opacity 0.25s;
 }
 .magic-circle svg { width: 100%; height: 100%; }
 .magic-circle .mc-inner { animation: spin-rev 44s linear infinite; transform-origin: 100px 100px; transform-box: view-box; }
@@ -275,7 +314,7 @@ h2 {
   border-radius: 50% 50% 48% 48% / 62% 62% 38% 38%;
   background: radial-gradient(ellipse at 50% 82%, #ffe08a 0%, #ff9a3c 38%, #e0431f 66%, transparent 76%);
   transform-origin: bottom center;
-  animation: flicker var(--fd, 1.5s) ease-in-out infinite;
+  animation: flicker 1.5s ease-in-out infinite;
 }
 .flame.f1 { width: 58%; height: 100%; animation-duration: 1.7s; }
 .flame.f2 { width: 40%; height: 82%; animation-duration: 1.2s; animation-delay: .3s; opacity: .9; }
@@ -293,6 +332,23 @@ h2 {
 }
 @keyframes emberRise { 0% { transform: translateY(0) scale(1); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-90px) scale(.3); opacity: 0; } }
 
+/* steam wisps above the brew */
+.cauldron-steam { position: absolute; left: 50%; top: 8%; transform: translateX(-50%); width: 44%; height: 30%; z-index: 2; pointer-events: none; }
+.steam {
+  position: absolute; bottom: 0; left: 50%; width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle, var(--c, rgba(255,255,255,0.5)), transparent 70%);
+  opacity: 0; filter: blur(6px);
+  animation: steamRise 4.6s ease-in-out infinite;
+}
+.steam.s1 { animation-delay: 0s; margin-left: -30px; }
+.steam.s2 { animation-delay: 1.6s; margin-left: 4px; width: 28px; height: 28px; }
+.steam.s3 { animation-delay: 3.1s; margin-left: 22px; width: 18px; height: 18px; }
+@keyframes steamRise {
+  0% { transform: translateY(6px) scale(0.7); opacity: 0; }
+  25% { opacity: 0.5; }
+  100% { transform: translateY(-64px) translateX(10px) scale(1.7); opacity: 0; }
+}
+
 .cauldron-svg { position: relative; z-index: 1; width: 100%; height: 100%; display: block; overflow: visible; }
 /* cheap drag-over feedback — SVG stroke + glow, no layer-forming filters */
 .cauldron.drag-over .cauldron-body { stroke: var(--rune); stroke-width: 3; }
@@ -300,18 +356,21 @@ h2 {
 .cauldron.drag-over .magic-circle { opacity: 0.9; }
 .cauldron.pulse .cauldron-glow { animation: glowPulse 0.7s ease; }
 
-/* Pause GPU-costly ambient motion while an HTML5 drag is in flight — this is
-   what eliminates the stutter when dragging over/off the cauldron. */
+/* Pause GPU-costly ambient motion while a drag is in flight. */
+body.is-dragging { user-select: none; cursor: grabbing; }
 body.is-dragging .flame,
 body.is-dragging .ember,
+body.is-dragging .steam,
+body.is-dragging .aurora,
+body.is-dragging .star,
 body.is-dragging .magic-circle,
 body.is-dragging .magic-circle .mc-inner,
 body.is-dragging .bubble,
 body.is-dragging .liquid-shine { animation-play-state: paused; }
 @keyframes glowPulse { 0% { filter: blur(15px); } 40% { filter: blur(28px); transform: scale(1.07); } 100% { filter: blur(15px); } }
 
-#liquid { transition: y 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), fill 0.6s, fill-opacity 0.6s; }
-#liquidSurface, #liquidShine { transition: cy 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), rx 0.55s, fill 0.6s, fill-opacity 0.6s; }
+.liquid { transition: y 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), fill 0.6s, fill-opacity 0.6s; }
+.liquid-surface, .liquid-shine { transition: cy 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), rx 0.55s, fill 0.6s, fill-opacity 0.6s; }
 .liquid-shine { animation: shimmer 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes shimmer { 0%, 100% { opacity: 0.25; transform: scaleX(0.82); } 50% { opacity: 0.55; transform: scaleX(1.04); } }
 .glass-shine { opacity: 0.5; }
@@ -349,6 +408,16 @@ body.is-dragging .liquid-shine { animation-play-state: paused; }
 
 .stage-tip { color: var(--ink-faint); font-size: 12.5px; margin: 12px 0 0; text-align: center; font-style: italic; }
 
+/* drag ghost follows the pointer */
+.drag-ghost {
+  position: fixed; left: -28px; top: -28px; width: 56px; height: 56px;
+  z-index: 200; pointer-events: none;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px rgba(127, 230, 196, 0.35));
+  animation: ghostIn 0.12s ease;
+}
+.drag-ghost svg { width: 100%; height: 100%; }
+@keyframes ghostIn { from { opacity: 0; scale: 0.6; } to { opacity: 1; scale: 1; } }
+
 /* ---------------- Right: reagents ---------------- */
 .search-wrap { padding: 12px 14px 8px; }
 .search {
@@ -370,8 +439,8 @@ body.is-dragging .liquid-shine { animation-play-state: paused; }
 .legend-bar { flex: 1; height: 5px; border-radius: 999px; background: linear-gradient(90deg, #e5484d, #f5a623, #3ddc97); }
 
 .ing-list { overflow-y: auto; flex: 1; padding: 0 12px 12px; }
+.shelf-empty { color: var(--ink-faint); font-size: 13px; font-style: italic; padding: 10px 6px; }
 .ing-section { margin-bottom: 2px; }
-.ing-section.hidden { display: none; }
 .ing-section-head {
   position: sticky; top: 0; z-index: 3;
   display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
@@ -387,18 +456,17 @@ body.is-dragging .liquid-shine { animation-play-state: paused; }
   padding: 12px 8px 10px; border-radius: 12px; cursor: grab;
   border: 1px solid var(--line-soft); background: rgba(255, 255, 255, 0.03); color: var(--ink);
   font: inherit; text-align: center; transition: transform 0.12s, border-color 0.2s, background 0.2s, box-shadow 0.2s; --fit: rgba(255, 255, 255, 0.14);
+  touch-action: pan-y;
 }
 .ing-card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--fit); transition: background 0.4s; }
 .ing-card:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.07); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4); border-color: var(--gold-dim); }
 .ing-card:active { cursor: grabbing; }
-.ing-card.dragging { opacity: 0.45; }
 .ing-card .ing-icon { width: 40px; height: 40px; pointer-events: none; }
 .ing-card .ing-icon svg { width: 100%; height: 100%; }
 .ing-card .ing-name { font-size: 12px; font-weight: 500; line-height: 1.2; pointer-events: none; }
 .ing-card .fit-dot { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--fit); box-shadow: 0 0 6px var(--fit); transition: background 0.4s, box-shadow 0.4s; opacity: 0; }
 .ing-card.scored .fit-dot { opacity: 1; }
 .ing-card.scored { border-color: var(--fit); }
-.ing-card.hidden { display: none; }
 
 /* ---------------- Popup ---------------- */
 .pop-backdrop { position: fixed; inset: 0; background: rgba(4, 3, 10, 0.6); z-index: 90; backdrop-filter: blur(3px); }
@@ -428,12 +496,17 @@ body.is-dragging .liquid-shine { animation-play-state: paused; }
 .pop-chip.active { color: #2a1e06; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); border-color: transparent; }
 
 .toast {
-  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(10px);
+  position: fixed; left: 50%; bottom: 26px;
   background: var(--panel-2); border: 1px solid var(--gold-dim); color: var(--gold-bright);
   font-family: var(--font-head); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;
-  box-shadow: var(--shadow); z-index: 120; opacity: 0; transition: opacity 0.25s, transform 0.25s;
+  box-shadow: var(--shadow); z-index: 120;
+  animation: toastLife 1.9s ease forwards;
 }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@keyframes toastLife {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  10%, 82% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+}
 
 /* scrollbars */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -441,19 +514,23 @@ body.is-dragging .liquid-shine { animation-play-state: paused; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(217, 178, 94, 0.45); background-clip: padding-box; }
 
 /* ---------------- Responsive ---------------- */
-@media (max-width: 1160px) { .layout { grid-template-columns: 264px 1fr 288px; gap: 12px; } }
+@media (max-width: 1160px) { .layout { grid-template-columns: 270px 1fr 288px; gap: 12px; } }
 @media (max-width: 1000px) {
   body { overflow: auto; }
-  .layout { grid-template-columns: 1fr; height: auto; }
-  .stage { order: -1; padding: 8px 0 4px; }
+  .app { height: auto; min-height: 100vh; }
+  .layout { grid-template-columns: 1fr; }
+  .stage { order: 1; padding: 8px 0 4px; }
+  .panel-right { order: 2; }
+  .panel-left { order: 3; }
   .cauldron { width: min(380px, 78%); }
-  .panel-left, .panel-right { max-height: 520px; }
+  .panel-left, .panel-right { max-height: 540px; }
 }
 @media (max-width: 640px) {
   .topbar { padding: 10px 14px; }
   .brand-tag { display: none; }
   .layout { padding: 12px; }
   .btn-label { display: none; }
+  .cocktail-name { font-size: 24px; }
   /* recipes menu becomes a bottom sheet so it never overflows */
   .recipes-menu {
     position: fixed; top: auto; left: 8px; right: 8px; bottom: 8px; width: auto;
@@ -463,6 +540,7 @@ body.is-dragging .liquid-shine { animation-play-state: paused; }
 @media (max-width: 380px) { .ing-grid { grid-template-columns: 1fr; } .recipes-menu { grid-template-columns: 1fr; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble, .liquid-shine, .flame, .ember, .magic-circle, .magic-circle .mc-inner { animation: none; }
+  .bubble, .liquid-shine, .flame, .ember, .steam, .star, .aurora,
+  .magic-circle, .magic-circle .mc-inner { animation: none; }
   * { transition-duration: 0.001ms !important; }
 }

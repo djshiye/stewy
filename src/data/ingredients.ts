@@ -1,20 +1,9 @@
-/* Stewy — ingredient database
-   Each ingredient carries:
-     id        unique key (used by recipes + brew state)
-     name      display name
-     group     sidebar grouping / filter tab
-     icon      which icon factory renders it (see icons.js)
-     color     liquid color as hex (drives cauldron mixing)
-     opacity   0..1 how opaque the liquid is (soda ~clear, cream ~opaque)
-     abv       alcohol % by volume (for strength estimate)
-     unit      default measure ('ml' volumes; 'dash' / 'piece' for small items)
-     amt       default amount to add, in ml (pieces stored as ~ml of impact)
-     tags      flavor profile, each 0..3, used for the harmony engine
-   Flavor dimensions:
-     boozy sweet sour bitter herbal fruity citrus smoky spicy floral
-     creamy aromatic fresh nutty coffee
-*/
-window.INGREDIENTS = [
+/* Stewy — ingredient database.
+   Colours drive the cauldron's live colour mixing; tags feed the harmony
+   engine (each flavour dimension 0..3). */
+import type { Group, Ingredient } from './types';
+
+export const INGREDIENTS: Ingredient[] = [
   // ---------------- Base spirits ----------------
   { id: 'vodka', name: 'Vodka', group: 'Spirits', icon: 'bottle', color: '#f6f7fb', opacity: 0.14, abv: 40, amt: 45, cap: '#8a8f98',
     tags: { boozy: 3 } },
@@ -118,6 +107,8 @@ window.INGREDIENTS = [
     tags: { sweet: 3, floral: 1, aromatic: 1 } },
   { id: 'agave', name: 'Agave Nectar', group: 'Syrups', icon: 'syrup', color: '#c98a3a', opacity: 0.55, abv: 0, amt: 15,
     tags: { sweet: 3, aromatic: 1 } },
+  { id: 'sugar_cube', name: 'Sugar Cube', group: 'Syrups', icon: 'sugar', color: '#ffffff', opacity: 0.3, abv: 0, amt: 5, unit: 'piece',
+    tags: { sweet: 3 } },
 
   // ---------------- Bitters & aromatics ----------------
   { id: 'angostura', name: 'Angostura Bitters', group: 'Bitters', icon: 'dropper', color: '#5a2a1e', opacity: 0.6, abv: 44, amt: 1, unit: 'dash',
@@ -125,7 +116,7 @@ window.INGREDIENTS = [
   { id: 'orange_bitters', name: 'Orange Bitters', group: 'Bitters', icon: 'dropper', color: '#b5641e', opacity: 0.5, abv: 40, amt: 1, unit: 'dash',
     tags: { bitter: 2, citrus: 3, aromatic: 2 } },
 
-  // ---------------- Extras (dairy / egg / coffee) & Garnish ----------------
+  // ---------------- Extras (dairy / egg / coffee) ----------------
   { id: 'egg_white', name: 'Egg White', group: 'Extras', icon: 'egg', color: '#f3f1e6', opacity: 0.55, abv: 0, amt: 20,
     tags: { creamy: 1 } },
   { id: 'heavy_cream', name: 'Heavy Cream', group: 'Extras', icon: 'cream', color: '#f6f3ea', opacity: 0.95, abv: 0, amt: 30,
@@ -134,12 +125,12 @@ window.INGREDIENTS = [
     tags: { creamy: 2 } },
   { id: 'espresso', name: 'Espresso', group: 'Extras', icon: 'coffee', color: '#2b1a0e', opacity: 0.85, abv: 0, amt: 30,
     tags: { coffee: 3, bitter: 2, aromatic: 1 } },
+
+  // ---------------- Garnish ----------------
   { id: 'mint', name: 'Fresh Mint', group: 'Garnish', icon: 'mint', color: '#6fbf73', opacity: 0.2, abv: 0, amt: 6, unit: 'piece',
     tags: { fresh: 3, herbal: 2 } },
   { id: 'cucumber', name: 'Cucumber', group: 'Garnish', icon: 'cucumber', color: '#cfe8b0', opacity: 0.2, abv: 0, amt: 10, unit: 'piece',
     tags: { fresh: 3, herbal: 1 } },
-  { id: 'sugar_cube', name: 'Sugar Cube', group: 'Syrups', icon: 'sugar', color: '#ffffff', opacity: 0.3, abv: 0, amt: 5, unit: 'piece',
-    tags: { sweet: 3 } },
   { id: 'salt', name: 'Salt Rim', group: 'Garnish', icon: 'shaker', color: '#ffffff', opacity: 0.2, abv: 0, amt: 1, unit: 'piece',
     tags: {} },
   { id: 'cherry', name: 'Maraschino Cherry', group: 'Garnish', icon: 'cherry', color: '#b01a34', opacity: 0.5, abv: 0, amt: 3, unit: 'piece',
@@ -150,8 +141,10 @@ window.INGREDIENTS = [
     tags: { aromatic: 1 } },
 ];
 
-// group order for the sidebar tabs
-window.INGREDIENT_GROUPS = ['Spirits', 'Liqueurs', 'Juices', 'Mixers', 'Syrups', 'Bitters', 'Extras', 'Garnish'];
+export const INGREDIENT_GROUPS: Group[] = [
+  'Spirits', 'Liqueurs', 'Juices', 'Mixers', 'Syrups', 'Bitters', 'Extras', 'Garnish',
+];
 
-// fast lookup by id
-window.ING_BY_ID = window.INGREDIENTS.reduce((m, i) => { m[i.id] = i; return m; }, {});
+export const ING_BY_ID: Record<string, Ingredient> = Object.fromEntries(
+  INGREDIENTS.map((i) => [i.id, i]),
+);
