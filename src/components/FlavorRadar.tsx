@@ -31,7 +31,7 @@ export function FlavorRadar({ p }: { p: Profile }) {
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#3ddc97" />
-            <stop offset="100%" stopColor="#9a7bf5" />
+            <stop offset="100%" stopColor="#d9b25e" />
           </linearGradient>
         </defs>
         {[0.33, 0.66, 1].map((k) => (

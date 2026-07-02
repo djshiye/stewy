@@ -1,6 +1,6 @@
 /* Parametric SVG icon system — crisp flat icons generated per-ingredient,
    plus the brand mark and the rotating summoning circle. */
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import type { Ingredient } from '../data/types';
 import { shade } from '../lib/color';
 
@@ -291,7 +291,7 @@ function ShakerIcon() {
 }
 
 /** Dispatch: render the right icon for an ingredient. */
-export function IngredientIcon({ ing }: { ing: Ingredient }) {
+export const IngredientIcon = memo(function IngredientIcon({ ing }: { ing: Ingredient }) {
   switch (ing.icon) {
     case 'bottle': return <BottleIcon liquid={ing.color} cap={ing.cap} />;
     case 'syrup': return <SyrupIcon liquid={ing.color} />;
@@ -313,7 +313,7 @@ export function IngredientIcon({ ing }: { ing: Ingredient }) {
     case 'olive': return <OliveIcon />;
     case 'shaker': return <ShakerIcon />;
   }
-}
+});
 
 /** Brand mark — an enchanted cauldron with glowing brew + gilded rim. */
 export function BrandMark() {
@@ -340,17 +340,15 @@ export function BrandMark() {
   );
 }
 
-/** Rotating "summoning circle" behind the cauldron (hexagram + runic ticks). */
+/** Rotating "summoning circle" behind the cauldron — a celestial almanac:
+    runic tick ring, a counter-turning ring of moon phases and star sparkles,
+    and a soft sunburst at the heart. */
 export function MagicCircle() {
   const C = 100;
   const P = (deg: number, rad: number): [string, string] => [
     (C + rad * Math.cos((deg * Math.PI) / 180)).toFixed(1),
     (C + rad * Math.sin((deg * Math.PI) / 180)).toFixed(1),
   ];
-  const tri = (off: number, rad: number) => {
-    const a = P(off - 90, rad), b = P(off + 30, rad), c = P(off + 150, rad);
-    return `M${a[0]} ${a[1]} L${b[0]} ${b[1]} L${c[0]} ${c[1]} Z`;
-  };
   const ticks = [];
   for (let d = 0; d < 360; d += 15) {
     const o = P(d, 90), i = P(d, d % 45 === 0 ? 80 : 85);
@@ -361,17 +359,53 @@ export function MagicCircle() {
     const p = P(d, 71);
     dots.push(<circle key={d} cx={p[0]} cy={p[1]} r="1.6" />);
   }
+
+  // moon-phase ring: new → waxing half → full → waning half, twice around
+  const MOON = 'rgba(242,214,140,0.75)';
+  const moons = [];
+  for (let i = 0; i < 8; i++) {
+    const deg = i * 45;
+    const [x, y] = P(deg, 57);
+    const phase = i % 4;
+    moons.push(
+      <g key={i} transform={`translate(${x} ${y}) rotate(${deg})`}>
+        {phase === 0 && <circle r="3.6" fill="none" stroke={MOON} strokeWidth="1" />}
+        {phase === 1 && <path d="M0,-3.6 A3.6,3.6 0 0,1 0,3.6 Z" fill={MOON} />}
+        {phase === 2 && <circle r="3.6" fill={MOON} />}
+        {phase === 3 && <path d="M0,-3.6 A3.6,3.6 0 0,0 0,3.6 Z" fill={MOON} />}
+      </g>,
+    );
+  }
+  // four-point star sparkles between the moons
+  const sparks = [];
+  for (let i = 0; i < 8; i++) {
+    const [x, y] = P(i * 45 + 22.5, 57);
+    sparks.push(
+      <path key={i} transform={`translate(${x} ${y})`}
+        d="M0,-4.4 L1.1,-1.1 L4.4,0 L1.1,1.1 L0,4.4 L-1.1,1.1 L-4.4,0 L-1.1,-1.1 Z"
+        fill="rgba(127,230,196,0.55)" />,
+    );
+  }
+  // sunburst rays at the heart (mostly veiled by the cauldron)
+  const rays = [];
+  for (let d = 0; d < 360; d += 30) {
+    const a = P(d, 30), b = P(d, 42);
+    rays.push(<line key={d} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} />);
+  }
+
   return (
     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
       <circle cx="100" cy="100" r="94" stroke="rgba(217,178,94,0.5)" strokeWidth="1" />
       <circle cx="100" cy="100" r="90" stroke="rgba(217,178,94,0.28)" strokeWidth="0.6" strokeDasharray="2 4" />
       <circle cx="100" cy="100" r="80" stroke="rgba(127,230,196,0.45)" strokeWidth="1" />
-      <circle cx="100" cy="100" r="63" stroke="rgba(154,123,245,0.4)" strokeWidth="0.8" />
       <g stroke="rgba(217,178,94,0.5)" strokeWidth="0.9">{ticks}</g>
       <g fill="rgba(127,230,196,0.6)">{dots}</g>
-      <g className="mc-inner" stroke="rgba(154,123,245,0.55)" strokeWidth="1.1" fill="none">
-        <path d={tri(0, 63)} />
-        <path d={tri(180, 63)} />
+      <g className="mc-inner">
+        <circle cx="100" cy="100" r="65" stroke="rgba(242,214,140,0.32)" strokeWidth="0.8" fill="none" />
+        <circle cx="100" cy="100" r="48" stroke="rgba(242,214,140,0.22)" strokeWidth="0.6" strokeDasharray="1.5 5" fill="none" />
+        {moons}
+        {sparks}
+        <g stroke="rgba(242,214,140,0.3)" strokeWidth="1" strokeLinecap="round">{rays}</g>
       </g>
     </svg>
   );

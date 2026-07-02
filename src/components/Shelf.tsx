@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { memo, useMemo, useState, type CSSProperties } from 'react';
 import type { Group, Ingredient } from '../data/types';
 import { INGREDIENT_GROUPS, INGREDIENTS } from '../data/ingredients';
 import { describe, fit, type Harmony } from '../lib/harmony';
@@ -13,7 +13,7 @@ interface Props {
 
 type Tab = 'All' | Group;
 
-export function Shelf({ h, onPick, onDragStart }: Props) {
+export const Shelf = memo(function Shelf({ h, onPick, onDragStart }: Props) {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('All');
 
@@ -102,4 +102,4 @@ export function Shelf({ h, onPick, onDragStart }: Props) {
       </div>
     </aside>
   );
-}
+});

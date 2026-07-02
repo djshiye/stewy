@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { Recipe } from '../data/types';
 import { RECIPES } from '../data/recipes';
 import { UNIT_ORDER, UNITS, type UnitKey } from '../lib/units';
@@ -11,7 +11,7 @@ interface Props {
   onClear: () => void;
 }
 
-export function Header({ unit, onUnit, onRecipe, onClear }: Props) {
+export const Header = memo(function Header({ unit, onUnit, onRecipe, onClear }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapRef = useRef<HTMLDivElement>(null);
 
@@ -86,4 +86,4 @@ export function Header({ unit, onUnit, onRecipe, onClear }: Props) {
       </div>
     </header>
   );
-}
+});

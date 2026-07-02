@@ -1,10 +1,11 @@
-import type { RefObject } from 'react';
-import type { BrewState } from '../store';
+import { memo, type RefObject } from 'react';
+import type { BrewEntry } from '../data/types';
 import { VERDICT, type Harmony } from '../lib/harmony';
 import { Cauldron, type SplashSpec } from './Cauldron';
 
 interface Props {
-  state: BrewState;
+  name: string;
+  brew: BrewEntry[];
   h: Harmony | null;
   splashes: SplashSpec[];
   dragOver: boolean;
@@ -12,12 +13,14 @@ interface Props {
   cauldronBoxRef: RefObject<HTMLDivElement | null>;
 }
 
-export function Stage({ state, h, splashes, dragOver, onName, cauldronBoxRef }: Props) {
+export const Stage = memo(function Stage({
+  name, brew, h, splashes, dragOver, onName, cauldronBoxRef,
+}: Props) {
   return (
     <section className="stage">
       <input
         className="cocktail-name"
-        value={state.name}
+        value={name}
         spellCheck={false}
         maxLength={40}
         aria-label="Cocktail name"
@@ -29,7 +32,7 @@ export function Stage({ state, h, splashes, dragOver, onName, cauldronBoxRef }: 
       </div>
 
       <Cauldron
-        brew={state.brew}
+        brew={brew}
         splashes={splashes}
         dragOver={dragOver}
         boxRef={cauldronBoxRef}
@@ -38,4 +41,4 @@ export function Stage({ state, h, splashes, dragOver, onName, cauldronBoxRef }: 
       <p className="stage-tip">Drag a reagent onto the cauldron — or tap it — to choose a measure.</p>
     </section>
   );
-}
+});

@@ -1,19 +1,20 @@
-import type { Dispatch } from 'react';
-import type { BrewAction, BrewState } from '../store';
+import { memo, type Dispatch } from 'react';
+import type { BrewAction } from '../store';
+import type { BrewEntry } from '../data/types';
 import type { Harmony } from '../lib/harmony';
 import { ING_BY_ID } from '../data/ingredients';
-import { amountLabel, trim, UNITS } from '../lib/units';
+import { amountLabel, trim, UNITS, type UnitKey } from '../lib/units';
 import { IngredientIcon } from '../icons/Icons';
 import { HarmonyCard } from './HarmonyCard';
 
 interface Props {
-  state: BrewState;
+  brew: BrewEntry[];
+  unit: UnitKey;
   dispatch: Dispatch<BrewAction>;
   h: Harmony | null;
 }
 
-export function BrewPanel({ state, dispatch, h }: Props) {
-  const { brew, unit } = state;
+export const BrewPanel = memo(function BrewPanel({ brew, unit, dispatch, h }: Props) {
   const totalMl = brew.reduce((s, e) => s + e.ml, 0);
   const alc = brew.reduce((s, e) => s + e.ml * (ING_BY_ID[e.id]?.abv ?? 0), 0);
   const abv = totalMl > 0 ? alc / totalMl : 0;
@@ -74,4 +75,4 @@ export function BrewPanel({ state, dispatch, h }: Props) {
       <HarmonyCard h={h} brew={brew} />
     </aside>
   );
-}
+});

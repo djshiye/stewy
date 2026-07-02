@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Ingredient } from './data/types';
 import { useBrewStore } from './store';
 import { harmony } from './lib/harmony';
@@ -10,6 +10,8 @@ import { AmountDialog } from './components/AmountDialog';
 import { StarField } from './components/StarField';
 import { IngredientIcon } from './icons/Icons';
 import type { SplashSpec } from './components/Cauldron';
+import type { Recipe } from './data/types';
+import type { UnitKey } from './lib/units';
 
 let seq = 0;
 
@@ -19,10 +21,11 @@ export default function App() {
 
   // ---- amount dialog -----------------------------------------------------
   const [dialogIng, setDialogIng] = useState<Ingredient | null>(null);
+  const closeDialog = useCallback(() => setDialogIng(null), []);
 
   // ---- toast ---------------------------------------------------------------
   const [toast, setToast] = useState<{ msg: string; id: number } | null>(null);
-  const notify = (msg: string) => setToast({ msg, id: ++seq });
+  const notify = useCallback((msg: string) => setToast({ msg, id: ++seq }), []);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 1900);
@@ -31,18 +34,30 @@ export default function App() {
 
   // ---- cauldron splash fx ----------------------------------------------------
   const [splashes, setSplashes] = useState<SplashSpec[]>([]);
-  const splash = (color: string) => {
+  const splash = useCallback((color: string) => {
     const id = ++seq;
     setSplashes((s) => [...s, { id, color }]);
     setTimeout(() => setSplashes((s) => s.filter((x) => x.id !== id)), 1250);
-  };
+  }, []);
 
-  const addIngredient = (ing: Ingredient, ml: number) => {
+  const addIngredient = useCallback((ing: Ingredient, ml: number) => {
     dispatch({ type: 'add', id: ing.id, ml });
     splash(ing.color);
     notify(`Added ${ing.name}`);
     setDialogIng(null);
-  };
+  }, [dispatch, splash, notify]);
+
+  // ---- header actions ------------------------------------------------------
+  const setUnit = useCallback((unit: UnitKey) => dispatch({ type: 'setUnit', unit }), [dispatch]);
+  const loadRecipe = useCallback((r: Recipe) => {
+    dispatch({ type: 'loadRecipe', id: r.id });
+    notify(`Loaded ${r.name}`);
+  }, [dispatch, notify]);
+  const clearBrew = useCallback(() => {
+    dispatch({ type: 'clear' });
+    notify('Cauldron emptied');
+  }, [dispatch, notify]);
+  const setName = useCallback((name: string) => dispatch({ type: 'setName', name }), [dispatch]);
 
   // ---- pointer drag (mouse / pen; touch taps open the dialog) -------------
   const [dragIng, setDragIng] = useState<Ingredient | null>(null);
@@ -51,16 +66,20 @@ export default function App() {
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const posRef = useRef({ x: 0, y: 0 });
 
-  const placeGhost = (x: number, y: number) => {
-    posRef.current = { x, y };
-    if (ghostRef.current) ghostRef.current.style.transform = `translate(${x}px, ${y}px)`;
-  };
-
-  const startDrag = (ing: Ingredient, ev: React.PointerEvent) => {
+  const startDrag = useCallback((ing: Ingredient, ev: React.PointerEvent) => {
     if (ev.pointerType === 'touch' || ev.button !== 0) return;
     const sx = ev.clientX, sy = ev.clientY;
     let active = false;
 
+    // capture guarantees pointerup/cancel delivery even if released off-window
+    try {
+      (ev.target as Element).setPointerCapture?.(ev.pointerId);
+    } catch { /* pointer already released — drag still works, only capture is lost */ }
+
+    const placeGhost = (x: number, y: number) => {
+      posRef.current = { x, y };
+      if (ghostRef.current) ghostRef.current.style.transform = `translate(${x}px, ${y}px)`;
+    };
     const inCauldron = (e: PointerEvent) => {
       const box = cauldronBoxRef.current?.getBoundingClientRect();
       return !!box && e.clientX >= box.left && e.clientX <= box.right
@@ -89,9 +108,11 @@ export default function App() {
     const up = (e: PointerEvent) => {
       const dropped = active && inCauldron(e);
       if (active) {
-        // swallow the click that follows a completed drag
-        window.addEventListener('click', (c) => { c.stopPropagation(); c.preventDefault(); },
-          { capture: true, once: true });
+        // swallow the click that follows a completed drag; self-disarm in case
+        // the browser never dispatches one
+        const swallow = (c: MouseEvent) => { c.stopPropagation(); c.preventDefault(); };
+        window.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 150);
       }
       cleanup();
       if (dropped) setDialogIng(ing);
@@ -102,26 +123,22 @@ export default function App() {
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', cancel);
-  };
+  }, []);
 
   return (
     <div className="app">
       <StarField />
-      <Header
-        unit={state.unit}
-        onUnit={(unit) => dispatch({ type: 'setUnit', unit })}
-        onRecipe={(r) => { dispatch({ type: 'loadRecipe', id: r.id }); notify(`Loaded ${r.name}`); }}
-        onClear={() => { dispatch({ type: 'clear' }); notify('Cauldron emptied'); }}
-      />
+      <Header unit={state.unit} onUnit={setUnit} onRecipe={loadRecipe} onClear={clearBrew} />
 
       <main className="layout">
-        <BrewPanel state={state} dispatch={dispatch} h={h} />
+        <BrewPanel brew={state.brew} unit={state.unit} dispatch={dispatch} h={h} />
         <Stage
-          state={state}
+          name={state.name}
+          brew={state.brew}
           h={h}
           splashes={splashes}
           dragOver={overCauldron}
-          onName={(name) => dispatch({ type: 'setName', name })}
+          onName={setName}
           cauldronBoxRef={cauldronBoxRef}
         />
         <Shelf h={h} onPick={setDialogIng} onDragStart={startDrag} />
@@ -129,9 +146,10 @@ export default function App() {
 
       {dialogIng && (
         <AmountDialog
+          key={dialogIng.id}
           ing={dialogIng}
           unit={state.unit}
-          onClose={() => setDialogIng(null)}
+          onClose={closeDialog}
           onAdd={addIngredient}
         />
       )}
