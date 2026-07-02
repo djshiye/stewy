@@ -36,7 +36,7 @@ export const Header = memo(function Header({ unit, onUnit, onRecipe, onClear }: 
       <div className="brand">
         <span className="brand-mark"><BrandMark /></span>
         <span className="brand-text">
-          <span className="brand-name">Stewy</span>
+          <h1 className="brand-name">Stewy</h1>
           <span className="brand-tag">the enchanted cocktail cauldron</span>
         </span>
       </div>

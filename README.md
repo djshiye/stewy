@@ -1,11 +1,13 @@
+<p align="center">
+  <img src="public/logo.png" alt="Stewy — the enchanted cocktail cauldron" width="560" />
+</p>
+
 # 🔮 Stewy — The Enchanted Cocktail Cauldron
 
-A reactive, wizardly mixology playground — now a modern **React + TypeScript SPA**.
+A reactive, wizardly mixology playground — a modern **React + TypeScript SPA**.
 Drag reagents into a see-through cauldron set over a rotating summoning circle
 and a flickering hearth-fire, choose your measures, and watch a live **harmony
 engine** judge your brew — as the cauldron changes colour like a real potion.
-
-![Stewy](public/logo.svg)
 
 ## Features
 
@@ -43,8 +45,9 @@ engine** judge your brew — as the cauldron changes colour like a real potion.
   ([Icons.tsx](src/icons/Icons.tsx)) and hand-tuned CSS animation.
 
 ```
-index.html              Vite entry
-public/                 favicon, logo, Cloudflare _headers
+index.html              Vite entry + SEO meta (Open Graph, JSON-LD)
+public/                 brand assets (favicon, logo, og image, PWA icons),
+                        robots.txt, sitemap.xml, site.webmanifest, _headers
 src/
   main.tsx              bootstrap
   App.tsx               composition root: state, drag system, dialog, toasts

@@ -9,3 +9,19 @@
 # Vite emits content-hashed files under /assets — cache forever
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# brand images & icons — stable, revalidate daily
+/og.png
+  Cache-Control: public, max-age=86400
+/logo.png
+  Cache-Control: public, max-age=86400
+/logo.svg
+  Cache-Control: public, max-age=86400
+/favicon.svg
+  Cache-Control: public, max-age=86400
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+/icon-192.png
+  Cache-Control: public, max-age=86400
+/icon-512.png
+  Cache-Control: public, max-age=86400

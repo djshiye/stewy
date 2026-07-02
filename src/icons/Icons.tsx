@@ -315,27 +315,49 @@ export const IngredientIcon = memo(function IngredientIcon({ ing }: { ing: Ingre
   }
 });
 
-/** Brand mark — an enchanted cauldron with glowing brew + gilded rim. */
+/** Brand mark — the canonical Stewy sigil: a gold-rimmed cauldron of glowing
+    brew beneath a crescent moon and star sparkle (matches favicon + logo). */
 export function BrandMark() {
-  const gid = useId();
+  const uid = useId();
+  const brewId = `${uid}b`, auraId = `${uid}a`, fireId = `${uid}f`, moonId = `${uid}m`;
   return (
-    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
       <defs>
-        <radialGradient id={gid} cx="50%" cy="60%" r="60%">
-          <stop offset="0%" stopColor="#a8ffe0" />
-          <stop offset="55%" stopColor="#3ddc97" />
-          <stop offset="100%" stopColor="#5b3fd0" />
+        <radialGradient id={brewId} cx="0.5" cy="0.4" r="0.8">
+          <stop offset="0" stopColor="#a8ffe0" />
+          <stop offset="0.55" stopColor="#3ddc97" />
+          <stop offset="1" stopColor="#1c8a61" />
         </radialGradient>
+        <radialGradient id={auraId} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#3ddc97" stopOpacity="0.4" />
+          <stop offset="1" stopColor="#3ddc97" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={fireId} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#ffcf7d" stopOpacity="0.85" />
+          <stop offset="0.55" stopColor="#ff8a3c" stopOpacity="0.45" />
+          <stop offset="1" stopColor="#ff8a3c" stopOpacity="0" />
+        </radialGradient>
+        <mask id={moonId}>
+          <circle cx="18" cy="14.5" r="6" fill="#fff" />
+          <circle cx="20.6" cy="12.9" r="5.2" fill="#000" />
+        </mask>
       </defs>
-      <ellipse cx="24" cy="41" rx="13" ry="3" fill="rgba(61,220,151,0.28)" />
-      <path d="M9 22 Q7 34 18 39 Q24 41 30 39 Q41 34 39 22 Z" fill="rgba(220,255,240,0.08)" stroke="rgba(217,178,94,0.55)" strokeWidth="1.4" />
-      <path d="M12 26 Q11 34 19 37 Q24 39 29 37 Q37 34 36 26 Z" fill={`url(#${gid})`} opacity="0.94" />
-      <ellipse cx="24" cy="22" rx="16" ry="4.2" fill="rgba(220,255,240,0.12)" stroke="#d9b25e" strokeWidth="1.5" />
-      <circle cx="20" cy="30" r="1.6" fill="rgba(255,255,255,0.9)" />
-      <circle cx="27" cy="27" r="1.1" fill="rgba(255,255,255,0.8)" />
-      <circle cx="24" cy="33" r="1.3" fill="rgba(255,255,255,0.75)" />
-      <path d="M18 15 q3 -5 6 -1 q3 -5 6 0" stroke="#7fe6c4" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity="0.85" />
-      <path d="M8 18 l1.4 2.6 l2.6 1.4 l-2.6 1.4 l-1.4 2.6 l-1.4 -2.6 l-2.6 -1.4 l2.6 -1.4 Z" fill="#f2d68c" opacity="0.85" transform="scale(0.7) translate(2 4)" />
+      <ellipse cx="32" cy="55.5" rx="15" ry="6.5" fill={`url(#${fireId})`} />
+      <path d="M15.8 30.5 Q14.5 45 26 51.5 Q32 54 38 51.5 Q49.5 45 48.2 30.5 Z" fill="#201409" stroke="rgba(217,178,94,0.55)" strokeWidth="1.4" />
+      <path d="M22.5 52.3 l-2.4 4.6 q-0.7 1.6 1 1.6 h3.6 q1.4 0 1.1 -1.5 l-1 -4.9 Z" fill="#2a1d12" />
+      <path d="M41.5 52.3 l2.4 4.6 q0.7 1.6 -1 1.6 h-3.6 q-1.4 0 -1.1 -1.5 l1 -4.9 Z" fill="#2a1d12" />
+      <ellipse cx="32" cy="26" rx="11" ry="6.5" fill={`url(#${auraId})`} />
+      <ellipse cx="32" cy="29.5" rx="16.4" ry="4.8" fill="#2a1d12" stroke="#d9b25e" strokeWidth="1.8" />
+      <ellipse cx="32" cy="29.6" rx="13" ry="3.4" fill={`url(#${brewId})`} />
+      <ellipse cx="30" cy="29" rx="6.5" ry="1.7" fill="#a8ffe0" opacity="0.55" />
+      <circle cx="26.5" cy="26.3" r="1.7" fill="#bfffe4" opacity="0.9" />
+      <circle cx="33.8" cy="24.6" r="1.2" fill="#bfffe4" opacity="0.75" />
+      <circle cx="30.2" cy="22" r="0.9" fill="#bfffe4" opacity="0.6" />
+      <circle cx="16.5" cy="49" r="1" fill="#ffb45e" opacity="0.9" />
+      <circle cx="47.5" cy="47" r="0.8" fill="#ff9a3c" opacity="0.8" />
+      <circle cx="18" cy="14.5" r="6" fill="#f2d68c" mask={`url(#${moonId})`} />
+      <path d="M47.5 9.5 l1.5 4.2 4.2 1.5 -4.2 1.5 -1.5 4.2 -1.5 -4.2 -4.2 -1.5 4.2 -1.5 Z" fill="#7fe6c4" />
+      <circle cx="42" cy="22.5" r="1" fill="#f2d68c" opacity="0.8" />
     </svg>
   );
 }

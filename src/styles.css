@@ -131,6 +131,7 @@ h2 {
 .brand-mark svg { width: 100%; height: 100%; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
 .brand-name {
+  margin: 0;
   font-family: var(--font-display); font-size: 24px; font-weight: 900; letter-spacing: 0.5px;
   background: linear-gradient(90deg, var(--gold-bright), var(--emerald));
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -220,7 +221,11 @@ h2 {
   padding: 14px 16px; border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(217, 178, 94, 0.07), transparent);
 }
-.panel-head h2::before { content: "✦ "; color: var(--gold-dim); font-size: 11px; vertical-align: 1px; }
+.panel-head h2::before {
+  content: "✦ ";
+  content: "✦ " / ""; /* alt-text form hides the flourish from screen readers */
+  color: var(--gold-dim); font-size: 11px; vertical-align: 1px;
+}
 .pill {
   font-family: var(--font-head); font-size: 10.5px; font-weight: 600; letter-spacing: 0.4px; color: var(--ink-dim);
   background: rgba(255, 235, 200, 0.05); border: 1px solid var(--line); padding: 4px 10px; border-radius: 999px;
