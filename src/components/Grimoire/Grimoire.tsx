@@ -20,6 +20,7 @@ import { Glass } from '../../icons/Glass';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
 import { classicCount, filterClassics, FILTERS, getClassics, METHOD_LABEL, scoreColor, type Classic, type FilterKey } from './classics';
+import { snapToRow } from './snapScroll';
 import './Grimoire.css';
 
 export interface GrimoireProps {
@@ -255,10 +256,34 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
   // Opening with a classic in the pot: bring its entry into view (the index stays unselected).
   useEffect(() => {
     const scroller = scrollRef.current;
-    const el = currentId ? listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(currentId)}"]`) : null;
-    if (!scroller || !el) return;
-    const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
-    scroller.scrollTop = Math.max(0, top - (scroller.clientHeight - el.offsetHeight) / 2);
+    const list = listRef.current;
+    const el = currentId ? list?.querySelector<HTMLElement>(`[data-id="${CSS.escape(currentId)}"]`) : null;
+    if (!scroller || !list || !el) return;
+    // The sheet's first layout is not its final one: off-screen cells collapse to their estimated height
+    // (content-visibility) a moment after opening, which moves every row. So aim again whenever the grid
+    // resizes, until the user takes over or the layout has had time to settle. Offsets, not rects: the
+    // sheet is still scaling in while this runs.
+    const aim = () => {
+      const items = Array.from(list.children) as HTMLElement[];
+      const origin = items[0]?.offsetTop ?? 0;
+      const rowTops = [...new Set(items.map((c) => c.offsetTop - origin))].sort((a, b) => a - b);
+      // centre the cell, then land on a row boundary so the first visible row is whole
+      scroller.scrollTop = snapToRow(rowTops, el.offsetTop - origin, el.offsetHeight, scroller.clientHeight, scroller.scrollHeight - scroller.clientHeight);
+    };
+    aim();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(aim);
+    ro?.observe(list);
+    const stop = () => {
+      ro?.disconnect();
+      clearTimeout(timer);
+    };
+    const timer = setTimeout(stop, 1200);
+    const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+    for (const e of events) scroller.addEventListener(e, stop, { once: true, passive: true });
+    return () => {
+      stop();
+      for (const e of events) scroller.removeEventListener(e, stop);
+    };
   }, [currentId]);
 
   const toTop = () => scrollRef.current?.scrollTo({ top: 0 });
