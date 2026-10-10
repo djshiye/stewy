@@ -37,7 +37,7 @@ export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: Se
   const lines = useMemo(() => measureLines(brew, unit), [brew, unit]);
   const note = useMemo(() => tastingNote(h), [h]);
   const foam = useMemo(() => foamFor(brew), [brew]);
-  const garnish = useMemo(() => garnishFor(model.garnish ?? card.garnish), [model.garnish, card.garnish]);
+  const garnish = useMemo(() => garnishFor(card.garnish), [card.garnish]);
   const today = useMemo(() => new Date(), [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const glassLabel = GLASS_LABEL[card.glass];

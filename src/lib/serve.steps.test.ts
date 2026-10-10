@@ -7,12 +7,13 @@ const brew = (...xs: [string, number][]): BrewEntry[] => xs.map(([id, ml]) => ({
 const steps = (b: BrewEntry[], name = 'Test') => methodSteps(serveCard(b, name, 'oz'));
 
 describe('methodSteps', () => {
-  it('stirs a Negroni over one large cube and expresses the peel', () => {
+  it('stirs a Negroni over one large cube and garnishes with the slice in the brew', () => {
     const s = steps(brew(['gin', 30], ['campari', 30], ['sweet_vermouth', 30], ['orange_slice', 3]));
     expect(s[0]).toBe('Add the gin, Campari and sweet vermouth to a mixing glass with ice');
     expect(s[1]).toBe('Stir for 30 seconds until the glass is frosted');
     expect(s[2]).toContain('over one large cube');
-    expect(s[s.length - 1]).toMatch(/orange/);
+    expect(s[s.length - 1]).toBe('Garnish with an orange slice');
+    expect(s.join('\n')).not.toMatch(/peel/i);
   });
 
   it('shakes with a crema for an Espresso Martini', () => {
@@ -63,9 +64,12 @@ describe('measureLines', () => {
     expect([gin.primary, gin.secondary]).toEqual(['30 ml', '1 oz']);
   });
   it('gives counted items no second unit', () => {
-    const slice = measureLines(NEGRONI, 'oz')[2];
-    expect(slice.secondary).toBeNull();
-    expect(slice.primary).toBe('1 slice');
+    const dashes = measureLines(brew(['gin', 60], ['angostura', 1.8]), 'oz')[1];
+    expect(dashes.secondary).toBeNull();
+    expect(dashes.primary).toBe('2 dashes');
+  });
+  it('leaves garnish pieces out of the measures', () => {
+    expect(measureLines(NEGRONI, 'oz').map((l) => l.id)).toEqual(['gin', 'campari']);
   });
 });
 

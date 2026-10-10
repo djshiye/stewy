@@ -4,7 +4,7 @@ import type { BrewEntry, GlassKind, Ingredient, Method, Recipe } from '../data/t
 import { ING_BY_ID } from '../data/ingredients';
 import { harmony, resemblance, VERDICT, type Tier } from './harmony';
 import { mixColor } from './color';
-import { amountLabel, isCounted, trim, type UnitKey } from './units';
+import { amountLabel, isCounted, perPiece, trim, type UnitKey } from './units';
 
 /** Water added by mixing, as a fraction of the pre-dilution volume. */
 export const DILUTION: Record<Method, number> = { stir: 0.22, shake: 0.28, build: 0.12, blend: 0.35 };
@@ -114,17 +114,49 @@ export function inferGlass(brew: BrewEntry[], method: Method, match?: Recipe | n
   return 'rocks';
 }
 
-/** Short serving names for pieces that read well in a recipe. */
-const GARNISH_NAME: Record<string, string> = {
-  mint: 'Mint sprig', cucumber: 'Cucumber slice', salt: 'Salt rim', cherry: 'Cherry',
-  orange_slice: 'Orange slice', olive: 'Olive',
+/** A garnish-group ingredient poured into the brew, with how many pieces. */
+interface BrewGarnish { id: string; count: number }
+
+const isGarnishLine = (id: string) => ING_BY_ID[id]?.group === 'Garnish';
+
+/** Whole pieces of a counted garnish (at least one). */
+const pieceCount = (ing: Ingredient, ml: number) => Math.max(1, Math.round(ml / perPiece(ing)));
+
+/** Garnish-group entries in a brew, in the order they were added. */
+function brewGarnish(brew: BrewEntry[]): BrewGarnish[] {
+  return resolve(brew)
+    .filter((r) => r.ing.group === 'Garnish' && r.ml > 0)
+    .map((r) => ({ id: r.ing.id, count: pieceCount(r.ing, r.ml) }));
+}
+
+/** Plural noun phrases used when more than one piece is served. */
+const GARNISH_PLURAL: Record<string, string> = {
+  orange_slice: 'orange slices', cherry: 'maraschino cherries', olive: 'olives', cucumber: 'cucumber slices',
 };
 
+/** What one garnish item is called ("Orange slice", "2 olives"), sentence case. */
+function garnishPhrase(g: BrewGarnish): string {
+  if (g.count > 1 && GARNISH_PLURAL[g.id]) return `${g.count} ${GARNISH_PLURAL[g.id]}`;
+  if (g.id === 'cucumber') return 'Cucumber slice';
+  return ING_BY_ID[g.id]?.name ?? g.id;
+}
+
+/** Garnish row text for items in the brew: "Orange slice", "Maraschino cherry and fresh mint". */
+function brewGarnishText(items: BrewGarnish[]): string {
+  const names = items.map((g, i) => {
+    const t = garnishPhrase(g);
+    return i === 0 ? t : t.charAt(0).toLowerCase() + t.slice(1);
+  });
+  return joinList(names);
+}
+
+/** Garnish for a brew. Garnish ingredients poured into the brew are the garnish; otherwise
+    the matched classic's, otherwise one inferred from the flavours. */
 export function inferGarnish(brew: BrewEntry[], match?: Recipe | null): string | null {
+  const own = brewGarnish(brew);
+  if (own.length) return brewGarnishText(own);
   if (match?.garnish) return match.garnish;
   const xs = resolve(brew);
-  const own = xs.filter((r) => r.ing.group === 'Garnish').map((r) => GARNISH_NAME[r.ing.id] ?? r.ing.name);
-  if (own.length) return own.join(', ');
   if (has(xs, 'lime_juice')) return 'Lime wheel';
   if (has(xs, 'lemon_juice')) return 'Lemon twist';
   if (has(xs, 'orange_juice') || has(xs, 'grapefruit_juice')) return 'Orange slice';
@@ -182,7 +214,7 @@ export function methodLine(card: Pick<ServeCard, 'method' | 'glass'>): string {
   }
 }
 
-/** One clipboard line: "1.5 oz Gin", "2 dashes Angostura bitters", "Orange slice", "Cherry (2 pieces)". */
+/** One clipboard line: "1.5 oz Gin", "2 dashes Angostura bitters", "Sugar cube (2 cubes)". */
 function recipeLine(l: ServeCard['lines'][number]): string {
   const ing = ING_BY_ID[l.id];
   if (!ing || !isCounted(ing)) return `${l.amount} ${l.name}`;
@@ -193,7 +225,7 @@ function recipeLine(l: ServeCard['lines'][number]): string {
 
 /** Plain-text recipe for the clipboard. */
 export function recipeText(card: ServeCard, url?: string): string {
-  const out = [card.name, '', ...card.lines.map(recipeLine), '', methodLine(card)];
+  const out = [card.name, '', ...card.lines.filter((l) => !isGarnishLine(l.id)).map(recipeLine), '', methodLine(card)];
   if (card.garnish) out.push(`Garnish: ${card.garnish}`);
   out.push('', `Harmony ${card.score}, ${card.verdict}`);
   if (url) out.push(url);
@@ -291,7 +323,13 @@ export function methodSteps(
   const hasId = (id: string) => rows.some((i) => i.id === id);
   const glass = GLASS_LABEL[card.glass];
   const ice = serveIce(card.glass, card.method);
-  const { rim, pieces } = garnishParts(card.garnish);
+  const own = card.lines.filter((l) => isGarnishLine(l.id)).map((l) => ({
+    id: l.id, count: Math.max(1, parseInt(l.amount, 10) || 1),
+  }));
+  // Garnish poured into the brew is the garnish; otherwise read the classic's text.
+  const { rim, pieces } = own.length
+    ? { rim: own.some((g) => g.id === 'salt') ? 'salt' : null, pieces: [] as string[] }
+    : garnishParts(card.garnish);
   const mint = card.lines.find((l) => l.id === 'mint');
   const muddled = card.method === 'build' && !!mint && parseInt(mint.amount, 10) >= 4;
 
@@ -356,6 +394,15 @@ export function methodSteps(
       break;
   }
 
+  if (own.length) {
+    const phrases = own.filter((g) => g.id !== 'salt').map(brewGarnishStep);
+    if (phrases.length) {
+      const [first, ...more] = phrases;
+      steps.push([first.charAt(0).toUpperCase() + first.slice(1), ...more].join(', then '));
+    }
+    return steps;
+  }
+
   const peels = pieces.filter((p) => /\b(peel|twist|zest)\b/i.test(p));
   const dots = pieces.filter((p) => /\bbitters\b/i.test(p));
   const rest = pieces.filter((p) => !peels.includes(p) && !dots.includes(p));
@@ -363,6 +410,20 @@ export function methodSteps(
   if (dots.length) steps.push('Dot the top with a few drops of bitters');
   if (rest.length) steps.push(`Garnish with ${joinList(rest.map(withArticle))}`);
   return steps;
+}
+
+/** How a garnish ingredient from the brew goes on the drink, as a lowercase verb phrase. */
+function brewGarnishStep(g: BrewGarnish): string {
+  const many = g.count > 1;
+  const some = (n: string) => (many ? `${g.count} ${GARNISH_PLURAL[g.id] ?? n}` : `${article(n)} ${n}`);
+  switch (g.id) {
+    case 'mint': return 'slap a mint sprig and set it in the glass';
+    case 'olive': return many ? `spear ${g.count} olives and drop them in` : 'spear an olive and drop it in';
+    case 'cherry': return `drop in ${some('maraschino cherry')}`;
+    case 'cucumber': return `float ${some('cucumber slice')} on top`;
+    case 'orange_slice': return `garnish with ${some('orange slice')}`;
+    default: return `garnish with ${(ING_BY_ID[g.id]?.name ?? g.id).toLowerCase()}`;
+  }
 }
 
 export interface MeasureLine {
@@ -374,10 +435,11 @@ export interface MeasureLine {
   secondary: string | null;
 }
 
-/** Menu lines for a brew: the active unit first, a second unit beside it. */
+/** Menu lines for a brew: the active unit first, a second unit beside it. Garnish pieces are left out. */
 export function measureLines(brew: BrewEntry[], unit: UnitKey): MeasureLine[] {
   const out: MeasureLine[] = [];
   for (const { ing, ml } of resolve(brew)) {
+    if (ing.group === 'Garnish') continue; // garnish items belong to the Garnish row
     const primary = amountLabel({ id: ing.id, ml }, ing, unit);
     let secondary: string | null = null;
     if (!isCounted(ing)) {

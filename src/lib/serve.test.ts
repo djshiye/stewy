@@ -3,8 +3,9 @@ import type { BrewEntry, Recipe } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
 import { RECIPE_BY_ID } from '../data/recipes';
 import {
-  brewStats, DILUTION, inferGarnish, inferGlass, inferMethod, methodLine, recipeText, serveCard,
+  brewStats, DILUTION, inferGarnish, inferGlass, inferMethod, measureLines, methodLine, methodSteps, recipeText, serveCard,
 } from './serve';
+import { garnishFor } from '../icons/garnish';
 
 const brew = (...xs: [string, number][]): BrewEntry[] => xs.map(([id, ml]) => ({ id, ml }));
 
@@ -122,7 +123,7 @@ describe('inferGarnish', () => {
     expect(inferGarnish(NEGRONI, RECIPE_BY_ID.negroni)).toBe('Orange peel');
   });
   it('uses garnish ingredients in the brew', () => {
-    expect(inferGarnish(MOJITO)).toBe('Mint sprig');
+    expect(inferGarnish(MOJITO)).toBe('Fresh mint');
     expect(inferGarnish(brew(['gin', 60], ['olive', 3]))).toBe('Olive');
   });
   it('suggests from the ingredients otherwise', () => {
@@ -179,7 +180,7 @@ describe('serveCard, methodLine and recipeText', () => {
   it('writes counted lines without repeating the noun', () => {
     const text = recipeText(serveCard(brew(['gin', 60], ['angostura', 1.8], ['orange_slice', 1]), 'Test', 'oz'));
     expect(text).toMatch(/^2 dashes Angostura bitters$/m);
-    expect(text).toMatch(/^Orange slice$/m);
+    expect(text).toMatch(/^Garnish: Orange slice$/m);
     expect(text).not.toMatch(/slice Orange slice/);
   });
 
@@ -188,5 +189,70 @@ describe('serveCard, methodLine and recipeText', () => {
     expect(card.lines).toEqual([]);
     expect(card.tier).toBe('none');
     expect(card.score).toBe(0);
+  });
+});
+
+describe('garnish in the brew is the garnish', () => {
+  const NEGRONI_SLICE = brew(['gin', 30], ['campari', 30], ['sweet_vermouth', 30], ['orange_slice', 3]);
+  const steps = (b: BrewEntry[]) => methodSteps(serveCard(b, 'Test', 'oz'));
+
+  it('replaces the matched classic garnish', () => {
+    expect(inferGarnish(NEGRONI_SLICE, RECIPE_BY_ID.negroni)).toBe('Orange slice');
+    expect(inferGarnish(NEGRONI, RECIPE_BY_ID.negroni)).toBe('Orange peel');
+  });
+
+  it('keeps the classic garnish when the brew has none', () => {
+    expect(serveCard(NEGRONI, 'Test', 'oz').garnish).toBe('Orange peel');
+    expect(steps(NEGRONI).join('\n')).toMatch(/Express an orange peel/);
+  });
+
+  it('names, counts and joins the pieces', () => {
+    expect(inferGarnish(brew(['gin', 60], ['cherry', 3], ['mint', 6]))).toBe('Maraschino cherry and fresh mint');
+    expect(inferGarnish(brew(['gin', 60], ['olive', 6]))).toBe('2 olives');
+    expect(inferGarnish(brew(['gin', 60], ['olive', 3], ['cherry', 6], ['salt', 1]))).toBe('Olive, 2 maraschino cherries and salt rim');
+    expect(inferGarnish(brew(['gin', 60], ['orange_slice', 6]))).toBe('2 orange slices');
+    expect(inferGarnish(brew(['gin', 60], ['salt', 1]))).toBe('Salt rim');
+  });
+
+  it('drops garnish items from the measures and the recipe lines', () => {
+    const card = serveCard(NEGRONI_SLICE, 'Test', 'oz');
+    expect(measureLines(NEGRONI_SLICE, 'oz').map((l) => l.id)).toEqual(['gin', 'campari', 'sweet_vermouth']);
+    const text = recipeText(card).split('\n');
+    expect(text).not.toContain('Orange slice');
+    expect(text.some((l) => /slice/.test(l) && !l.startsWith('Garnish: '))).toBe(false);
+    expect(text).toContain('Garnish: Orange slice');
+    expect(text.join('\n')).not.toMatch(/peel/i);
+  });
+
+  it('garnishes the last step with a verb per item', () => {
+    const last = (b: BrewEntry[]) => steps(b).at(-1);
+    expect(last(NEGRONI_SLICE)).toBe('Garnish with an orange slice');
+    expect(last(brew(['gin', 60], ['dry_vermouth', 10], ['olive', 3]))).toBe('Spear an olive and drop it in');
+    expect(last(brew(['gin', 60], ['dry_vermouth', 10], ['olive', 6]))).toBe('Spear 2 olives and drop them in');
+    expect(last(brew(['gin', 60], ['mint', 6]))).toBe('Slap a mint sprig and set it in the glass');
+    expect(last(brew(['gin', 60], ['cherry', 3]))).toBe('Drop in a maraschino cherry');
+    expect(last(brew(['gin', 60], ['cucumber', 4]))).toBe('Float 2 cucumber slices on top');
+    expect(last(brew(['gin', 60], ['cherry', 3], ['mint', 6])))
+      .toBe('Drop in a maraschino cherry, then slap a mint sprig and set it in the glass');
+  });
+
+  it('rims with salt before pouring and adds no garnish step for it alone', () => {
+    const s = steps(brew(['tequila_blanco', 45], ['lime_juice', 25], ['triple_sec', 20], ['salt', 1]));
+    expect(s[0]).toMatch(/^Rim a .* with salt$/);
+    expect(s.some((x) => /garnish|slap|spear/i.test(x))).toBe(false);
+    const withSlice = steps(brew(['tequila_blanco', 45], ['lime_juice', 25], ['salt', 1], ['orange_slice', 3]));
+    expect(withSlice[0]).toMatch(/with salt$/);
+    expect(withSlice.at(-1)).toBe('Garnish with an orange slice');
+  });
+
+  it('maps every brew garnish onto glass art', () => {
+    for (const id of ['mint', 'cucumber', 'salt', 'cherry', 'orange_slice', 'olive']) {
+      for (const ml of [ING_BY_ID[id].amt, 12]) {
+        const text = inferGarnish(brew(['gin', 60], [id, ml]));
+        expect(garnishFor(text), `${id} ${ml}: ${text}`).toHaveLength(1);
+      }
+    }
+    expect(garnishFor(inferGarnish(NEGRONI_SLICE, RECIPE_BY_ID.negroni))).toEqual(['orange-wheel']);
+    expect(garnishFor('Maraschino cherry and fresh mint')).toEqual(['cherry', 'mint-sprig']);
   });
 });
