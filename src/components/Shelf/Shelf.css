@@ -371,6 +371,18 @@ body.is-dragging .bottle:active .bottle__art { opacity: 0.4; }
 .bottle__art > .bottle__mark--raise { outline: 1px solid rgba(91, 215, 154, 0.5); outline-offset: -1px; }
 .bottle__art > .bottle__mark--clash { outline: 1px solid rgba(242, 106, 91, 0.48); outline-offset: -1px; }
 
+/* low objects (cups, bowls, eggs): the mark sits on the object, not in the air above it */
+.bottle[data-icon='coffee'] .bottle__art > .bottle__mark,
+.bottle[data-icon='citrus'] .bottle__art > .bottle__mark,
+.bottle[data-icon='cucumber'] .bottle__art > .bottle__mark,
+.bottle[data-icon='shaker'] .bottle__art > .bottle__mark,
+.bottle[data-icon='sugar'] .bottle__art > .bottle__mark { top: calc(var(--bt-h) * 0.58); }
+.bottle[data-icon='egg'] .bottle__art > .bottle__mark { top: calc(var(--bt-h) * 0.46); }
+.bottle[data-icon='cream'] .bottle__art > .bottle__mark,
+.bottle[data-icon='cherry'] .bottle__art > .bottle__mark,
+.bottle[data-icon='olive'] .bottle__art > .bottle__mark,
+.bottle[data-icon='mint'] .bottle__art > .bottle__mark { top: calc(var(--bt-h) * 0.4); }
+
 /* ---------- scroll nudges (desktop pointers only) ---------- */
 .shelf__nudge {
   position: absolute;

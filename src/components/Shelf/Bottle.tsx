@@ -41,6 +41,7 @@ export const Bottle = memo(function Bottle(props: BottleProps) {
         type="button"
         className="bottle"
         data-bottle={ing.id}
+        data-icon={ing.icon}
         data-inpot={inPot || undefined}
         tabIndex={tabbable ? 0 : -1}
         aria-label={label(ing, delta, amount)}
