@@ -621,6 +621,20 @@
   }
 }
 
+/* short portrait phones (iPhone SE and the like, below 700 tall): the pot is capped by the small
+   viewport height so the summary row (68px plus its 16px gap) and a little air sit above the
+   dock on the first screen. The 116px is the stage padding, hint pill, gap, summary and air. */
+@media (max-width: 699px) and (max-height: 699px) and (orientation: portrait) {
+  .stg-pot {
+    width: min(
+      calc(100% + 24px),
+      520px,
+      max(320px, calc((100dvh - var(--top-h) - var(--dock-h) - 200px) * 1.2)),
+      calc((100svh - var(--top-h) - var(--dock-h) - env(safe-area-inset-bottom) - 116px) * 1.2)
+    );
+  }
+}
+
 /* phone landscape: the pot takes the whole visible height of the left column */
 @media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
   .stage {

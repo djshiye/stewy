@@ -24,6 +24,13 @@
   min-height: 0;
 }
 
+/* the drag ghost carries the 48-unit tile icon; without a size its svg collapses to nothing */
+.drag-ghost > svg {
+  display: block;
+  width: 56px;
+  height: 56px;
+}
+
 /* ---------- desktop (1000 and up): the shell is 100dvh, no page scroll ---------- */
 @media (min-width: 1000px) {
   body {
@@ -199,7 +206,7 @@
 @media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
   :root {
     --top-h: 48px;
-    --dock-h: 144px;
+    --dock-h: 148px;
     --land-pot: 46vw;
   }
 
@@ -234,12 +241,18 @@
   }
 }
 
-/* ---------- very large screens: scale the whole interface ----------
+/* ---------- big desktops: scale the whole interface ----------
    zoom (current Chrome, Safari, Firefox) scales layout, text and pointer coordinates together.
    dvh stays physical, so the shell divides its height by the factor. Sheets and the toaster are
-   siblings of .app, so they carry the same zoom (ui.css); the drag ghost scales its child only
-   (its position is written in raw viewport pixels). */
-@media (min-width: 2200px) and (min-height: 1200px) {
+   siblings of .app, so they carry the same zoom (first rule below); the drag ghost scales its child only
+   (its position is written in raw viewport pixels). The factor steps live in tokens.css; this
+   block starts at the first step (1800 x 1000). */
+@media (min-width: 1800px) and (min-height: 1000px) {
+  .ui-sheet-wrap,
+  .ui-toaster {
+    zoom: var(--ui-zoom);
+  }
+
   .app {
     zoom: var(--ui-zoom);
     height: calc(100dvh / var(--ui-zoom));

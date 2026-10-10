@@ -213,11 +213,20 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
 - **Short viewports (below 820px tall):** the recipe card tightens its padding and hides the sub
   line on a filled card (an empty card keeps its hint). Rows fit as described under the recipe
   card; the stats row and the Serve button stay pinned at the card bottom.
-- **Very large screens:** the whole interface is scaled with `zoom` so a 2560 x 1440 display
-  reads like 1600 x 900: factor 1.6 from 2200 x 1200, factor 2 from 3200 x 1800 (`--ui-zoom`).
+- **Big desktops:** the whole interface is scaled with `zoom` in steps, each with both a width
+  and a height minimum (a 1920 x 900 window stays at 1). Every step's lower bound lands near
+  a 1500 to 1600 x 850 to 900 CSS viewport, the sweet spot (`--ui-zoom`):
+
+  | From (width x height) | Factor | Reads as |
+  | --- | --- | --- |
+  | 1800 x 1000 | 1.2 | 1500 x 833 (1920 x 1080 reads 1600 x 900) |
+  | 2200 x 1250 | 1.4 | 1571 x 893 |
+  | 2560 x 1400 | 1.6 | 1600 x 875 (2560 x 1440 reads 1600 x 900) |
+  | 3200 x 1800 | 2 | 1600 x 900 |
+
   Sheets and the toaster carry the same zoom; the shell divides its height by it, the drag ghost
-  scales its child only, and the shelf tooltip stands outside the zoom because it positions
-  itself in viewport pixels.
+  scales its child only (the ghost icon is 56px at factor 1), and the shelf tooltip stands
+  outside the zoom because it positions itself in viewport pixels.
 
 ### Tablet (700 to 999 wide)
 The pot is capped at 520px wide, so the cards stay near the first screen. The stage and the
@@ -246,6 +255,9 @@ pot are hidden below 1000px (they would clip).
     |  bottle row (horizontal)    [Serve] |
     +-------------------------------------+
 ```
+On short portrait phones (below 700px tall, such as 320 x 568) the pot is also capped by the
+small viewport height (`svh`), so the summary row sits fully above the dock on the first screen
+(taller phones are unchanged).
 The dock is persistent, so the 77-bottle shelf is never scrolled past. Content gets bottom
 padding equal to the dock height plus `env(safe-area-inset-bottom)`. Serve is always one tap
 away in the dock. Toasts sit just above the dock and never cover the row they refer to.
@@ -253,7 +265,8 @@ away in the dock. Toasts sit just above the dock and never cover the row they re
 ### Phone landscape (up to 999 wide and 500 tall)
 Two columns: the pot sits in a sticky left column as tall as the screen (46vw wide) while the
 summary, recipe and analysis scroll on the right. The top bar is sticky at 48px. The dock moves
-into the right column and shrinks to 144px (shelf tabs are 44px tall inside it). Sheets stay
+into the right column and shrinks to 148px (the shelf head and tabs are 44px tall inside it,
+so the coarse-pointer hit area is not clipped). Sheets stay
 bottom sheets here; the pour dial scrolls inside its sheet because its minimum size plus chips
 and preview exceed the height.
 
