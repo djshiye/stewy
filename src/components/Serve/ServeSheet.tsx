@@ -127,7 +127,7 @@ export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: Se
 
           <div className="serve__actions">
             <Button variant="primary" size="lg" className="serve__save" icon={<BookmarkSimple size={18} />} onClick={onSave}>
-              Save to Cellar
+              Save to the Cellar
             </Button>
             {desktop ? (
               <>

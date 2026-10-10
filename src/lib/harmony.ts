@@ -76,8 +76,8 @@ export function tierFor(s: number): Tier {
 }
 
 export const VERDICT: Record<Tier, string> = {
-  legendary: 'Legendary Elixir', great: 'Masterful Brew', good: 'A Fine Potion',
-  ok: 'Drinkable Draught', poor: 'Murky Concoction', bad: 'Cursed Sludge',
+  legendary: 'Legendary elixir', great: 'Masterful brew', good: 'A fine potion',
+  ok: 'Drinkable draught', poor: 'Murky concoction', bad: 'Cursed sludge',
   none: 'Waiting for ingredients',
 };
 
@@ -366,7 +366,7 @@ export interface Suggestion {
 
 export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] {
   if (!brew.length || !h)
-    return [{ text: 'Add an ingredient to start your drink.', kind: '' }];
+    return [{ text: 'Add an ingredient to start your brew.', kind: '' }];
   const F = h.F, tot = h.tot || 1;
   const out: Suggestion[] = [];
   const p = (d: FlavorDim) => (F[d] ?? 0) / tot;

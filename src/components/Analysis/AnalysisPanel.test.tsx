@@ -60,7 +60,7 @@ describe('AnalysisPanel', () => {
     expect(screen.getByText('Start from a classic')).toBeTruthy();
     expect(screen.getAllByRole('button')).toHaveLength(3);
     for (const name of ['Negroni', 'Daiquiri', 'Old Fashioned']) expect(screen.getByText(name)).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: /Load Daiquiri/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^Daiquiri/ }));
     expect(onLoadRecipe).toHaveBeenCalledWith(expect.objectContaining({ id: 'daiquiri' }));
   });
 

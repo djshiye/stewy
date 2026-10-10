@@ -231,7 +231,7 @@ function recipeLine(l: ServeCard['lines'][number]): string {
 export function recipeText(card: ServeCard, url?: string): string {
   const out = [card.name, '', ...card.lines.filter((l) => !isGarnishLine(l.id)).map(recipeLine), '', methodLine(card)];
   if (card.garnish) out.push(`Garnish: ${card.garnish}`);
-  out.push('', `Harmony ${card.score}, ${card.verdict}`);
+  out.push('', `Score ${card.score}, ${card.verdict}`);
   if (url) out.push(url);
   return out.join('\n');
 }
@@ -239,7 +239,7 @@ export function recipeText(card: ServeCard, url?: string): string {
 /* ---------- additions for the serve sheet ---------- */
 
 /** First words that stay capitalised inside a sentence. */
-const PROPER_FIRST = new Set(['Campari', 'Aperol', 'Angostura', 'Lillet', 'Grand', 'Bénédictine', 'Irish', "Peychaud's", "Pimm's"]);
+const PROPER_FIRST = new Set(['Campari', 'Aperol', 'Angostura', 'Lillet', 'Grand', 'Bénédictine', 'Irish', 'Peychaud’s', 'Pimm’s']);
 
 /** An ingredient name set inside a sentence ("Sweet vermouth" to "sweet vermouth", "Campari" stays). */
 export function inlineName(name: string): string {

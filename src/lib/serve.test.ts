@@ -166,7 +166,7 @@ describe('serveCard, methodLine and recipeText', () => {
     expect(lines).toContain('1 oz Gin');
     expect(lines).toContain('Stir with ice and strain into a rocks glass.');
     expect(lines).toContain('Garnish: Orange peel');
-    expect(lines).toContain(`Harmony ${card.score}, ${card.verdict}`);
+    expect(lines).toContain(`Score ${card.score}, ${card.verdict}`);
     expect(lines[lines.length - 1]).toBe('https://stewy.app/#b=x');
     expect(recipeText(card)).not.toContain('https');
   });

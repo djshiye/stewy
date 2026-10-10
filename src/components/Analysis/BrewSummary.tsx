@@ -50,11 +50,13 @@ export function BrewSummary({ model, onShare, onAdd }: BrewSummaryProps) {
                   type="button"
                   className="chip"
                   onClick={() => onAdd(s.ing, s.ml)}
-                  aria-label={`Add ${suggestionAmount(s, unit)} ${s.ing.name}, raises the score by ${s.delta}`}
                 >
                   <span className="chip__tile"><IngredientIcon ing={s.ing} /></span>
                   <span className="chip__name">{suggestionName(s)}</span>
-                  <b className="chip__delta">+{s.delta}</b>
+                  <b className="chip__delta">
+                    <span aria-hidden="true">+{s.delta}</span>
+                    <span className="ui-vh">, {suggestionAmount(s, unit)}, raises the score by {s.delta}</span>
+                  </b>
                 </button>
               </li>
             ))}

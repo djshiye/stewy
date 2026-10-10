@@ -77,7 +77,7 @@ describe('text helpers', () => {
   it('keeps proper names and lowers the rest', () => {
     expect(inlineName('Campari')).toBe('Campari');
     expect(inlineName('Sweet vermouth')).toBe('sweet vermouth');
-    expect(inlineName("Pimm's No. 1")).toBe("Pimm's No. 1");
+    expect(inlineName('Pimm’s No. 1')).toBe('Pimm’s No. 1');
   });
   it('captions the ice', () => {
     expect(serveCaption({ method: 'stir', glass: 'rocks' })).toBe('Served over one large cube');

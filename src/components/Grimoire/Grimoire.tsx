@@ -27,7 +27,7 @@ export interface GrimoireProps {
   /** Id of the classic currently in the pot (model.match?.recipe.id when the match is exact). */
   currentId: string | null;
   onClose(): void;
-  /** Load a classic into the cauldron. The shell closes the sheet and toasts with Undo. */
+  /** Load a classic into the pot. The shell closes the sheet and toasts with Undo. */
   onLoad(recipe: Recipe): void;
   /** Unit for the amounts in the detail view. */
   unit?: UnitKey;
@@ -47,6 +47,7 @@ function ScoreMark({ score, className }: { score: number; className?: string }) 
   return (
     <span className={['grim-score', className].filter(Boolean).join(' ')} style={{ '--tier': scoreColor(score) } as CSSProperties}>
       <i aria-hidden="true" />
+      <span className="ui-vh">Score </span>
       {score}
     </span>
   );
@@ -70,7 +71,6 @@ const Cell = memo(function Cell({ c, index, selected, inPot, tabbable, onSelect,
     <li
       role="option"
       aria-selected={selected}
-      aria-label={`${recipe.name}, ${METHOD_LABEL[recipe.method].toLowerCase()}, score ${c.score}${inPot ? ', in the pot' : ''}`}
       tabIndex={tabbable ? 0 : -1}
       data-id={recipe.id}
       className="grim-cell"
@@ -152,7 +152,7 @@ function Detail({ c, unit, inPot, onLoad, onBack }: DetailProps) {
       </div>
       <div className="grim-detail__foot">
         <Button variant="primary" size="lg" fullWidth onClick={onLoad}>
-          Load into the cauldron
+          Load into the pot
         </Button>
       </div>
     </div>
@@ -168,7 +168,7 @@ function PaneHint() {
         <Glass kind="rocks" color="rgba(190, 205, 230, 0.5)" fill={0} className="grim-hint__g" />
       </div>
       <p className="grim-hint__title serif">Pick a classic</p>
-      <p className="grim-hint__text">Its full build, glass and method appear here, ready to load into the cauldron.</p>
+      <p className="grim-hint__text">Its full build, glass and method appear here, ready to load into the pot.</p>
     </div>
   );
 }
@@ -194,6 +194,9 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
   const selRef = useRef<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const wasOverlay = useRef(false);
 
   const deferred = useDeferredValue(query);
   const visible = useMemo(() => filterClassics(all, filter, deferred), [all, filter, deferred]);
@@ -210,6 +213,44 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
     }
   }, []);
   const onActive = useCallback((id: string) => setActiveId(id), []);
+
+  // The phone overlay behaves like a nested dialog: the index goes inert, focus moves in, Tab stays
+  // inside (Back, Load and the sheet's Close), and Esc steps back to the index instead of closing the sheet.
+  const overlayOpen = !desktop && selected !== null && detailOpen;
+  useEffect(() => {
+    if (!overlayOpen) {
+      if (wasOverlay.current) {
+        wasOverlay.current = false;
+        const opener = openerRef.current;
+        const back = opener?.isConnected ? opener : listRef.current?.querySelector<HTMLElement>('[tabindex="0"]');
+        back?.focus({ preventScroll: true });
+      }
+      return;
+    }
+    wasOverlay.current = true;
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overlay = overlayRef.current;
+    overlay?.querySelector<HTMLElement>('.grim-detail__back')?.focus({ preventScroll: true });
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setDetailOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !overlay) return;
+      const close = overlay.closest('[role="dialog"]')?.querySelector<HTMLElement>('.ui-sheet__close');
+      const list = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled])'), ...(close ? [close] : [])];
+      if (!list.length) return;
+      const i = list.indexOf(document.activeElement as HTMLElement);
+      const next = e.shiftKey ? (i <= 0 ? list.length - 1 : i - 1) : i < 0 || i === list.length - 1 ? 0 : i + 1;
+      e.preventDefault();
+      e.stopPropagation();
+      list[next].focus();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [overlayOpen]);
 
   // Opening with a classic in the pot: bring its entry into view (the index stays unselected).
   useEffect(() => {
@@ -269,7 +310,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
 
   return (
     <div className="grim" data-detail={selected ? 'open' : 'none'}>
-      <div className="grim__main">
+      <div className="grim__main" inert={overlayOpen}>
         <header className="grim__head">
           <div className="grim__title">
             <h2 id="grimoire-title" className="serif" tabIndex={-1} data-autofocus={desktop ? undefined : ''}>
@@ -282,7 +323,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
             <input
               type="text"
               value={query}
-              placeholder="Search by name or ingredient"
+              placeholder="Try gin or negroni…"
               aria-label="Search by name or ingredient"
               autoComplete="off"
               spellCheck={false}
@@ -362,7 +403,6 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
             <button
               type="button"
               className="grim-bar__info"
-              aria-label={`Show the build of ${selected.recipe.name}`}
               onClick={() => setDetailOpen(true)}
             >
               <Glass
@@ -381,11 +421,12 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
                   <ScoreMark score={selected.score} />
                 </span>
               </span>
+              <span className="ui-vh">, show the build</span>
             </button>
             <Button
               variant="primary"
               size="lg"
-              aria-label={`Load ${selected.recipe.name} into the cauldron`}
+              aria-label={`Load ${selected.recipe.name} into the pot`}
               onClick={loadSelected}
             >
               Load
@@ -404,8 +445,8 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
         </aside>
       )}
 
-      {!desktop && selected && detailOpen && (
-        <aside className="grim__overlay" aria-label={`${selected.recipe.name} details`}>
+      {overlayOpen && selected && (
+        <aside className="grim__overlay" ref={overlayRef} aria-label={`${selected.recipe.name} details`}>
           <Detail
             c={selected}
             unit={unit}

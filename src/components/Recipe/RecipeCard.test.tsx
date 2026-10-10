@@ -57,7 +57,7 @@ describe('RecipeCard', () => {
     expect(model.h?.score).toBeLessThan(40);
     setup(model);
     expect(screen.queryByText(/Close to/)).toBeNull();
-    expect(screen.getByText(/Your own mix\. Built over ice\./)).toBeTruthy();
+    expect(screen.getByText(/Your own brew\. Built over ice\./)).toBeTruthy();
   });
 
   it('steps the amount with the arrow keys', async () => {
@@ -100,14 +100,14 @@ describe('RecipeCard', () => {
 
   it('renames inline: Enter commits, Escape cancels', async () => {
     const p = setup();
-    await userEvent.click(screen.getByRole('button', { name: /Rename/ }));
-    let input = screen.getByRole('textbox', { name: 'Drink name' });
+    await userEvent.click(screen.getByRole('button', { description: 'Click to rename' }));
+    let input = screen.getByRole('textbox', { name: 'Brew name' });
     await userEvent.clear(input);
     await userEvent.type(input, 'My negroni{Enter}');
     expect(p.onName).toHaveBeenCalledWith('My negroni');
 
-    await userEvent.click(screen.getByRole('button', { name: /Rename/ }));
-    input = screen.getByRole('textbox', { name: 'Drink name' });
+    await userEvent.click(screen.getByRole('button', { description: 'Click to rename' }));
+    input = screen.getByRole('textbox', { name: 'Brew name' });
     await userEvent.type(input, 'xyz{Escape}');
     expect(p.onName).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('textbox')).toBeNull();

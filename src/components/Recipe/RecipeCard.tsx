@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CaretDown, Martini, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import type { Ingredient } from '../../data/types';
@@ -57,7 +57,7 @@ function subLine(model: AppModel): string {
     ? `Close to a ${match.recipe.name}.`
     : h?.archetype
       ? ARCHETYPE_LINE[h.archetype]
-      : 'Your own mix.';
+      : 'Your own brew.';
   return `${lead} ${METHOD_SENTENCE[method]}`;
 }
 
@@ -69,7 +69,7 @@ function serveLabel(glass: AppModel['glass']): string {
 /** Long names step down a size so a title stays on one line where it can. */
 const titleSize = (name: string) => (name.length <= 13 ? 'lg' : name.length <= 17 ? 'md' : 'sm');
 
-/** The drink name: click to edit, Enter or blur commits, Esc cancels. */
+/** The brew name: click to edit, Enter or blur commits, Esc cancels. */
 function Title({ name, onName, compact }: { name: string; onName(n: string): void; compact: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
@@ -77,6 +77,7 @@ function Title({ name, onName, compact }: { name: string; onName(n: string): voi
   const button = useRef<HTMLButtonElement>(null);
   const cancelled = useRef(false);
   const refocus = useRef(false);
+  const hintId = useId();
 
   useEffect(() => {
     if (editing) {
@@ -122,7 +123,7 @@ function Title({ name, onName, compact }: { name: string; onName(n: string): voi
         className="rc__title rc__title--input serif"
         data-size={titleSize(draft)}
         data-compact={compact ? '' : undefined}
-        aria-label="Drink name"
+        aria-label="Brew name"
         value={draft}
         maxLength={40}
         spellCheck={false}
@@ -135,27 +136,32 @@ function Title({ name, onName, compact }: { name: string; onName(n: string): voi
   }
 
   return (
-    <h2 className="rc__heading" data-compact={compact ? '' : undefined} data-size={titleSize(name)}>
-      <button
-        ref={button}
-        type="button"
-        className="rc__title serif"
-        aria-label={`${name}. Rename`}
-        onClick={begin}
-      >
-        {compact ? (
-          <>
-            <PencilSimple size={16} aria-hidden="true" />
-            <span className="rc__rename">Rename</span>
-          </>
-        ) : (
-          <>
-            <span className="rc__name">{name}</span>
-            <PencilSimple className="rc__pencil" size={18} aria-hidden="true" />
-          </>
-        )}
-      </button>
-    </h2>
+    <>
+      <h2 className="rc__heading" data-compact={compact ? '' : undefined} data-size={titleSize(name)}>
+        <button
+          ref={button}
+          type="button"
+          className="rc__title serif"
+          // phones show only "Rename", so the name must lead with it; on desktop the heading keeps the plain name
+          aria-label={compact ? `Rename ${name}` : undefined}
+          aria-describedby={compact ? undefined : hintId}
+          onClick={begin}
+        >
+          {compact ? (
+            <>
+              <PencilSimple size={16} aria-hidden="true" />
+              <span className="rc__rename">Rename</span>
+            </>
+          ) : (
+            <>
+              <span className="rc__name">{name}</span>
+              <PencilSimple className="rc__pencil" size={18} aria-hidden="true" />
+            </>
+          )}
+        </button>
+      </h2>
+      {!compact && <span id={hintId} className="ui-vh">Click to rename</span>}
+    </>
   );
 }
 
@@ -296,21 +302,23 @@ export function RecipeCard(props: RecipeCardProps) {
           <div className="stat">
             <dt>Volume</dt>
             <dd>{totalLabel(stats.volumeMl, unit)}</dd>
-            <small>
-              {unit === 'ml' ? `${Math.round(stats.finalVolumeMl)} ml served` : `${Math.round(stats.volumeMl)} ml`}
-            </small>
+            <dd className="stat__sub">
+              <small>
+                {unit === 'ml' ? `${Math.round(stats.finalVolumeMl)} ml served` : `${Math.round(stats.volumeMl)} ml`}
+              </small>
+            </dd>
           </div>
           <div className="stat">
             <dt>Strength</dt>
             <dd>
               {Math.round(stats.finalAbv)}%<span className="stat__unit"> ABV</span>
             </dd>
-            <small>{empty ? 'no alcohol yet' : METHOD_AFTER[method]}</small>
+            <dd className="stat__sub"><small>{empty ? 'no alcohol yet' : METHOD_AFTER[method]}</small></dd>
           </div>
           <div className="stat">
             <dt>Method</dt>
             <dd>{empty ? 'None' : METHOD_VERB[method]}</dd>
-            <small>{empty ? 'yet' : METHOD_TIME[method]}</small>
+            <dd className="stat__sub"><small>{empty ? 'yet' : METHOD_TIME[method]}</small></dd>
           </div>
         </dl>
         <div className="rc__actions">

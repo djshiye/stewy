@@ -27,7 +27,7 @@ export const RECIPES: Recipe[] = [
     note: 'Gin and lime, sharp and clean.',
     build: [['gin', 50], ['lime_juice', 20], ['simple_syrup', 15]] },
 
-  { id: 'bees_knees', name: "Bee's Knees", glass: 'coupe', method: 'shake', garnish: 'Lemon twist',
+  { id: 'bees_knees', name: "Bee’s Knees", glass: 'coupe', method: 'shake', garnish: 'Lemon twist',
     note: 'Gin, lemon and honey from the Prohibition era.',
     build: [['gin', 50], ['lemon_juice', 25], ['honey_syrup', 20]] },
 
@@ -126,7 +126,7 @@ export const RECIPES: Recipe[] = [
     build: [['gin', 45], ['lemon_juice', 30], ['simple_syrup', 15], ['soda_water', 60]] },
 
   { id: 'paloma', name: 'Paloma', glass: 'highball', method: 'build', garnish: 'Salt rim, grapefruit wedge',
-    note: "Tequila and grapefruit soda, Mexico's favourite.",
+    note: "Tequila and grapefruit soda, Mexico’s favourite.",
     build: [['tequila', 50], ['lime_juice', 15], ['grapefruit_soda', 100], ['salt', 1]] },
 
   { id: 'dark_n_stormy', name: "Dark 'n' Stormy", glass: 'highball', method: 'build', garnish: 'Lime wedge',
@@ -138,7 +138,7 @@ export const RECIPES: Recipe[] = [
     build: [['tequila', 50], ['creme_de_cassis', 15], ['lime_juice', 15], ['ginger_beer', 100]] },
 
   { id: 'caipirinha', name: 'Caipirinha', glass: 'rocks', method: 'build', garnish: 'Lime wedge',
-    note: "Brazil's cachaça, muddled with lime and sugar.",
+    note: "Brazil’s cachaça, muddled with lime and sugar.",
     build: [['cachaca', 50], ['lime_juice', 20], ['simple_syrup', 15]] },
 
   { id: 'mint_julep', name: 'Mint Julep', glass: 'julep', method: 'build', garnish: 'Mint sprig',
@@ -149,7 +149,7 @@ export const RECIPES: Recipe[] = [
     note: 'Gin sour with a blackberry liqueur drizzle.',
     build: [['gin', 40], ['lemon_juice', 15], ['simple_syrup', 10], ['blackberry_liqueur', 15]] },
 
-  { id: 'pimms_cup', name: "Pimm's Cup", glass: 'highball', method: 'build', garnish: 'Cucumber, mint, orange',
+  { id: 'pimms_cup', name: "Pimm’s Cup", glass: 'highball', method: 'build', garnish: 'Cucumber, mint, orange',
     note: 'The English summer, tall and fruity.',
     build: [['pimms', 50], ['lemon_lime_soda', 100], ['cucumber', 4], ['mint', 4], ['orange_slice', 3]] },
 

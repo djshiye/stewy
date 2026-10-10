@@ -67,7 +67,7 @@ export const INGREDIENTS: Ingredient[] = [
     tags: { herbal: 2, sweet: 2, spicy: 1, aromatic: 2, boozy: 1 } },
   { id: 'amaro', name: 'Amaro', group: 'Liqueurs', icon: 'bottle', bottle: 'liqueur', color: '#8a4a1e', opacity: 0.6, abv: 35, amt: 20, cap: '#5a2c10',
     tags: { bitter: 2, sweet: 2, herbal: 2, aromatic: 2, citrus: 1, boozy: 1 } },
-  { id: 'pimms', name: "Pimm's No. 1", group: 'Liqueurs', icon: 'bottle', bottle: 'liqueur', color: '#9a3a14', opacity: 0.5, abv: 25, amt: 50, cap: '#b8860b',
+  { id: 'pimms', name: "Pimm’s No. 1", group: 'Liqueurs', icon: 'bottle', bottle: 'liqueur', color: '#9a3a14', opacity: 0.5, abv: 25, amt: 50, cap: '#b8860b',
     tags: { herbal: 1, fruity: 1, spicy: 1, sweet: 1, bitter: 1, citrus: 1, boozy: 1 } },
   { id: 'peach_schnapps', name: 'Peach schnapps', group: 'Liqueurs', icon: 'bottle', bottle: 'liqueur', color: '#f6c65a', opacity: 0.34, abv: 20, amt: 20, cap: '#d19b12',
     tags: { sweet: 3, fruity: 3 } },
@@ -147,7 +147,7 @@ export const INGREDIENTS: Ingredient[] = [
     tags: { bitter: 3, spicy: 2, aromatic: 3 } },
   { id: 'orange_bitters', name: 'Orange bitters', group: 'Bitters', icon: 'dropper', color: '#b5641e', opacity: 0.5, abv: 40, amt: 1, unit: 'dash',
     tags: { bitter: 2, citrus: 3, aromatic: 2 } },
-  { id: 'peychauds', name: "Peychaud's bitters", group: 'Bitters', icon: 'dropper', color: '#b0233a', opacity: 0.5, abv: 35, amt: 1, unit: 'dash',
+  { id: 'peychauds', name: "Peychaud’s bitters", group: 'Bitters', icon: 'dropper', color: '#b0233a', opacity: 0.5, abv: 35, amt: 1, unit: 'dash',
     tags: { bitter: 2, aromatic: 3, herbal: 1, spicy: 1 } },
 
   // ---------------- Extras (dairy / egg / coffee) ----------------

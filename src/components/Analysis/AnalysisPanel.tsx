@@ -78,7 +78,6 @@ export function AnalysisPanel({ model, onAdd, onLoadRecipe }: AnalysisPanelProps
                     type="button"
                     className="start__row"
                     onClick={() => onLoadRecipe?.(c.recipe)}
-                    aria-label={`Load ${c.recipe.name}: ${c.key}`}
                   >
                     <span className="start__glass" aria-hidden="true">
                       <Glass kind={c.recipe.glass} color={c.color} garnish={c.garnish} ice={c.ice} foam={c.foam} fit />
@@ -191,14 +190,16 @@ export function AnalysisPanel({ model, onAdd, onLoadRecipe }: AnalysisPanelProps
                         type="button"
                         className="try__row"
                         onClick={() => onAdd(s.ing, s.ml)}
-                        aria-label={`Add ${amount} ${s.ing.name}, raises the score by ${s.delta}`}
                       >
                         <span className="try__tile"><IngredientIcon ing={s.ing} /></span>
                         <span className="try__text">
                           <span className="try__name">{name}</span>
                           <span className="try__amt">{amount}</span>
                         </span>
-                        <span className="try__delta">+{s.delta}</span>
+                        <span className="try__delta">
+                          <span aria-hidden="true">+{s.delta}</span>
+                          <span className="ui-vh">, raises the score by {s.delta}</span>
+                        </span>
                         <span className="try__add" aria-hidden="true"><Plus size={14} weight="bold" /></span>
                       </button>
                     </li>

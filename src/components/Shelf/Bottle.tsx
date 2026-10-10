@@ -22,17 +22,18 @@ export interface BottleProps {
   onTip?(ing: Ingredient, el: HTMLElement | null, via: 'hover' | 'focus'): void;
 }
 
-function label(ing: Ingredient, delta: Delta | undefined, amount: string | null): string {
-  if (amount) return `${ing.name}, in the pot, ${amount}`;
-  const kind = indicatorFor(delta).kind;
-  const words = kind === 'none' ? null : deltaWords(delta);
-  return words ? `${ing.name}, ${words.toLowerCase()}` : ing.name;
+/** What the visible name and amount do not say: the pot state, or what adding it would do. */
+function extra(delta: Delta | undefined, inPot: boolean): string | null {
+  if (inPot) return 'in the pot';
+  const words = indicatorFor(delta).kind === 'none' ? null : deltaWords(delta);
+  return words ? words.toLowerCase() : null;
 }
 
 export const Bottle = memo(function Bottle(props: BottleProps) {
   const { ing, delta, amount, tabbable, index, onPick, onDragStart, onFocusBottle, onTip } = props;
   const inPot = amount !== null;
   const mark = inPot ? { kind: 'none' as const } : indicatorFor(delta);
+  const more = extra(delta, inPot);
 
   const art = (el: HTMLElement) => el.querySelector<HTMLElement>('.bottle__art') ?? el;
 
@@ -45,7 +46,6 @@ export const Bottle = memo(function Bottle(props: BottleProps) {
         data-icon={ing.icon}
         data-inpot={inPot || undefined}
         tabIndex={tabbable ? 0 : -1}
-        aria-label={label(ing, delta, amount)}
         onClick={(e) => onPick(ing, art(e.currentTarget).getBoundingClientRect())}
         onPointerDown={(e) => {
           onTip?.(ing, null, 'hover');
@@ -73,14 +73,15 @@ export const Bottle = memo(function Bottle(props: BottleProps) {
           )}
         </span>
         <span className="bottle__name">{ing.name}</span>
-        <span className="bottle__amt" aria-hidden="true">
+        <span className="bottle__amt">
           {amount && (
             <>
-              <Check size={12} weight="bold" />
+              <Check size={12} weight="bold" aria-hidden="true" />
               <span>{amount}</span>
             </>
           )}
         </span>
+        {more && <span className="ui-vh">, {more}</span>}
       </button>
     </li>
   );
