@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Plus } from '@phosphor-icons/react';
-import type { Ingredient } from '../../data/types';
+import type { Ingredient, Recipe } from '../../data/types';
 import type { AppModel } from '../../app/types';
 import { VERDICT } from '../../lib/harmony';
 import {
@@ -17,6 +17,8 @@ import './Analysis.css';
 export interface AnalysisPanelProps {
   model: AppModel;
   onAdd(ing: Ingredient, ml: number): void;
+  /** Loads a classic into the pot (the empty state's quick picks). */
+  onLoadRecipe?(recipe: Recipe): void;
 }
 
 const ZONES: StrengthZone[] = ['light', 'classic', 'strong'];

@@ -10,6 +10,9 @@ export interface Delta {
   delta: number;
   /** Amount, in ml, that produced the best result. */
   ml: number;
+  /** True when adding it at that amount introduces or worsens a real flavour clash
+      (curdling, muddy pairings), as opposed to merely unbalancing the brew. */
+  clash?: boolean;
 }
 
 export interface CoachSuggestion {
