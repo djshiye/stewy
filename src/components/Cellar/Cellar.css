@@ -294,3 +294,28 @@
     padding: var(--s6) var(--s4) var(--s8);
   }
 }
+
+/* touch: Rename and Delete are 44px squares (the sheet-wide 6px grow-by-pseudo would overlap them, Delete winning) */
+@media (pointer: coarse) {
+  .cellar-row__actions .ui-ibtn--sm {
+    width: 44px;
+    height: 44px;
+  }
+  .cellar-row__actions .ui-ibtn--sm::before {
+    content: none;
+  }
+}
+/* the 44px squares need room on a 320px screen: a slimmer glass column and tighter gaps keep the name readable */
+@media (pointer: coarse) and (max-width: 379px) {
+  .cellar-row {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: var(--s2);
+    padding-right: var(--s2);
+  }
+  .cellar-row__glass {
+    width: 40px;
+  }
+  .cellar-row__actions {
+    gap: 0;
+  }
+}
