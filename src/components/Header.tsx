@@ -72,7 +72,7 @@ export const Header = memo(function Header({ unit, onUnit, onRecipe, onClear }: 
                   className="recipe-item"
                   onClick={() => { onRecipe(r); setMenuOpen(false); }}
                 >
-                  <span className="r-name">{r.emoji} {r.name}</span>
+                  <span className="r-name">{r.name}</span>
                   <span className="r-note">{r.note}</span>
                 </button>
               ))}

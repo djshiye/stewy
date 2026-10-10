@@ -35,7 +35,7 @@ export function HarmonyCard({ h, brew }: { h: Harmony | null; brew: BrewEntry[] 
           <span className="harmony-verdict">{VERDICT[h ? h.tier : 'none']}</span>
           {match && (
             <span className="harmony-match" title={`${Math.round(match.sim * 100)}% match`}>
-              ✦ resembles {match.recipe.emoji} {match.recipe.name}
+              resembles {match.recipe.name}
             </span>
           )}
         </div>
