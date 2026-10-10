@@ -303,7 +303,7 @@ export default function App() {
             />
           </div>
           <div className="slot slot--analysis">
-            <AnalysisPanel model={model} onAdd={tryAdding} />
+            <AnalysisPanel model={model} onAdd={tryAdding} onLoadRecipe={loadRecipe} />
           </div>
         </main>
 
