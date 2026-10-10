@@ -57,13 +57,31 @@ function cubeNode(c: Cube, key: string): ReactNode {
     }
     const lit = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
     const cxm = pts.reduce((a, p) => a + p[0], 0) / 4, cym = pts.reduce((a, p) => a + p[1], 0) / 4;
-    const inner = pts.map((p) => `${f(cxm + (p[0] - cxm) * 0.58)} ${f(cym + (p[1] - cym) * 0.58)}`);
+    const at = (u: number, v: number): [number, number] => {
+      const top = [pts[0][0] + (pts[1][0] - pts[0][0]) * u, pts[0][1] + (pts[1][1] - pts[0][1]) * u];
+      const bot = [pts[3][0] + (pts[2][0] - pts[3][0]) * u, pts[3][1] + (pts[2][1] - pts[3][1]) * u];
+      return [top[0] + (bot[0] - top[0]) * v, top[1] + (bot[1] - top[1]) * v];
+    };
+    const shrink = (k: number) => pts.map((p) => `${f(cxm + (p[0] - cxm) * k)} ${f(cym + (p[1] - cym) * k)}`);
+    // a faint internal fracture on the larger faces, different per cube
+    const sd = Math.round(c.x * 7 + c.y * 3);
+    const crack = c.s >= 14 && (i === 1 || i === 2)
+      ? [[0.14 + rnd(sd) * 0.12, 0.04], [0.3, 0.26 + rnd(sd + 1) * 0.08], [0.22, 0.45], [0.44, 0.6 + rnd(sd + 2) * 0.08], [0.38, 0.82]]
+      : null;
+    const branch = crack ? [crack[1], [0.58, crack[1][1] - 0.04]] : null;
+    const pathOf = (list: number[][]) => `M${list.map(([u, v]) => { const q = at(u, v); return `${f(q[0])} ${f(q[1])}`; }).join('L')}`;
     faces.push(
       <g key={i}>
-        <path d={d} fill={`rgba(236,246,255,${(0.1 + 0.36 * lit).toFixed(2)})`} stroke="rgba(255,255,255,.62)" strokeWidth=".7" strokeLinejoin="round" />
-        <path d={`M${inner.join('L')}Z`} fill={`rgba(255,255,255,${(0.03 + 0.1 * lit).toFixed(2)})`} stroke="rgba(255,255,255,.22)" strokeWidth=".5" strokeLinejoin="round" />
+        {/* soft glow under the edges, then the body: lighter in the middle, brighter on lit faces */}
+        <path d={d} fill="none" stroke={`rgba(226,240,255,${(0.1 + 0.1 * lit).toFixed(2)})`} strokeWidth="2.2" strokeLinejoin="round" />
+        <path d={d} fill={`rgba(232,244,255,${(0.1 + 0.28 * lit).toFixed(2)})`} stroke="rgba(255,255,255,.5)" strokeWidth=".6" strokeLinejoin="round" />
+        <path d={`M${shrink(0.62).join('L')}Z`} fill={`rgba(255,255,255,${(0.07 + 0.14 * lit).toFixed(2)})`} stroke="rgba(255,255,255,.14)" strokeWidth=".4" strokeLinejoin="round" />
+        <path d={`M${shrink(0.3).join('L')}Z`} fill={`rgba(255,255,255,${(0.05 + 0.08 * lit).toFixed(2)})`} />
+        {crack && branch && (
+          <path d={`${pathOf(crack)}${pathOf(branch)}`} stroke="rgba(255,255,255,.38)" strokeWidth=".45" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        )}
         {lit > 0.55 && (
-          <path d={`M${f(pts[0][0] + (pts[1][0] - pts[0][0]) * 0.18)} ${f(pts[0][1] + (pts[1][1] - pts[0][1]) * 0.18 + 1.2)}L${f(pts[0][0] + (pts[1][0] - pts[0][0]) * 0.5)} ${f(pts[0][1] + (pts[1][1] - pts[0][1]) * 0.5 + 1.2)}`}
+          <path d={`M${f(pts[0][0] + (pts[1][0] - pts[0][0]) * 0.14)} ${f(pts[0][1] + (pts[1][1] - pts[0][1]) * 0.14 + 1.2)}L${f(pts[0][0] + (pts[1][0] - pts[0][0]) * 0.52)} ${f(pts[0][1] + (pts[1][1] - pts[0][1]) * 0.52 + 1.2)}`}
             stroke="rgba(255,255,255,.85)" strokeWidth=".9" strokeLinecap="round" fill="none" />
         )}
       </g>,
@@ -71,7 +89,7 @@ function cubeNode(c: Cube, key: string): ReactNode {
   });
   return (
     <g key={key}>
-      <path d={hidden.join('')} fill="none" stroke="rgba(255,255,255,.2)" strokeWidth=".5" strokeLinejoin="round" />
+      <path d={hidden.join('')} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth=".5" strokeLinejoin="round" />
       {faces}
     </g>
   );
