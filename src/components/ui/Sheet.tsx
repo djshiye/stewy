@@ -50,8 +50,19 @@ function unlockPage() {
   }
 }
 
+/** The real Tab stops: rendered, and not parked out of the order (a roving radio has tabindex -1). */
 const tabbables = (el: HTMLElement) =>
-  Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((n) => n.getClientRects().length > 0);
+  Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((n) => n.tabIndex >= 0 && n.getClientRects().length > 0);
+
+/** Whether Tab (or Shift+Tab) from `active` would leave the list's span, so the trap must wrap it. */
+function leavesDialog(list: HTMLElement[], active: Element | null, back: boolean): boolean {
+  const at = active ? list.indexOf(active as HTMLElement) : -1;
+  if (at >= 0) return back ? at === 0 : at === list.length - 1;
+  if (!active) return true;
+  // focus is on something that is not a stop (the heading, the dialog): look for a stop on the way
+  const side = back ? Node.DOCUMENT_POSITION_FOLLOWING : Node.DOCUMENT_POSITION_PRECEDING;
+  return !list.some((n) => n.compareDocumentPosition(active) & side);
+}
 
 /**
  * Modal surface: a centred dialog on desktop, a bottom sheet with a grab handle and
@@ -138,15 +149,9 @@ function SheetLayer({ onClose, labelledBy, size, className, hideClose, children 
       e.preventDefault();
       return;
     }
-    const first = list[0];
-    const last = list[list.length - 1];
-    const active = document.activeElement;
-    if (e.shiftKey && (active === first || active === dlg)) {
+    if (leavesDialog(list, document.activeElement, e.shiftKey)) {
       e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
+      (e.shiftKey ? list[list.length - 1] : list[0]).focus();
     }
   };
 
@@ -173,7 +178,7 @@ function SheetLayer({ onClose, labelledBy, size, className, hideClose, children 
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
-        onClick={onClose}
+        onClick={present ? onClose : undefined}
       />
       <div className="ui-sheet-wrap" data-size={size}>
         <motion.div
@@ -183,6 +188,8 @@ function SheetLayer({ onClose, labelledBy, size, className, hideClose, children 
           aria-labelledby={labelledBy}
           tabIndex={-1}
           className={['ui-sheet', `ui-sheet--${size}`, className].filter(Boolean).join(' ')}
+          // an exiting sheet still holds its old handlers; a second click must hit the scrim instead
+          style={{ pointerEvents: present ? undefined : 'none' }}
           onKeyDown={trapTab}
           drag={isMobile ? 'y' : false}
           dragControls={controls}

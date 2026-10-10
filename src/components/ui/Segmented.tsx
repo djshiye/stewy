@@ -1,4 +1,4 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import './ui.css';
 
@@ -20,7 +20,12 @@ export interface SegmentedProps<T extends string> {
 
 const SPRING = { type: 'spring', stiffness: 420, damping: 34 } as const;
 
-/** A radio group drawn as a pill with a sliding thumb. Arrow keys move and select. */
+/**
+ * A radio group drawn as a pill with a sliding thumb. Arrow keys move and select.
+ * The thumb is a plain element parked on the first grid cell and slid by whole cells (the columns
+ * are equal), not a shared-layout (layoutId) element: Motion keeps those in a global registry
+ * that never lets go of a control which mounts and unmounts, like the one inside the pour dial.
+ */
 export function Segmented<T extends string>({
   options,
   value,
@@ -29,8 +34,6 @@ export function Segmented<T extends string>({
   className,
   ...aria
 }: SegmentedProps<T>) {
-  // per instance, so several controls on screen never share a thumb
-  const thumbId = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
 
@@ -54,6 +57,15 @@ export function Segmented<T extends string>({
       className={['ui-seg', `ui-seg--${size}`, className].filter(Boolean).join(' ')}
       onKeyDown={onKey}
     >
+      <motion.span
+        aria-hidden="true"
+        className="ui-seg__thumb"
+        // an absolutely placed grid child sizes to the cell it is assigned to
+        style={{ gridColumn: 1, gridRow: 1 }}
+        initial={false}
+        animate={{ x: `${idx * 100}%` }}
+        transition={SPRING}
+      />
       {options.map((o, i) => {
         const on = i === idx;
         return (
@@ -68,7 +80,6 @@ export function Segmented<T extends string>({
             className="ui-seg__opt"
             onClick={() => onChange(o.value)}
           >
-            {on && <motion.span layoutId={thumbId} className="ui-seg__thumb" transition={SPRING} />}
             <span className="ui-seg__label">{o.label}</span>
           </button>
         );

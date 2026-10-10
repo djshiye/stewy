@@ -81,6 +81,43 @@ describe('Sheet', () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
+  it('wraps Shift+Tab from the first real stop even when a parked radio (tabindex -1) comes first in the DOM', async () => {
+    render(
+      <Sheet open onClose={() => {}} labelledBy="t" size="dial">
+        <h2 id="t" tabIndex={-1}>Title</h2>
+        <div role="radiogroup" aria-label="Unit">
+          <button role="radio" aria-checked="false" tabIndex={-1}>ml</button>
+          <button role="radio" aria-checked="true" tabIndex={0}>oz</button>
+        </div>
+        <button>pour</button>
+      </Sheet>,
+    );
+    const user = userEvent.setup();
+    const dialog = screen.getByRole('dialog');
+    const oz = screen.getByRole('radio', { name: 'oz' });
+    oz.focus();
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByLabelText('Close'));
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    // forward from Close wraps to the first stop, never onto the parked radio
+    await user.tab();
+    expect(document.activeElement).toBe(oz);
+  });
+
+  it('keeps Shift+Tab inside when focus rests on the heading (not a Tab stop)', async () => {
+    render(
+      <Sheet open onClose={() => {}} labelledBy="t" size="dial">
+        <h2 id="t" tabIndex={-1}>Title</h2>
+        <button>pour</button>
+      </Sheet>,
+    );
+    const user = userEvent.setup();
+    screen.getByRole('heading').focus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(screen.getByLabelText('Close'));
+  });
+
   it('locks the page while open and Esc closes only the topmost sheet', () => {
     const closeA = vi.fn();
     const closeB = vi.fn();

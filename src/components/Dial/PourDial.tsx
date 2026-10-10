@@ -154,10 +154,19 @@ export function PourDial({ request, model, onUnit, onConfirm, onRemove, onClose 
     return () => pad.removeEventListener('wheel', onWheel);
   }, [stepBy]);
 
+  // the dial answers once: the sheet stays on screen while it leaves, and a quick second click
+  // (or Enter) on its buttons must not pour again
+  const settled = useRef(false);
   const confirm = useCallback(() => {
-    if (!(ml > 0)) return;
+    if (settled.current || !(ml > 0)) return;
+    settled.current = true;
     onConfirm(ing, ml, mode);
   }, [ml, onConfirm, ing, mode]);
+  const remove = () => {
+    if (settled.current) return;
+    settled.current = true;
+    onRemove(ing);
+  };
 
   // ---- keyboard on the slider ----------------------------------------------
   const onKeyDown = (e: ReactKeyboardEvent) => {
@@ -371,7 +380,7 @@ export function PourDial({ request, model, onUnit, onConfirm, onRemove, onClose 
         <footer className="dial__actions">
           {edit ? (
             <>
-              <Button variant="danger-ghost" size="lg" icon={<Trash size={18} />} onClick={() => onRemove(ing)}>
+              <Button variant="danger-ghost" size="lg" icon={<Trash size={18} />} onClick={remove}>
                 Remove
               </Button>
               <Button variant="ghost" size="lg" disabled={atDefault} onClick={() => setValue(defaultValue)}>
