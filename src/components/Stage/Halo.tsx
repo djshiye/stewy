@@ -126,7 +126,7 @@ const MARKS = GAUGE_MARKS.map((ml) => {
   const a = gaugeAngle(ml);
   const [x0, y0] = polar(a, RG - 7);
   const [x1, y1] = polar(a, RG + 7);
-  const [tx, ty] = polar(a, RG + 26);
+  const [tx, ty] = polar(a, RG + (ml === 250 ? 46 : 26));
   return { ml, d: `M${f(x0)} ${f(y0)}L${f(x1)} ${f(y1)}`, tx: f(tx), ty: f(ty + 4.5), label: ml === 250 ? '250 ml' : String(ml) };
 });
 
@@ -143,7 +143,7 @@ export const Gauge = memo(function Gauge({ ml }: { ml: number }) {
           <g key={m.ml}>
             <path d={m.d} stroke="rgba(190,205,230,.4)" strokeWidth="1.4" />
             <path className="stg-gauge-on" d={m.d} style={{ stroke: 'var(--accent)', opacity: on ? 1 : 0 }} strokeWidth="2" />
-            <text x={m.tx} y={m.ty} textAnchor="middle" fontSize="13" fontWeight="500" fill="var(--tx-2)" className="stg-gauge-label"
+            <text x={m.tx} y={m.ty} textAnchor="middle" fontSize="14" fontWeight="500" fill="var(--tx-2)" className="stg-gauge-label"
               style={{ fill: on ? 'var(--accent)' : 'var(--tx-2)' }}>
               {m.label}
             </text>

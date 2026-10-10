@@ -130,11 +130,6 @@ export const Iron = memo(function Iron() {
           <stop offset=".55" stopColor="#8d909a" stopOpacity=".1" />
           <stop offset="1" stopColor="#8d909a" stopOpacity="0" />
         </linearGradient>
-        <radialGradient id="stg-boss" cx=".38" cy=".32" r=".8">
-          <stop offset="0" stopColor="#3b3d45" />
-          <stop offset=".6" stopColor="#1b1c21" />
-          <stop offset="1" stopColor="#0b0c0e" />
-        </radialGradient>
         <linearGradient id="stg-plate" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#2b2d34" />
           <stop offset="1" stopColor="#14151a" />

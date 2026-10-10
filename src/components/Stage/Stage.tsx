@@ -4,7 +4,7 @@
      iron (static) > light (brew on the iron, static) > surface (animated) > pours > steam
    The frame is also the drop target, so it covers the pot from handle to handle and lip to feet. */
 import { useMemo, type CSSProperties } from 'react';
-import { ArrowUp, Drop } from '@phosphor-icons/react';
+import { ArrowDown, ArrowUp, Drop } from '@phosphor-icons/react';
 import type { Ingredient } from '../../data/types';
 import { ING_BY_ID } from '../../data/ingredients';
 import type { AppModel, PourEvent } from '../../app/types';
@@ -49,7 +49,6 @@ export function Stage({ model, pours, dragging, dragOver, potRef }: StageProps) 
     <section className={cls} aria-label="The cauldron">
       <div
         className="stg-pot"
-        ref={potRef}
         role="img"
         aria-label={describe(model, ml)}
         style={{ '--depth': surfaceDepth(ml) } as CSSProperties}
@@ -67,11 +66,14 @@ export function Stage({ model, pours, dragging, dragOver, potRef }: StageProps) 
         <Surface floaters={floaters} />
         {pours.map((p) => <PourFx key={p.id} pour={p} />)}
         <Ambient />
+        {/* the drop target: handle to handle, lip to feet, so dragOver matches what the rim implies */}
+        <div className="stg-hit" ref={potRef} aria-hidden="true" />
       </div>
 
       <p className="stg-hint">
         <span className="stg-hint-icon" aria-hidden="true">
           <ArrowUp size={16} weight="regular" className="stg-hint-up" />
+          <ArrowDown size={16} weight="regular" className="stg-hint-down" />
           <Drop size={16} weight="regular" className="stg-hint-drop" />
         </span>
         <span className="stg-hint-text stg-hint-text--desk">Drag a bottle up into the pot, or tap one to set a measure</span>

@@ -61,6 +61,15 @@
   --u: calc(100cqw / 720);
 }
 
+.stg-hit {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 19%;
+  bottom: 4%;
+  pointer-events: none;
+}
+
 .stg-back,
 .stg-room,
 .stg-embers,
@@ -446,6 +455,10 @@
   opacity: 0;
 }
 
+.stg-hint-down {
+  display: none;
+}
+
 @media (max-width: 999px) {
   .stg-hint-text--desk {
     display: none;
@@ -453,6 +466,15 @@
 
   .stg-hint-text--touch {
     display: inline;
+  }
+
+  /* on a phone the bottles are below the pot */
+  .stg-hint-up {
+    display: none;
+  }
+
+  .stg-hint-down {
+    display: block;
   }
 }
 
@@ -470,7 +492,8 @@
   display: inline;
 }
 
-.is-over .stg-hint-up {
+.is-over .stg-hint-up,
+.is-over .stg-hint-down {
   opacity: 0;
 }
 
