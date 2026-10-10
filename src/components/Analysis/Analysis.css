@@ -154,7 +154,7 @@
   white-space: nowrap;
   pointer-events: none;
 }
-.radar__label[data-hot='true'] { color: var(--tx-1); }
+.radar__label[data-hot='true'] { color: var(--tx-1); font-weight: 600; }
 
 .ap__parts {
   display: grid;
@@ -509,6 +509,20 @@
   .radar { display: none; }
   .ap__parts { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s5); }
   .ap__meters { gap: var(--s3); }
+}
+
+/* ---------- short laptop screens (1280 and up): the radar gives way to a 2 x 2 breakdown ----------
+   so the verdict, the numbers and "Try adding" all fit without cutting a label in half. */
+@media (min-width: 1280px) and (max-height: 819px) {
+  .ap__profile { grid-template-columns: minmax(0, 1fr); }
+  .radar { display: none; }
+  .ap__parts { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s5); }
+}
+
+/* very short windows: the two meters go next, the stats and the card already say the same */
+@media (min-width: 1000px) and (max-height: 679px) {
+  .ap__meters { display: none; }
+  .ap__start .start li:nth-child(3) { display: none; }
 }
 
 /* ---------- phones: the card reads "Why it scores"; the verdict and chips live above ---------- */

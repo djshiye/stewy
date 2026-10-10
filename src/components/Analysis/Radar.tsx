@@ -44,6 +44,14 @@ export function Radar({ p }: RadarProps) {
   const radii = useMotionLerp(axes.map((a) => radarRadius(a.value)), 0.5);
   const d = useTransform(radii, (r) => poly((i) => R * r[i]));
   const empty = !p || Object.keys(p).length === 0;
+  // only the two strongest axes stand out, so the emphasis keeps meaning something
+  const hot = new Set(
+    axes
+      .filter((a) => a.value >= 0.12)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 2)
+      .map((a) => a.key),
+  );
   const summary = empty
     ? 'Flavour profile: nothing in the pot yet'
     : `Flavour profile: ${axes
@@ -65,7 +73,7 @@ export function Radar({ p }: RadarProps) {
         <motion.path className="radar__shape" d={d} />
       </svg>
       {axes.map((a, i) => (
-        <span key={a.key} className="radar__label" data-hot={a.value >= 0.12} style={labelStyle(i)}>
+        <span key={a.key} className="radar__label" data-hot={hot.has(a.key)} style={labelStyle(i)}>
           {a.label}
         </span>
       ))}
