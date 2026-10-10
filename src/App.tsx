@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FocusEvent, type PointerEvent } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { Ingredient, Recipe } from './data/types';
 import { ING_BY_ID } from './data/ingredients';
@@ -15,21 +15,29 @@ import { useHotkeys } from './app/useHotkeys';
 import { useIsDesktop } from './app/useMediaQuery';
 import { useToasts, type ToastAction } from './app/useToasts';
 import { copyText } from './app/clipboard';
+import { Cellar, Grimoire, PourDial, ServeSheet, prefetch, prefetchAll, whenIdle, type LazyName } from './app/lazySheets';
 import { TopBar } from './components/TopBar/TopBar';
 import { Stage } from './components/Stage/Stage';
 import { Shelf } from './components/Shelf/Shelf';
 import { RecipeCard } from './components/Recipe/RecipeCard';
 import { AnalysisPanel } from './components/Analysis/AnalysisPanel';
 import { BrewSummary } from './components/Analysis/BrewSummary';
-import { PourDial } from './components/Dial/PourDial';
-import { ServeSheet } from './components/Serve/ServeSheet';
-import { Grimoire } from './components/Grimoire/Grimoire';
-import { Cellar } from './components/Cellar/Cellar';
 import { Toaster } from './components/ui/Toaster';
 import { LiveRegion } from './components/ui/LiveRegion';
 import { IngredientIcon } from './icons/Icons';
 
 type SheetName = 'serve' | 'grimoire' | 'cellar' | null;
+
+/** Which lazy surface a hovered or focused button will open, read from its label. */
+function warmTarget(el: Element | null): LazyName | null {
+  const btn = el?.closest('button');
+  if (!btn) return null;
+  const label = btn.getAttribute('aria-label') ?? btn.textContent ?? '';
+  if (/grimoire/i.test(label)) return 'grimoire';
+  if (/cellar/i.test(label)) return 'cellar';
+  if (/^\s*serve/i.test(label)) return 'serve';
+  return btn.closest('.shelf, .dock') ? 'dial' : null;
+}
 
 let pourSeq = 0;
 const POUR_MS = 1400;
@@ -50,6 +58,22 @@ export default function App() {
   const [pours, setPours] = useState<PourEvent[]>([]);
   const [dial, setDial] = useState<DialRequest | null>(null);
   const [sheet, setSheet] = useState<SheetName>(null);
+  // Surfaces mount once their chunk is ready (or the moment they are asked for) and then stay
+  // mounted, so each sheet's exit animation can play.
+  const [ready, setReady] = useState<Record<LazyName, boolean>>({ serve: false, grimoire: false, cellar: false, dial: false });
+  const markReady = useCallback((name: LazyName) => setReady((r) => (r[name] ? r : { ...r, [name]: true })), []);
+  const warm = useCallback((name: LazyName) => void prefetch(name).then(() => markReady(name), () => {}), [markReady]);
+  const warmFromEvent = useCallback(
+    (e: PointerEvent | FocusEvent) => {
+      const name = warmTarget(e.target instanceof Element ? e.target : null);
+      if (name) warm(name);
+    },
+    [warm],
+  );
+  useEffect(
+    () => whenIdle(() => void prefetchAll().then(() => setReady({ serve: true, grimoire: true, cellar: true, dial: true }), () => {})),
+    [],
+  );
 
   const undoAction: ToastAction = useMemo(
     () => ({ label: 'Undo', run: () => dispatch({ type: 'undo' }) }),
@@ -188,9 +212,16 @@ export default function App() {
 
   // ---- sheets ---------------------------------------------------------------
   const closeSheet = useCallback(() => setSheet(null), []);
+  const openSheet = useCallback(
+    (name: Exclude<SheetName, null>) => {
+      markReady(name);
+      setSheet(name);
+    },
+    [markReady],
+  );
   const openServe = useCallback(() => {
-    if (model.brew.length) setSheet('serve');
-  }, [model.brew.length]);
+    if (model.brew.length) openSheet('serve');
+  }, [model.brew.length, openSheet]);
 
   const saveToCellar = useCallback(() => {
     const item = cellar.save({
@@ -250,8 +281,8 @@ export default function App() {
     onUndo: undo,
     onRedo: redo,
     onSearch: () => searchRef.current?.focus(),
-    onGrimoire: () => setSheet('grimoire'),
-    onCellar: () => setSheet('cellar'),
+    onGrimoire: () => openSheet('grimoire'),
+    onCellar: () => openSheet('cellar'),
     onServe: openServe,
   });
 
@@ -267,7 +298,7 @@ export default function App() {
       <div className="scene" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
 
-      <div className="app">
+      <div className="app" onPointerOver={warmFromEvent} onFocus={warmFromEvent}>
         <TopBar
           unit={model.unit}
           onUnit={setUnit}
@@ -276,8 +307,8 @@ export default function App() {
           onUndo={undo}
           onRedo={redo}
           cellarCount={cellar.items.length}
-          onOpenGrimoire={() => setSheet('grimoire')}
-          onOpenCellar={() => setSheet('cellar')}
+          onOpenGrimoire={() => openSheet('grimoire')}
+          onOpenCellar={() => openSheet('cellar')}
           onShare={share}
         />
 
@@ -327,36 +358,50 @@ export default function App() {
 
       <AnimatePresence>
         {dial && (
-          <PourDial
-            key={`${dial.ing.id}:${dial.mode}`}
-            request={dial}
-            model={model}
-            onUnit={setUnit}
-            onConfirm={confirmDial}
-            onRemove={removeFromDial}
-            onClose={closeDial}
-          />
+          <Suspense key={`${dial.ing.id}:${dial.mode}`} fallback={null}>
+            <PourDial
+              request={dial}
+              model={model}
+              onUnit={setUnit}
+              onConfirm={confirmDial}
+              onRemove={removeFromDial}
+              onClose={closeDial}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
-      <ServeSheet
-        open={sheet === 'serve'}
-        model={model}
-        onClose={closeSheet}
-        onSave={saveToCellar}
-        onShare={share}
-        onCopy={copyRecipe}
-      />
-      <Grimoire open={sheet === 'grimoire'} currentId={currentId} unit={model.unit} onClose={closeSheet} onLoad={loadRecipe} />
-      <Cellar
-        open={sheet === 'cellar'}
-        items={cellar.items}
-        onClose={closeSheet}
-        onLoad={loadFromCellar}
-        onRename={cellar.rename}
-        onDelete={deleteFromCellar}
-        onOpenGrimoire={() => setSheet('grimoire')}
-      />
+      {/* one boundary each, so a chunk still arriving never hides a sheet that is already up */}
+      {ready.serve && (
+        <Suspense fallback={null}>
+          <ServeSheet
+            open={sheet === 'serve'}
+            model={model}
+            onClose={closeSheet}
+            onSave={saveToCellar}
+            onShare={share}
+            onCopy={copyRecipe}
+          />
+        </Suspense>
+      )}
+      {ready.grimoire && (
+        <Suspense fallback={null}>
+          <Grimoire open={sheet === 'grimoire'} currentId={currentId} unit={model.unit} onClose={closeSheet} onLoad={loadRecipe} />
+        </Suspense>
+      )}
+      {ready.cellar && (
+        <Suspense fallback={null}>
+          <Cellar
+            open={sheet === 'cellar'}
+            items={cellar.items}
+            onClose={closeSheet}
+            onLoad={loadFromCellar}
+            onRename={cellar.rename}
+            onDelete={deleteFromCellar}
+            onOpenGrimoire={() => openSheet('grimoire')}
+          />
+        </Suspense>
+      )}
 
       <Toaster toast={toast} onDismiss={dismiss} onPause={pause} onResume={resume} />
       <LiveRegion message={announcement} />

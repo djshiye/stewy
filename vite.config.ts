@@ -23,6 +23,21 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: {
+    rolldownOptions: {
+      output: {
+        // Vendor code in its own long-lived chunks: it changes far less often than the app,
+        // and the entry chunk stays small.
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/, priority: 30 },
+            { name: 'motion', test: /node_modules[\\/](?:motion|motion-dom|motion-utils|framer-motion)[\\/]/, priority: 20 },
+            { name: 'icons-ui', test: /node_modules[\\/]@phosphor-icons[\\/]/, priority: 10 },
+          ],
+        },
+      },
+    },
+  },
   server: { port: 5173 },
   test: {
     projects: [
