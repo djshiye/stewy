@@ -313,12 +313,12 @@ export function RecipeCard(props: RecipeCardProps) {
             <dd>
               {Math.round(stats.finalAbv)}%<span className="stat__unit"> ABV</span>
             </dd>
-            <dd className="stat__sub"><small>{empty ? 'no alcohol yet' : METHOD_AFTER[method]}</small></dd>
+            <dd className="stat__sub"><small>{empty ? 'no alcohol' : METHOD_AFTER[method]}</small></dd>
           </div>
           <div className="stat">
             <dt>Method</dt>
             <dd>{empty ? 'None' : METHOD_VERB[method]}</dd>
-            <dd className="stat__sub"><small>{empty ? 'no method yet' : METHOD_TIME[method]}</small></dd>
+            <dd className="stat__sub"><small>{empty ? 'add a bottle' : METHOD_TIME[method]}</small></dd>
           </div>
         </dl>
         <div className="rc__actions">

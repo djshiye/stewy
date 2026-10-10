@@ -488,4 +488,6 @@
   .rc:not([data-empty]) .rc__sub { display: none; }
   .stat { padding-top: var(--s2); padding-bottom: var(--s2); }
   .rc__actions { margin-top: var(--s3); }
+  /* two placeholder rows read as complete; a third would be cut mid-row */
+  .ghost:nth-child(3) { display: none; }
 }

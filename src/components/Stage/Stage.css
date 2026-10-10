@@ -65,7 +65,9 @@
   }
 
   /* the sky fades in under the top bar instead of being cut off */
-  .stg-back {
+  /* masked on the full-width stage, not the pot frame: on tablets the frame is narrower than the
+     room's glow, and a mask on the frame would show its edges as a lighter box */
+  .stage {
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 44px);
     mask-image: linear-gradient(180deg, transparent 0, #000 44px);
   }

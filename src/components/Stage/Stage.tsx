@@ -25,9 +25,9 @@ export interface StageProps {
 }
 
 function describe(model: AppModel, ml: number): string {
-  if (!model.brew.length) return 'Cast-iron cauldron, empty';
+  if (!model.brew.length) return 'Cast-iron pot, empty';
   const names = model.brew.map((e) => ING_BY_ID[e.id]?.name).filter(Boolean).join(', ');
-  return `Cast-iron cauldron holding ${Math.round(ml)} ml of brew: ${names}`;
+  return `Cast-iron pot holding ${Math.round(ml)} ml of brew: ${names}`;
 }
 
 export function Stage({ model, pours, dragging, dragOver, potRef }: StageProps) {
@@ -46,7 +46,7 @@ export function Stage({ model, pours, dragging, dragOver, potRef }: StageProps) 
   ].filter(Boolean).join(' ');
 
   return (
-    <section className={cls} aria-label="The cauldron">
+    <section className={cls} aria-label="The pot">
       <div
         className="stg-pot"
         role="img"
