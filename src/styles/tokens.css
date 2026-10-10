@@ -30,7 +30,7 @@
   --ink-500: #3a4254;
   --tx-1: #f1eee8;
   --tx-2: #a9b1bf;
-  --tx-3: #7d8696;
+  --tx-3: #939cac;
   --line: rgba(190, 205, 230, 0.09);
   --line-2: rgba(190, 205, 230, 0.16);
   --hover: rgba(190, 205, 230, 0.08);
@@ -113,6 +113,7 @@
   --shelf-h: 224px;
   --dock-h: 196px;
   --gutter: 24px;
+  --ui-zoom: 1;
   --col-l: 336px;
   --col-r: 380px;
   --col-gap: 24px;
@@ -141,11 +142,38 @@
   }
 }
 
+/* a scrub rewrites the brew variables on every step: skip the 600 ms recolour then, or every
+   step retargets a dozen inherited transitions and restyles the whole tree */
+:root:has(.pill[data-scrubbing]) {
+  transition: none;
+}
+
 @media (min-width: 1000px) and (max-width: 1279px) {
   :root {
     --col-l: 300px;
     --col-r: 340px;
     --col-gap: 16px;
     --gutter: 16px;
+  }
+}
+
+/* narrow desktop: slimmer side cards so the pot keeps the largest share */
+@media (min-width: 1000px) and (max-width: 1099px) {
+  :root {
+    --col-l: 280px;
+    --col-r: 316px;
+  }
+}
+
+/* very large screens: scale the whole interface so it reads like 1440 x 900 (see layout.css) */
+@media (min-width: 2200px) and (min-height: 1200px) {
+  :root {
+    --ui-zoom: 1.6;
+  }
+}
+
+@media (min-width: 3200px) and (min-height: 1800px) {
+  :root {
+    --ui-zoom: 2;
   }
 }
