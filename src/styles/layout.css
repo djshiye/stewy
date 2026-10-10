@@ -1,0 +1,174 @@
+/* App shell layout. Desktop: top bar, three columns, back bar. Mobile: one stack and
+   a fixed dock. Component folders own everything inside their slot. */
+
+.app {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A slot is a grid cell the child fills; the child owns its surface. */
+.slot {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.slot > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ---------- desktop (1000 and up): the shell is 100dvh, no page scroll ---------- */
+@media (min-width: 1000px) {
+  body {
+    overflow: hidden;
+  }
+
+  .app {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .counter {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: var(--col-l) minmax(0, 1fr) var(--col-r);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--col-gap);
+    padding: var(--s2) var(--gutter) 0;
+  }
+
+  .slot--recipe { grid-column: 1; grid-row: 1; }
+  .slot--stage { grid-column: 2; grid-row: 1; }
+  .slot--analysis { grid-column: 3; grid-row: 1; }
+
+  .slot--recipe,
+  .slot--analysis {
+    /* cards scroll internally on short viewports; their stat row and Serve button
+       stay pinned at the card bottom (owners handle that inside the card) */
+    overflow: hidden;
+    border-radius: var(--r-md);
+  }
+
+  .slot--stage {
+    /* the pot may overflow its column on purpose (handles, halo) */
+    overflow: visible;
+  }
+
+  .shelf-slot {
+    position: relative;
+    z-index: var(--z-shelf);
+    flex: none;
+    height: var(--shelf-h);
+    padding: 0 var(--gutter) var(--s5);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .dock {
+    display: none;
+  }
+}
+
+/* short desktop viewports: tighter back bar so the pot keeps its room */
+@media (min-width: 1000px) and (max-height: 819px) {
+  :root {
+    --shelf-h: 204px;
+  }
+
+  .counter {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1000px) and (max-width: 1279px) {
+  .counter {
+    padding-inline: var(--gutter);
+  }
+}
+
+/* ---------- mobile (below 1000): one stack and a fixed dock ---------- */
+@media (max-width: 999px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .app {
+    padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom) + var(--s4));
+  }
+
+  .counter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+    padding: 0 var(--gutter);
+  }
+
+  .slot {
+    display: block;
+  }
+
+  .slot--stage {
+    order: 1;
+    margin-inline: calc(var(--gutter) * -1);
+    overflow: hidden;
+  }
+
+  .slot--summary {
+    order: 2;
+  }
+
+  .slot--recipe {
+    order: 3;
+  }
+
+  .slot--analysis {
+    order: 4;
+  }
+
+  .shelf-slot {
+    display: none;
+  }
+
+  /* the dock is persistent, opaque and never scrolled past */
+  .dock {
+    position: fixed;
+    z-index: var(--z-dock);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--dock-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: linear-gradient(180deg, #141a24, #0c1017);
+    box-shadow:
+      0 -24px 40px -16px rgba(7, 9, 13, 0.9),
+      0 0 0 1px var(--line) inset,
+      0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .dock > * {
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+/* very short phones (landscape): let the dock shrink */
+@media (max-width: 999px) and (max-height: 500px) {
+  :root {
+    --dock-h: 148px;
+  }
+}

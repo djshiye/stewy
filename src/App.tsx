@@ -1,172 +1,361 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Ingredient } from './data/types';
+import { AnimatePresence } from 'motion/react';
+import type { Ingredient, Recipe } from './data/types';
+import { ING_BY_ID } from './data/ingredients';
 import { useBrewStore } from './store';
-import { harmony } from './lib/harmony';
-import { Header } from './components/Header';
-import { BrewPanel } from './components/BrewPanel';
-import { Stage } from './components/Stage';
-import { Shelf } from './components/Shelf';
-import { AmountDialog } from './components/AmountDialog';
-import { StarField } from './components/StarField';
-import { IngredientIcon } from './icons/Icons';
-import type { SplashSpec } from './components/Cauldron';
-import type { Recipe } from './data/types';
+import { useCellar, type CellarItem } from './cellar';
+import { VERDICT } from './lib/harmony';
+import { clearShareHash, readSharedBrew, shareUrl } from './lib/share';
 import type { UnitKey } from './lib/units';
+import type { DialRequest, PourEvent } from './app/types';
+import { useAppModel } from './app/useAppModel';
+import { useBrewTheme } from './app/useBrewTheme';
+import { useDrag } from './app/useDrag';
+import { useHotkeys } from './app/useHotkeys';
+import { useIsDesktop } from './app/useMediaQuery';
+import { useToasts, type ToastAction } from './app/useToasts';
+import { copyText } from './app/clipboard';
+import { TopBar } from './components/TopBar/TopBar';
+import { Stage } from './components/Stage/Stage';
+import { Shelf } from './components/Shelf/Shelf';
+import { RecipeCard } from './components/Recipe/RecipeCard';
+import { AnalysisPanel } from './components/Analysis/AnalysisPanel';
+import { BrewSummary } from './components/Analysis/BrewSummary';
+import { PourDial } from './components/Dial/PourDial';
+import { ServeSheet } from './components/Serve/ServeSheet';
+import { Grimoire } from './components/Grimoire/Grimoire';
+import { Cellar } from './components/Cellar/Cellar';
+import { Toaster } from './components/ui/Toaster';
+import { LiveRegion } from './components/ui/LiveRegion';
+import { IngredientIcon } from './icons/Icons';
 
-let seq = 0;
+type SheetName = 'serve' | 'grimoire' | 'cellar' | null;
+
+let pourSeq = 0;
+const POUR_MS = 1400;
+
+const isTouch = () => window.matchMedia('(pointer: coarse)').matches;
 
 export default function App() {
   const [state, dispatch] = useBrewStore();
-  const h = useMemo(() => harmony(state.brew), [state.brew]);
+  const cellar = useCellar();
+  const model = useAppModel(state);
+  useBrewTheme(model.mix);
+  const desktop = useIsDesktop();
+  const { toast, push, dismiss, pause, resume } = useToasts();
 
-  // ---- amount dialog -----------------------------------------------------
-  const [dialogIng, setDialogIng] = useState<Ingredient | null>(null);
-  const closeDialog = useCallback(() => setDialogIng(null), []);
+  const potRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const [pours, setPours] = useState<PourEvent[]>([]);
+  const [dial, setDial] = useState<DialRequest | null>(null);
+  const [sheet, setSheet] = useState<SheetName>(null);
 
-  // ---- toast ---------------------------------------------------------------
-  const [toast, setToast] = useState<{ msg: string; id: number } | null>(null);
-  const notify = useCallback((msg: string) => setToast({ msg, id: ++seq }), []);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 1900);
-    return () => clearTimeout(t);
-  }, [toast]);
+  const undoAction: ToastAction = useMemo(
+    () => ({ label: 'Undo', run: () => dispatch({ type: 'undo' }) }),
+    [dispatch],
+  );
 
-  // ---- cauldron splash fx ----------------------------------------------------
-  const [splashes, setSplashes] = useState<SplashSpec[]>([]);
-  const splash = useCallback((color: string) => {
-    const id = ++seq;
-    setSplashes((s) => [...s, { id, color }]);
-    setTimeout(() => setSplashes((s) => s.filter((x) => x.id !== id)), 1250);
+  // ---- history --------------------------------------------------------------
+  /** Undo also answers a visible Undo toast, so it reverses whatever the toast names. */
+  const undo = useCallback(() => {
+    if (toast?.action?.label === 'Undo') {
+      const run = toast.action.run;
+      dismiss();
+      run();
+    } else {
+      dispatch({ type: 'undo' });
+    }
+  }, [toast, dismiss, dispatch]);
+  const redo = useCallback(() => dispatch({ type: 'redo' }), [dispatch]);
+
+  // ---- pouring --------------------------------------------------------------
+  const pour = useCallback((ing: Ingredient) => {
+    const id = ++pourSeq;
+    setPours((p) => [...p, { id, color: ing.color, ingId: ing.id }]);
+    setTimeout(() => setPours((p) => p.filter((x) => x.id !== id)), POUR_MS);
+    if (isTouch()) navigator.vibrate?.(8);
   }, []);
 
-  const addIngredient = useCallback((ing: Ingredient, ml: number) => {
-    dispatch({ type: 'add', id: ing.id, ml });
-    splash(ing.color);
-    notify(`Added ${ing.name}`);
-    setDialogIng(null);
-  }, [dispatch, splash, notify]);
+  const addIngredient = useCallback(
+    (ing: Ingredient, ml: number, announce = false) => {
+      dispatch({ type: 'add', id: ing.id, ml });
+      pour(ing);
+      if (announce) push(`Added ${ing.name}`, undoAction);
+    },
+    [dispatch, pour, push, undoAction],
+  );
 
-  // ---- header actions ------------------------------------------------------
+  const removeIngredient = useCallback(
+    (id: string) => {
+      const ing = ING_BY_ID[id];
+      dispatch({ type: 'remove', id });
+      if (ing) push(`Removed ${ing.name}`, undoAction);
+    },
+    [dispatch, push, undoAction],
+  );
+
+  // ---- the dial -------------------------------------------------------------
+  const openAdd = useCallback((ing: Ingredient, anchor: DOMRect | null) => {
+    setDial({ ing, mode: 'add', ml: ing.amt, anchor });
+  }, []);
+
+  const openEdit = useCallback(
+    (ing: Ingredient, anchor: DOMRect | null) => {
+      const entry = model.brew.find((e) => e.id === ing.id);
+      setDial({ ing, mode: 'edit', ml: entry?.ml ?? ing.amt, anchor });
+    },
+    [model.brew],
+  );
+
+  const closeDial = useCallback(() => setDial(null), []);
+
+  const confirmDial = useCallback(
+    (ing: Ingredient, ml: number, mode: 'add' | 'edit') => {
+      if (mode === 'add') {
+        addIngredient(ing, ml);
+      } else {
+        const current = model.brew.find((e) => e.id === ing.id)?.ml ?? 0;
+        dispatch({ type: 'setAmount', id: ing.id, ml });
+        if (ml > current) pour(ing);
+      }
+      setDial(null);
+    },
+    [addIngredient, dispatch, model.brew, pour],
+  );
+
+  const removeFromDial = useCallback(
+    (ing: Ingredient) => {
+      removeIngredient(ing.id);
+      setDial(null);
+    },
+    [removeIngredient],
+  );
+
+  // ---- drag from the shelf --------------------------------------------------
+  const { dragging, dragOver, start: startDrag, ghostRef } = useDrag(potRef, (ing) => openAdd(ing, null));
+
+  // ---- brew actions ---------------------------------------------------------
   const setUnit = useCallback((unit: UnitKey) => dispatch({ type: 'setUnit', unit }), [dispatch]);
-  const loadRecipe = useCallback((r: Recipe) => {
-    dispatch({ type: 'loadRecipe', id: r.id });
-    notify(`Loaded ${r.name}`);
-  }, [dispatch, notify]);
+  const setName = useCallback((name: string) => dispatch({ type: 'setName', name }), [dispatch]);
+  const setAmount = useCallback(
+    (id: string, ml: number) => dispatch({ type: 'setAmount', id, ml }),
+    [dispatch],
+  );
   const clearBrew = useCallback(() => {
     dispatch({ type: 'clear' });
-    notify('Cauldron emptied');
-  }, [dispatch, notify]);
-  const setName = useCallback((name: string) => dispatch({ type: 'setName', name }), [dispatch]);
+    push('Cleared the pot', undoAction);
+  }, [dispatch, push, undoAction]);
 
-  // ---- pointer drag (mouse / pen; touch taps open the dialog) -------------
-  const [dragIng, setDragIng] = useState<Ingredient | null>(null);
-  const [overCauldron, setOverCauldron] = useState(false);
-  const cauldronBoxRef = useRef<HTMLDivElement | null>(null);
-  const ghostRef = useRef<HTMLDivElement | null>(null);
-  const posRef = useRef({ x: 0, y: 0 });
+  const tryAdding = useCallback(
+    (ing: Ingredient, ml: number) => addIngredient(ing, ml, true),
+    [addIngredient],
+  );
 
-  const startDrag = useCallback((ing: Ingredient, ev: React.PointerEvent) => {
-    if (ev.pointerType === 'touch' || ev.button !== 0) return;
-    const sx = ev.clientX, sy = ev.clientY;
-    let active = false;
-
-    // capture guarantees pointerup/cancel delivery even if released off-window
-    try {
-      (ev.target as Element).setPointerCapture?.(ev.pointerId);
-    } catch { /* pointer already released — drag still works, only capture is lost */ }
-
-    const placeGhost = (x: number, y: number) => {
-      posRef.current = { x, y };
-      if (ghostRef.current) ghostRef.current.style.transform = `translate(${x}px, ${y}px)`;
-    };
-    const inCauldron = (e: PointerEvent) => {
-      const box = cauldronBoxRef.current?.getBoundingClientRect();
-      return !!box && e.clientX >= box.left && e.clientX <= box.right
-        && e.clientY >= box.top && e.clientY <= box.bottom;
-    };
-    const cleanup = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', cancel);
-      document.body.classList.remove('is-dragging');
-      setDragIng(null);
-      setOverCauldron(false);
-    };
-    const move = (e: PointerEvent) => {
-      if (!active && Math.hypot(e.clientX - sx, e.clientY - sy) > 6) {
-        active = true;
-        document.body.classList.add('is-dragging');
-        setDragIng(ing);
+  // ---- sharing and copying --------------------------------------------------
+  const share = useCallback(async () => {
+    if (!model.brew.length) {
+      push('Add an ingredient to share a brew');
+      return;
+    }
+    const url = shareUrl({ brew: model.brew, name: model.name });
+    if (isTouch() && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: `${model.name} on Stewy`, url });
+        return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
       }
-      if (active) {
-        placeGhost(e.clientX, e.clientY);
-        const over = inCauldron(e);
-        setOverCauldron((prev) => (prev === over ? prev : over));
-      }
-    };
-    const up = (e: PointerEvent) => {
-      const dropped = active && inCauldron(e);
-      if (active) {
-        // swallow the click that follows a completed drag; self-disarm in case
-        // the browser never dispatches one
-        const swallow = (c: MouseEvent) => { c.stopPropagation(); c.preventDefault(); };
-        window.addEventListener('click', swallow, { capture: true, once: true });
-        setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 150);
-      }
-      cleanup();
-      if (dropped) setDialogIng(ing);
-    };
-    const cancel = () => cleanup();
+    }
+    push((await copyText(url)) ? 'Link copied' : 'Could not copy the link');
+  }, [model.brew, model.name, push]);
 
-    placeGhost(ev.clientX, ev.clientY);
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', cancel);
+  const copyRecipe = useCallback(
+    async (text: string) => {
+      push((await copyText(text)) ? 'Recipe copied' : 'Could not copy the recipe');
+    },
+    [push],
+  );
+
+  // ---- sheets ---------------------------------------------------------------
+  const closeSheet = useCallback(() => setSheet(null), []);
+  const openServe = useCallback(() => {
+    if (model.brew.length) setSheet('serve');
+  }, [model.brew.length]);
+
+  const saveToCellar = useCallback(() => {
+    const item = cellar.save({
+      name: model.name,
+      brew: model.brew,
+      score: model.h?.score ?? null,
+      color: model.mix?.css ?? null,
+    });
+    push(`Saved ${item.name} to the Cellar`, { label: 'Undo', run: () => cellar.remove(item.id) });
+  }, [cellar, model, push]);
+
+  const loadRecipe = useCallback(
+    (r: Recipe) => {
+      dispatch({ type: 'loadRecipe', id: r.id });
+      setSheet(null);
+      push(`Loaded ${r.name}`, undoAction);
+    },
+    [dispatch, push, undoAction],
+  );
+
+  const loadFromCellar = useCallback(
+    (item: CellarItem) => {
+      dispatch({ type: 'loadBrew', brew: item.brew, name: item.name });
+      setSheet(null);
+      push(`Loaded ${item.name}`, undoAction);
+    },
+    [dispatch, push, undoAction],
+  );
+
+  const deleteFromCellar = useCallback(
+    (item: CellarItem) => {
+      cellar.remove(item.id);
+      push(`Deleted ${item.name}`, { label: 'Undo', run: () => cellar.restore(item) });
+    },
+    [cellar, push],
+  );
+
+  // ---- shared link on first load --------------------------------------------
+  useEffect(() => {
+    const shared = readSharedBrew();
+    if (!shared) return;
+    dispatch({ type: 'loadBrew', brew: shared.brew, name: shared.name });
+    clearShareHash();
+    push('Opened a shared brew', { label: 'Undo', run: () => dispatch({ type: 'undo' }) });
+  }, [dispatch, push]);
+
+  // ---- pause ambient loops while the tab is hidden --------------------------
+  useEffect(() => {
+    const sync = () => document.body.classList.toggle('is-hidden', document.hidden);
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
   }, []);
 
+  // ---- keyboard -------------------------------------------------------------
+  useHotkeys({
+    onUndo: undo,
+    onRedo: redo,
+    onSearch: () => searchRef.current?.focus(),
+    onGrimoire: () => setSheet('grimoire'),
+    onCellar: () => setSheet('cellar'),
+    onServe: openServe,
+  });
+
+  // ---- score changes, read out politely -------------------------------------
+  const announcement = model.h
+    ? `Score ${model.h.score}. ${VERDICT[model.h.tier]}.`
+    : 'The pot is empty.';
+
+  const currentId = model.match && model.match.sim >= 0.98 ? model.match.recipe.id : null;
+
   return (
-    <div className="app">
-      <StarField />
-      <Header unit={state.unit} onUnit={setUnit} onRecipe={loadRecipe} onClear={clearBrew} />
+    <>
+      <div className="scene" aria-hidden="true" />
+      <div className="grain" aria-hidden="true" />
 
-      <main className="layout">
-        <BrewPanel brew={state.brew} unit={state.unit} dispatch={dispatch} h={h} />
-        <Stage
-          name={state.name}
-          brew={state.brew}
-          h={h}
-          splashes={splashes}
-          dragOver={overCauldron}
-          onName={setName}
-          cauldronBoxRef={cauldronBoxRef}
+      <div className="app">
+        <TopBar
+          unit={model.unit}
+          onUnit={setUnit}
+          canUndo={state.past.length > 0}
+          canRedo={state.future.length > 0}
+          onUndo={undo}
+          onRedo={redo}
+          cellarCount={cellar.items.length}
+          onOpenGrimoire={() => setSheet('grimoire')}
+          onOpenCellar={() => setSheet('cellar')}
+          onShare={share}
         />
-        <Shelf h={h} onPick={setDialogIng} onDragStart={startDrag} />
-      </main>
 
-      {dialogIng && (
-        <AmountDialog
-          key={dialogIng.id}
-          ing={dialogIng}
-          unit={state.unit}
-          onClose={closeDialog}
-          onAdd={addIngredient}
-        />
-      )}
+        <main className="counter">
+          <div className="slot slot--stage">
+            <Stage model={model} pours={pours} dragging={dragging} dragOver={dragOver} potRef={potRef} />
+          </div>
+          {!desktop && (
+            <div className="slot slot--summary">
+              <BrewSummary model={model} onShare={share} onAdd={tryAdding} />
+            </div>
+          )}
+          <div className="slot slot--recipe">
+            <RecipeCard
+              model={model}
+              onName={setName}
+              onUnit={setUnit}
+              onEdit={openEdit}
+              onSetAmount={setAmount}
+              onRemove={removeIngredient}
+              onClear={clearBrew}
+              onServe={openServe}
+            />
+          </div>
+          <div className="slot slot--analysis">
+            <AnalysisPanel model={model} onAdd={tryAdding} />
+          </div>
+        </main>
 
-      {dragIng && (
-        <div
-          className="drag-ghost"
-          ref={(el) => {
-            ghostRef.current = el;
-            if (el) el.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px)`;
-          }}
-        >
-          <IngredientIcon ing={dragIng} />
+        {desktop ? (
+          <div className="shelf-slot">
+            <Shelf
+              model={model}
+              variant="backbar"
+              onPick={openAdd}
+              onDragStart={startDrag}
+              onServe={openServe}
+              searchRef={searchRef}
+            />
+          </div>
+        ) : (
+          <div className="dock">
+            <Shelf model={model} variant="dock" onPick={openAdd} onDragStart={startDrag} onServe={openServe} />
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {dial && (
+          <PourDial
+            key={`${dial.ing.id}:${dial.mode}`}
+            request={dial}
+            model={model}
+            onUnit={setUnit}
+            onConfirm={confirmDial}
+            onRemove={removeFromDial}
+            onClose={closeDial}
+          />
+        )}
+      </AnimatePresence>
+
+      <ServeSheet
+        open={sheet === 'serve'}
+        model={model}
+        onClose={closeSheet}
+        onSave={saveToCellar}
+        onShare={share}
+        onCopy={copyRecipe}
+      />
+      <Grimoire open={sheet === 'grimoire'} currentId={currentId} onClose={closeSheet} onLoad={loadRecipe} />
+      <Cellar
+        open={sheet === 'cellar'}
+        items={cellar.items}
+        onClose={closeSheet}
+        onLoad={loadFromCellar}
+        onRename={cellar.rename}
+        onDelete={deleteFromCellar}
+        onOpenGrimoire={() => setSheet('grimoire')}
+      />
+
+      <Toaster toast={toast} onDismiss={dismiss} onPause={pause} onResume={resume} />
+      <LiveRegion message={announcement} />
+
+      {dragging && (
+        <div className="drag-ghost" ref={ghostRef} aria-hidden="true">
+          <IngredientIcon ing={dragging} />
         </div>
       )}
-
-      {toast && <div className="toast" key={toast.id} role="status">{toast.msg}</div>}
-    </div>
+    </>
   );
 }
