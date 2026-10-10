@@ -2,13 +2,14 @@ import { memo } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Check, Minus } from '@phosphor-icons/react';
 import type { Ingredient } from '../../data/types';
+import type { Delta } from '../../lib/coach';
 import { IngredientIcon } from '../../icons/Icons';
 import { deltaWords, indicatorFor } from './shelfUtils';
 
 export interface BottleProps {
   ing: Ingredient;
   /** Best score change from adding this ingredient; undefined when the pot is empty. */
-  delta: number | undefined;
+  delta: Delta | undefined;
   /** Amount label when the ingredient is already in the pot. */
   amount: string | null;
   tabbable: boolean;
@@ -21,7 +22,7 @@ export interface BottleProps {
   onTip?(ing: Ingredient, el: HTMLElement | null, via: 'hover' | 'focus'): void;
 }
 
-function label(ing: Ingredient, delta: number | undefined, amount: string | null): string {
+function label(ing: Ingredient, delta: Delta | undefined, amount: string | null): string {
   if (amount) return `${ing.name}, in the pot, ${amount}`;
   const kind = indicatorFor(delta).kind;
   const words = kind === 'none' ? null : deltaWords(delta);

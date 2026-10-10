@@ -1,6 +1,7 @@
 /* Pure helpers for the shelf: search, flavour notes, score-delta wording. */
 import type { Ingredient } from '../../data/types';
 import { FLAVOR_DIMS } from '../../data/types';
+import type { Delta } from '../../lib/coach';
 
 /** Lowercase and strip diacritics so "cachaca" finds Cachaça. */
 export function fold(s: string): string {
@@ -48,17 +49,22 @@ export type Indicator =
   | { kind: 'clash'; delta: number }
   | { kind: 'none' };
 
-/** The one quiet marker a bottle may carry on its shoulder. */
-export function indicatorFor(delta: number | undefined): Indicator {
-  if (delta === undefined) return { kind: 'none' };
-  if (delta >= 2) return { kind: 'raise', delta };
-  if (delta <= -8) return { kind: 'clash', delta };
+/** The one quiet marker a bottle may carry on its shoulder. A red dot means a real flavour
+    clash only; a big score drop from simply unbalancing the brew does not earn one. */
+export function indicatorFor(d: Delta | undefined): Indicator {
+  if (!d) return { kind: 'none' };
+  if (d.clash === true) return { kind: 'clash', delta: d.delta };
+  if (d.delta >= 2) return { kind: 'raise', delta: d.delta };
   return { kind: 'none' };
 }
 
 /** The delta in plain words, for the tooltip and screen readers. Null when there is no brew. */
-export function deltaWords(delta: number | undefined): string | null {
-  if (delta === undefined) return null;
+export function deltaWords(d: Delta | undefined): string | null {
+  if (!d) return null;
+  const { delta } = d;
+  if (d.clash === true) return delta < 0
+    ? `Clashes with the brew (curdles or muddies it), ${delta}`
+    : 'Clashes with the brew (curdles or muddies it)';
   if (delta >= 2) return `Raises the score by ${delta}`;
   if (delta === 1) return 'Raises the score slightly';
   if (delta === 0) return 'Leaves the score unchanged';

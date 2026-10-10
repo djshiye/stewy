@@ -288,7 +288,7 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
     </div>
   );
 
-  const tipDelta = tip ? model.deltas?.get(tip.ing.id)?.delta : undefined;
+  const tipDelta = tip ? model.deltas?.get(tip.ing.id) : undefined;
   const tipEntry = tip ? inPot.get(tip.ing.id) : undefined;
 
   return (
@@ -353,7 +353,7 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
                     key={ing.id}
                     ing={ing}
                     index={i}
-                    delta={model.deltas?.get(ing.id)?.delta}
+                    delta={model.deltas?.get(ing.id)}
                     amount={entry ? amountLabel(entry, ing, model.unit) : null}
                     tabbable={ing.id === tabbableId}
                     onPick={pick}

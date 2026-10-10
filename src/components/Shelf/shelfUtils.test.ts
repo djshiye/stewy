@@ -34,18 +34,28 @@ describe('shelf search', () => {
 });
 
 describe('shelf indicators', () => {
-  it('shows a raise badge from +2 and a clash dot from -8', () => {
-    expect(indicatorFor(2).kind).toBe('raise');
-    expect(indicatorFor(1).kind).toBe('none');
-    expect(indicatorFor(-7).kind).toBe('none');
-    expect(indicatorFor(-8).kind).toBe('clash');
+  it('shows a raise badge from +2', () => {
+    expect(indicatorFor({ delta: 2, ml: 30 }).kind).toBe('raise');
+    expect(indicatorFor({ delta: 1, ml: 30 }).kind).toBe('none');
     expect(indicatorFor(undefined).kind).toBe('none');
   });
 
+  it('shows the clash dot only for a flagged clash, never for a big drop alone', () => {
+    expect(indicatorFor({ delta: -12, ml: 30 }).kind).toBe('none');
+    expect(indicatorFor({ delta: -30, ml: 30, clash: false }).kind).toBe('none');
+    expect(indicatorFor({ delta: -12, ml: 30, clash: true })).toEqual({ kind: 'clash', delta: -12 });
+    expect(indicatorFor({ delta: -2, ml: 30, clash: true }).kind).toBe('clash');
+  });
+
   it('words the delta', () => {
-    expect(deltaWords(3)).toBe('Raises the score by 3');
-    expect(deltaWords(-9)).toBe('Lowers the score by 9');
+    expect(deltaWords({ delta: 3, ml: 30 })).toBe('Raises the score by 3');
+    expect(deltaWords({ delta: -9, ml: 30 })).toBe('Lowers the score by 9');
+    expect(deltaWords({ delta: -3, ml: 30 })).toBe('Lowers the score slightly');
     expect(deltaWords(undefined)).toBeNull();
+  });
+
+  it('says what a clash means', () => {
+    expect(deltaWords({ delta: -12, ml: 30, clash: true })).toBe('Clashes with the brew (curdles or muddies it), -12');
   });
 
   it('lists the strongest flavour notes first', () => {

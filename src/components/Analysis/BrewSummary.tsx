@@ -6,7 +6,7 @@ import { tierTone } from '../../lib/profile';
 import { IngredientIcon } from '../../icons/Icons';
 import { IconButton } from '../ui/IconButton';
 import { ScoreRing } from './ScoreRing';
-import { suggestionAmount, suggestionName } from './suggestions';
+import { suggestionAmount, suggestionName, worthAdding } from './suggestions';
 import './BrewSummary.css';
 
 export interface BrewSummaryProps {
@@ -19,6 +19,7 @@ export interface BrewSummaryProps {
 export function BrewSummary({ model, onShare, onAdd }: BrewSummaryProps) {
   const { h, unit } = model;
   const score = h?.score ?? null;
+  const suggestions = worthAdding(model.suggestions);
   const tone = score === null ? 'none' : tierTone(score);
   return (
     <section className="bs" aria-label="Summary">
@@ -39,11 +40,11 @@ export function BrewSummary({ model, onShare, onAdd }: BrewSummaryProps) {
           onClick={onShare}
         />
       </div>
-      {model.suggestions.length > 0 && (
+      {suggestions.length > 0 && (
         <div className="bs__try">
           <span className="bs__try-label" id="bs-try">Try adding</span>
           <ul className="bs__chips" aria-labelledby="bs-try">
-            {model.suggestions.map((s) => (
+            {suggestions.map((s) => (
               <li key={s.ing.id}>
                 <button
                   type="button"

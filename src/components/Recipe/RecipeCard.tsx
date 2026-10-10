@@ -303,7 +303,7 @@ export function RecipeCard(props: RecipeCardProps) {
             disabled={empty}
             onClick={onServe}
           >
-            {serveLabel(model.glass)}
+            {empty ? 'Serve' : serveLabel(model.glass)}
           </Button>
           <IconButton
             variant="outline"

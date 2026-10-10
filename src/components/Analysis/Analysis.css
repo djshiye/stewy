@@ -113,7 +113,7 @@
   align-items: center;
 }
 .ap[data-empty] .ap__profile {
-  grid-template-columns: minmax(0, 220px);
+  grid-template-columns: minmax(0, 200px);
   justify-content: center;
 }
 
@@ -147,7 +147,7 @@
 }
 .radar__label {
   position: absolute;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   font-weight: 500;
   color: var(--tx-3);
@@ -435,11 +435,53 @@
 .try__row:hover .try__add,
 .try__row:focus-visible .try__add { background: var(--ink-600); color: var(--tx-1); }
 .ap__none {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
   font-size: 13px;
   line-height: 18px;
   color: var(--tx-2);
 }
+.ap__none svg { flex: none; margin-top: 1px; color: var(--tx-3); }
 
+/* ---------- empty state: three classics to start from ---------- */
+.ap__start { display: grid; padding-top: var(--s2); }
+.start { display: grid; gap: 2px; }
+.start__row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 50px;
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  text-align: left;
+  transition: background-color var(--t-hover) var(--ease-out);
+}
+.start__row:hover { background: var(--hover); }
+.start__row:active { background: var(--ink-800); }
+.start__glass {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 46px;
+}
+.start__glass svg { width: 100%; height: 100%; }
+.start__text { display: grid; min-width: 0; gap: 1px; }
+.start__name {
+  font-size: 17px;
+  line-height: 22px;
+  color: var(--tx-1);
+}
+.start__key {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tx-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ap__tips ul { display: grid; gap: var(--s2); }
 .ap__tips li {
   align-items: flex-start;

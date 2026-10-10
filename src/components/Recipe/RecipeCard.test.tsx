@@ -105,7 +105,9 @@ describe('RecipeCard', () => {
     setup(modelFor([], 'Untitled brew'));
     expect(screen.getByText('Untitled brew')).toBeTruthy();
     expect(screen.getByText(/Drag a bottle up into the pot/)).toBeTruthy();
-    expect((screen.getByRole('button', { name: /Serve/ }) as HTMLButtonElement).disabled).toBe(true);
+    const serve = screen.getByRole('button', { name: /Serve/ }) as HTMLButtonElement;
+    expect(serve.disabled).toBe(true);
+    expect(serve.textContent).toBe('Serve');
     expect((screen.getByRole('button', { name: 'Clear the pot' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

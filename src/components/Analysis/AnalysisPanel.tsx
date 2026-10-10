@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Plus } from '@phosphor-icons/react';
+import { CheckCircle, Plus } from '@phosphor-icons/react';
 import type { Ingredient, Recipe } from '../../data/types';
 import type { AppModel } from '../../app/types';
 import { VERDICT } from '../../lib/harmony';
@@ -8,10 +8,12 @@ import {
   structureNote, tierTone, TIER_STOPS, METHOD_AFTER, type StrengthZone,
 } from '../../lib/profile';
 import { IngredientIcon } from '../../icons/Icons';
+import { Glass } from '../../icons/Glass';
+import { getClassics } from '../Grimoire/classics';
 import { ScoreRing } from './ScoreRing';
 import { useScrollFade } from './useScrollFade';
 import { Radar } from './Radar';
-import { suggestionAmount, suggestionName } from './suggestions';
+import { finishedNote, suggestionAmount, suggestionName, worthAdding } from './suggestions';
 import './Analysis.css';
 
 export interface AnalysisPanelProps {
@@ -22,9 +24,11 @@ export interface AnalysisPanelProps {
 }
 
 const ZONES: StrengthZone[] = ['light', 'classic', 'strong'];
+/** The three classics offered on an empty pot, in this order. */
+const PICKS = ['negroni', 'daiquiri', 'old_fashioned'];
 const pos = (p: number) => ({ '--p': p }) as CSSProperties;
 
-export function AnalysisPanel({ model, onAdd }: AnalysisPanelProps) {
+export function AnalysisPanel({ model, onAdd, onLoadRecipe }: AnalysisPanelProps) {
   const { h, unit } = model;
   const bodyRef = useScrollFade<HTMLDivElement>();
   const score = h?.score ?? null;
@@ -35,6 +39,10 @@ export function AnalysisPanel({ model, onAdd }: AnalysisPanelProps) {
   const struct = h && b ? structureNote(b.rows[2].value, h.archetype) : null;
   const abv = model.stats.finalAbv;
   const zone = strengthZone(abv);
+  const suggestions = worthAdding(model.suggestions);
+  const picks = !h && onLoadRecipe
+    ? PICKS.flatMap((id) => getClassics().find((c) => c.recipe.id === id) ?? [])
+    : [];
 
   return (
     <section className="ap" aria-label="Score and analysis" data-empty={h ? undefined : ''}>
@@ -59,6 +67,32 @@ export function AnalysisPanel({ model, onAdd }: AnalysisPanelProps) {
           <h2 className="ap__why-title">Why it scores</h2>
           {headline && <p className="ap__why-line">{headline.text}</p>}
         </div>
+
+        {picks.length > 0 && (
+          <div className="ap__start" role="group" aria-labelledby="ap-start">
+            <h3 className="ap__h" id="ap-start">Start from a classic</h3>
+            <ul className="start">
+              {picks.map((c) => (
+                <li key={c.recipe.id}>
+                  <button
+                    type="button"
+                    className="start__row"
+                    onClick={() => onLoadRecipe?.(c.recipe)}
+                    aria-label={`Load ${c.recipe.name}: ${c.key}`}
+                  >
+                    <span className="start__glass" aria-hidden="true">
+                      <Glass kind={c.recipe.glass} color={c.color} garnish={c.garnish} ice={c.ice} foam={c.foam} fit />
+                    </span>
+                    <span className="start__text">
+                      <span className="start__name serif">{c.recipe.name}</span>
+                      <span className="start__key">{c.key}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="ap__profile">
           <Radar p={h?.p ?? null} />
@@ -146,9 +180,9 @@ export function AnalysisPanel({ model, onAdd }: AnalysisPanelProps) {
         {h && (
           <div className="ap__try">
             <h3 className="ap__h">Try adding</h3>
-            {model.suggestions.length > 0 ? (
+            {suggestions.length > 0 ? (
               <ul className="try">
-                {model.suggestions.map((s) => {
+                {suggestions.map((s) => {
                   const name = suggestionName(s);
                   const amount = suggestionAmount(s, unit);
                   return (
@@ -172,7 +206,10 @@ export function AnalysisPanel({ model, onAdd }: AnalysisPanelProps) {
                 })}
               </ul>
             ) : (
-              <p className="ap__none">No single addition raises this score.</p>
+              <p className="ap__none" data-done={finishedNote(h.score).done ? '' : undefined}>
+                {finishedNote(h.score).done && <CheckCircle size={16} weight="regular" aria-hidden="true" />}
+                <span>{finishedNote(h.score).text}</span>
+              </p>
             )}
           </div>
         )}
