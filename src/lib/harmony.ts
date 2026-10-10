@@ -78,7 +78,7 @@ export function tierFor(s: number): Tier {
 export const VERDICT: Record<Tier, string> = {
   legendary: 'Legendary Elixir', great: 'Masterful Brew', good: 'A Fine Potion',
   ok: 'Drinkable Draught', poor: 'Murky Concoction', bad: 'Cursed Sludge',
-  none: 'Awaiting reagents',
+  none: 'Waiting for ingredients',
 };
 
 /** Points each scoring term contributed (penalties are negative). */
@@ -97,6 +97,9 @@ const NO_PARTS: Parts = {
   base: 0, pairing: 0, balance: 0, structure: 0, sweetSour: 0, oneNote: 0, clash: 0, crowd: 0,
 };
 
+/** A recognised drink shape. The pairwise model cannot see structure, so these are scored apart. */
+export type Archetype = 'sour' | 'spirit-forward' | 'highball' | 'sparkling' | 'dessert';
+
 export interface Harmony {
   score: number;
   tier: Tier;
@@ -108,7 +111,85 @@ export interface Harmony {
   parts: Parts;
   /** -1 (sour or bitter dominated) .. 0 (balanced) .. +1 (sweet dominated); null with no sweet, sour or bitter. */
   balance: number | null;
+  /** The classic shape this brew follows, if any (its bonus sits in `parts.structure`). */
+  archetype: Archetype | null;
 }
+
+/** Volumes and ingredient facts the archetype checks work from. Counted pieces and dashes
+    (garnish, bitters) are left out of the liquid volume. */
+interface Shape {
+  liquid: number;
+  /** Alcohol as ml of 40% spirit, so a 11% spritz and a neat pour compare fairly. */
+  booze: number;
+  /** Distinct strong (20% and up) ingredients: spirits and hard liqueurs. */
+  strong: number;
+  /** Distinct base spirits. */
+  spirits: number;
+  /** Base spirit volume. */
+  spirit: number;
+  /** Non-alcoholic long mixer: carbonated, or a big pour of juice. */
+  long: number;
+  /** Sparkling wine. */
+  sparkling: number;
+  /** Anything carbonated. */
+  fizz: number;
+  /** Juice that brings acidity. */
+  acid: number;
+  cream: number;
+  hasLiqueur: boolean;
+  /** A non-spirit ingredient that brings real sweetness (2 or more). */
+  sweetSrc: boolean;
+  /** A non-spirit ingredient that adds any sweetness. */
+  sweetMod: boolean;
+  /** A non-spirit ingredient that adds bitterness, aromatics or herbs (2 or more, or bitter 1). */
+  dryMod: boolean;
+  /** Distinct flavour-bearing ingredients. */
+  tagged: number;
+}
+
+function shapeOf(brew: BrewEntry[]): Shape {
+  const s: Shape = {
+    liquid: 0, booze: 0, strong: 0, spirits: 0, spirit: 0, long: 0, sparkling: 0, fizz: 0, acid: 0, cream: 0,
+    hasLiqueur: false, sweetSrc: false, sweetMod: false, dryMod: false, tagged: 0,
+  };
+  const seen = new Set<string>();
+  for (const e of brew) {
+    const ing = ING_BY_ID[e.id];
+    if (!ing || e.ml <= 0) continue;
+    addVolume(s, ing, e.ml);
+    if (seen.has(e.id)) continue;
+    seen.add(e.id);
+    const t = ing.tags;
+    if (Object.keys(t).length) s.tagged++;
+    if (!ing.unit && ing.abv >= 20) s.strong++;
+    if (ing.group === 'Spirits') { s.spirits++; continue; }
+    if (ing.group === 'Liqueurs' && (t.sweet ?? 0) >= 2) s.hasLiqueur = true;
+    if ((t.sweet ?? 0) >= 2) s.sweetSrc = true;
+    if ((t.sweet ?? 0) >= 1) s.sweetMod = true;
+    if ((t.bitter ?? 0) >= 1 || (t.aromatic ?? 0) >= 2 || (t.herbal ?? 0) >= 2) s.dryMod = true;
+  }
+  return s;
+}
+
+function addVolume(s: Shape, ing: Ingredient, ml: number) {
+  if (ing.unit) return;
+  const t = ing.tags;
+  s.liquid += ml;
+  if (ing.group === 'Spirits') s.spirit += ml;
+  s.booze += (ml * ing.abv) / 40;
+  if (ing.abv === 0 && (ing.carbonated || (ing.group === 'Juices' && ing.amt >= 60))) s.long += ml;
+  if (ing.carbonated) s.fizz += ml;
+  if (ing.carbonated && ing.abv > 0) s.sparkling += ml;
+  if ((ing.group === 'Juices' && ((t.sour ?? 0) >= 1 || (t.citrus ?? 0) >= 1)) || (t.sour ?? 0) >= 2) s.acid += ml;
+  if ((t.creamy ?? 0) >= 2) s.cream += ml;
+}
+
+const CURDLE = 0.2;
+const SHAPELESS = 16;
+const TAPER_START = 78;
+const TAPER_END = 90;
+const LONE_SPIRIT_CAP = 58;
+const LONE_CAP = 44;
 
 /** Signed sweet versus sour+bitter lean of a raw profile. */
 function lean(F: Profile): number | null {
@@ -125,7 +206,7 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
     // only flavourless items (soda, salt, ice)
     return {
       score: 42, tier: tierFor(42), p: {}, F, tot,
-      parts: { ...NO_PARTS, base: 42 }, balance: null,
+      parts: { ...NO_PARTS, base: 42 }, balance: null, archetype: null,
     };
   }
   const dims = Object.keys(F) as FlavorDim[];
@@ -148,15 +229,23 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
     parts.balance = bal * 10;
   }
 
-  const hasBase = (F.boozy ?? 0) > 0;
+  const shape = shapeOf(brew);
+  const share = (ml: number) => (shape.liquid > 0 ? ml / shape.liquid : 0);
+  // A base is real alcohol (a hard liqueur counts, a splash of vermouth does not) or sparkling wine.
+  const hasBase = share(shape.booze) >= 0.2 || share(shape.sparkling) >= 0.4;
   const hasBalancer = so > 0 || bi > 0;
   if (hasBase) { score += 5; parts.structure += 5; }
   if (hasBase && hasBalancer) { score += 4; parts.structure += 4; }
 
+  // A long drink dilutes its sweetness, so a long mixer is not "too sweet" the way a syrup is.
+  const longDrink = shape.booze > 0 && share(shape.long) >= 0.5;
+
   // too sweet / too sour without a counterweight
   const psw = sw / tot, pso = so / tot, pbi = bi / tot;
-  if (psw > 0.45 && pso + pbi < 0.1) { score -= 14; parts.sweetSour -= 14; }
-  else if (psw > 0.32 && pso + pbi < 0.08) { score -= 8; parts.sweetSour -= 8; }
+  if (!longDrink) {
+    if (psw > 0.45 && pso + pbi < 0.1) { score -= 14; parts.sweetSour -= 14; }
+    else if (psw > 0.32 && pso + pbi < 0.08) { score -= 8; parts.sweetSour -= 8; }
+  }
   if (pso > 0.5 && psw < 0.1 && pbi < 0.1) { score -= 12; parts.sweetSour -= 12; }
 
   // one-note (dominated by a single dimension)
@@ -174,17 +263,59 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   if (pc > 0.10) {
     clash += Math.min(pc, pacid);        // cream + acid: curdle
     clash += Math.min(pc, psmk) * 0.7;   // cream + smoke: muddy
+    if (pacid > 0.05) clash += CURDLE;   // any real acid curdles cream, however little
+    if (share(shape.fizz) >= 0.4) clash += CURDLE; // cream in a big fizzy pour splits and foams
   }
   clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
+  if (pcof > 0.1 && pacid > 0.05) clash += CURDLE * 0.8;
   score -= clash * 95;
   parts.clash = -clash * 95;
 
+  // Classic shapes. Each needs a clean brew (no clash, nothing too sweet or sour) and at most
+  // three strong ingredients. Bonuses go in `structure`; a brew with no shape at all loses points there.
+  let archetype: Archetype | null = null;
+  const clean = clash === 0 && parts.sweetSour === 0 && shape.strong <= 3 && shape.spirits <= 2;
+  if (clean && shape.liquid > 0 && n > 1) {
+    const sharpAll = pso + (F.citrus ?? 0) / tot;
+    const cands: [Archetype, number][] = [];
+    if (share(shape.booze) >= 0.15 && longDrink && shape.long >= 1.2 * shape.booze) cands.push(['highball', 5]);
+    if (share(shape.booze) >= 0.2 && shape.sweetSrc && share(shape.acid) >= 0.08 && share(shape.acid) <= 0.6)
+      cands.push(['sour', 0]);
+    if (share(shape.sparkling) >= 0.4 && shape.tagged > 1) cands.push(['sparkling', 0]);
+    if (shape.hasLiqueur && shape.cream > 0 && pc >= 0.15 && sharpAll < 0.04) cands.push(['dessert', 8]);
+    if (share(shape.booze) >= 0.5 && share(shape.spirit) >= 0.3 && sharpAll < 0.1 && shape.tagged > 1 && shape.dryMod)
+      cands.push(['spirit-forward', 5 + (shape.sweetMod ? 2 : 0)]);
+    cands.sort((x, y) => y[1] - x[1]);
+    if (cands.length) {
+      archetype = cands[0][0];
+      // The bonus covers what the pairwise terms miss, so it tapers off as they already credit the brew.
+      const bonus = cands[0][1] * clamp((TAPER_END - score) / (TAPER_END - TAPER_START), 0, 1);
+      score += bonus;
+      parts.structure += bonus;
+      if (archetype === 'spirit-forward') {
+        const relief = -parts.oneNote * 0.6;
+        score += relief;
+        parts.oneNote += relief;
+      }
+    }
+  }
+  if (!archetype && n > 1) {
+    // no recognisable shape; the more things thrown in, the muddier it gets
+    const pen = SHAPELESS + 3 * Math.max(0, n - 3);
+    score -= pen; parts.structure -= pen;
+  }
+
   // crowd / lonely
   if (n > 6) { score -= (n - 6) * 4; parts.crowd -= (n - 6) * 4; }
-  if (n === 1) { score -= 6; parts.crowd -= 6; }
+  if (n === 1) {
+    // one ingredient is a pour, not a cocktail: neat spirits stay presentable, the rest do not
+    const cap = shape.booze > 0 && share(shape.booze) >= 0.4 ? LONE_SPIRIT_CAP : LONE_CAP;
+    const pen = Math.max(6, score - cap);
+    score -= pen; parts.crowd -= pen;
+  }
 
   const final = clamp(Math.round(score), 3, 99);
-  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F) };
+  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F), archetype };
 }
 
 /** Fit of a candidate ingredient against the current mix profile → 0..1. */

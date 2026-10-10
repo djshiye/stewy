@@ -36,7 +36,12 @@ export type BrewAction =
 
 export const STORAGE_KEY = 'stewy.v2';
 export const LEGACY_KEY = 'stewy.v1';
-export const DEFAULT_NAME = 'Untitled Brew';
+export const DEFAULT_NAME = 'Untitled brew';
+/** The v2 default name; stored or saved brews carrying it move to DEFAULT_NAME. */
+const LEGACY_DEFAULT_NAME = 'Untitled Brew';
+
+/** Map the old default name onto the current one; any other name is left alone. */
+export const migrateName = (name: string): string => (name === LEGACY_DEFAULT_NAME ? DEFAULT_NAME : name);
 export const HISTORY_LIMIT = 60;
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
@@ -153,7 +158,7 @@ export function parseStored(raw: string | null): BrewState | null {
     return initialState({
       unit: s.unit && s.unit in UNITS ? (s.unit as UnitKey) : 'oz',
       brew: cleanBrew(s.brew),
-      name: typeof s.name === 'string' && s.name ? s.name : DEFAULT_NAME,
+      name: typeof s.name === 'string' && s.name ? migrateName(s.name) : DEFAULT_NAME,
     });
   } catch {
     return null;

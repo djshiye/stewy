@@ -65,6 +65,15 @@ describe('topSuggestions', () => {
     for (let i = 1; i < top.length; i++) expect(top[i - 1].delta).toBeGreaterThanOrEqual(top[i].delta);
   });
 
+  it('flags suggestions that add more of something already in the brew', () => {
+    const top = topSuggestions(SOUR, 80);
+    expect(top.length).toBeGreaterThan(0);
+    for (const s of top) expect(s.inBrew).toBe(SOUR.some((e) => e.id === s.ing.id));
+    const more = topSuggestions(brew(['white_rum', 20], ['lime_juice', 25], ['simple_syrup', 15]), 80);
+    expect(more.some((s) => s.inBrew)).toBe(true);
+    expect(more.some((s) => !s.inBrew)).toBe(true);
+  });
+
   it('defaults to three and skips garnish while other options exist', () => {
     const top = topSuggestions(SOUR);
     expect(top.length).toBeLessThanOrEqual(3);

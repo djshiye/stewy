@@ -86,18 +86,27 @@ export function rgbToOklch([r, g, b]: RGB): OKLCH {
   return [L, c, h];
 }
 
-/** OKLCH to sRGB (0..255), clipped to the gamut. */
-export function oklchToRgb(l: number, c: number, h: number): RGB {
+/** OKLCH to linear sRGB, unclipped (outside 0..1 means outside the gamut). */
+function oklchToLinear(l: number, c: number, h: number): RGB {
   const a = c * Math.cos((h * Math.PI) / 180), b = c * Math.sin((h * Math.PI) / 180);
   const lp = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
   const mp = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
   const sp = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
   return [
-    toSrgb(4.0767416621 * lp - 3.3077115913 * mp + 0.2309699292 * sp),
-    toSrgb(-1.2684380046 * lp + 2.6097574011 * mp - 0.3413193965 * sp),
-    toSrgb(-0.0041960863 * lp - 0.7034186147 * mp + 1.707614701 * sp),
+    4.0767416621 * lp - 3.3077115913 * mp + 0.2309699292 * sp,
+    -1.2684380046 * lp + 2.6097574011 * mp - 0.3413193965 * sp,
+    -0.0041960863 * lp - 0.7034186147 * mp + 1.707614701 * sp,
   ];
 }
+
+/** OKLCH to sRGB (0..255), clipped to the gamut. */
+export function oklchToRgb(l: number, c: number, h: number): RGB {
+  const [r, g, b] = oklchToLinear(l, c, h);
+  return [toSrgb(r), toSrgb(g), toSrgb(b)];
+}
+
+const inGamut = (l: number, c: number, h: number) =>
+  oklchToLinear(l, c, h).every((v) => v >= -0.0005 && v <= 1.0005);
 
 /** CSS `oklch()` string. */
 export function oklchToCss(l: number, c: number, h: number): string {
@@ -107,11 +116,53 @@ export function oklchToCss(l: number, c: number, h: number): string {
 /** Brand emerald, used when a brew has no colour of its own. */
 export const BRAND_ACCENT = '#3ddc97';
 
-/** A readable accent from the brew colour: same hue, light, with chroma held in 0.06..0.15.
-    Near-neutral or empty brews fall back to the brand emerald. */
+/** The raised ink the UI sits on (--ink-800); accents are measured against it. */
+export const INK_800 = '#161b24';
+
+/** WCAG relative luminance of an sRGB colour (0..255). */
+function luminance([r, g, b]: RGB): number {
+  const f = (u: number) => {
+    const v = u / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+/** WCAG contrast ratio between two sRGB colours (1..21). */
+export function contrastRatio(a: RGB, b: RGB): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+const ACCENT_MIN_CONTRAST = 7;
+
+/** Largest chroma at or below `c` that fits the sRGB gamut at this lightness and hue. */
+function fitChroma(l: number, c: number, h: number): number {
+  if (inGamut(l, c, h)) return c;
+  let lo = 0, hi = c;
+  for (let i = 0; i < 12; i++) {
+    const mid = (lo + hi) / 2;
+    if (inGamut(l, mid, h)) lo = mid; else hi = mid;
+  }
+  return lo;
+}
+
+/** A readable accent from the brew colour: same hue, chroma 0.7 x the brew's held in 0.07..0.15,
+    lightness raised from 0.62 until it reaches 7:1 against --ink-800. Near-neutral or empty
+    brews fall back to the brand emerald. */
 export function brewAccent(mix: Mix | null): string {
   if (!mix) return BRAND_ACCENT;
   const [, c, h] = rgbToOklch([mix.r, mix.g, mix.b]);
   if (c < 0.035) return BRAND_ACCENT;
-  return oklchToCss(0.8, clamp(c, 0.06, 0.15), h);
+  const want = clamp(0.7 * c, 0.07, 0.15);
+  const ink = hexToRgb(INK_800);
+  let css = BRAND_ACCENT;
+  for (let l = 0.62; l <= 1; l += 0.005) {
+    const ll = Number(l.toFixed(3));
+    const cc = Number(fitChroma(ll, want, h).toFixed(3));
+    css = oklchToCss(ll, cc, h);
+    const px = oklchToRgb(ll, cc, Number(h.toFixed(1))).map(Math.round) as RGB; // what a screen shows
+    if (contrastRatio(px, ink) >= ACCENT_MIN_CONTRAST) return css;
+  }
+  return css;
 }

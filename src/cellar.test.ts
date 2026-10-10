@@ -3,6 +3,7 @@ import {
   addItem, CELLAR_LIMIT, makeItem, parseCellar, removeItem, renameItem, restoreItem, type CellarInput,
   type CellarItem,
 } from './cellar';
+import { DEFAULT_NAME } from './store';
 
 const input = (name = 'Sour', score: number | null = 88): CellarInput => ({
   name, brew: [{ id: 'gin', ml: 45 }, { id: 'lime_juice', ml: 25 }], score, color: 'rgb(1, 2, 3)',
@@ -20,10 +21,15 @@ describe('makeItem', () => {
   });
 
   it('defaults and trims the name, and drops unknown ingredients', () => {
-    expect(makeItem(input('   ')).name).toBe('Untitled Brew');
+    expect(makeItem(input('   ')).name).toBe(DEFAULT_NAME);
     expect(makeItem(input('x'.repeat(60))).name).toHaveLength(40);
     const i = makeItem({ ...input(), brew: [{ id: 'gin', ml: 30 }, { id: 'nope', ml: 5 }] });
     expect(i.brew).toEqual([{ id: 'gin', ml: 30 }]);
+  });
+
+  it('moves the old default name to the new one', () => {
+    expect(makeItem(input('Untitled Brew')).name).toBe('Untitled brew');
+    expect(makeItem(input('Untitled Brew 2')).name).toBe('Untitled Brew 2');
   });
 
   it('makes unique ids', () => {
@@ -48,7 +54,7 @@ describe('list operations', () => {
   it('renames and removes', () => {
     const list = [item(2), item(1)];
     expect(renameItem(list, 'id1', ' Better ').map((i) => i.name)).toEqual(['Brew 2', 'Better']);
-    expect(renameItem(list, 'id1', '').find((i) => i.id === 'id1')?.name).toBe('Untitled Brew');
+    expect(renameItem(list, 'id1', '').find((i) => i.id === 'id1')?.name).toBe(DEFAULT_NAME);
     expect(removeItem(list, 'id2').map((i) => i.id)).toEqual(['id1']);
     expect(removeItem(list, 'zzz')).toHaveLength(2);
   });

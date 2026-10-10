@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
-import { describe as describeIng, flavorNotes, harmony, suggestions } from './harmony';
+import { describe as describeIng, flavorNotes, harmony, suggestions, VERDICT } from './harmony';
 
 /** Frozen copies of the 18 original classics, so the lock does not move with recipe data. */
 const CLASSICS: Record<string, [string, number][]> = {
@@ -182,6 +182,10 @@ describe('harmony breakdown', () => {
 });
 
 describe('copy', () => {
+  it('uses plain, sentence-case verdict copy for an empty pot', () => {
+    expect(VERDICT.none).toBe('Waiting for ingredients');
+  });
+
   it('describes an ingredient by its top notes without ABV', () => {
     expect(flavorNotes(ING_BY_ID.mezcal)[0]).toBe('boozy');
     expect(flavorNotes(ING_BY_ID.mezcal)).toHaveLength(3);

@@ -1,19 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { mixColor, oklchToCss, oklchToRgb, rgbToOklch, brewAccent, BRAND_ACCENT, type RGB } from './color';
+import { INGREDIENTS } from '../data/ingredients';
+import { RECIPES } from '../data/recipes';
+import {
+  brewAccent, BRAND_ACCENT, contrastRatio, hexToRgb, INK_800, mixColor, oklchToCss, oklchToRgb, rgbToOklch,
+  type RGB,
+} from './color';
 
-const BG: RGB = [0x12, 0x0d, 0x10];
-
-function luminance([r, g, b]: RGB): number {
-  const f = (u: number) => {
-    const v = u / 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-}
-const contrast = (a: RGB, b: RGB) => {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-};
+const BG: RGB = hexToRgb(INK_800);
+const contrast = (a: RGB, b: RGB) => contrastRatio(a.map(Math.round) as RGB, b);
 
 /** Parse "oklch(L C H)" or "#rrggbb" into sRGB. */
 function toRgb(css: string): RGB {
@@ -49,7 +43,7 @@ describe('brewAccent', () => {
     expect(brewAccent(mixColor([{ id: 'soda_water', ml: 100 }]))).toBe(BRAND_ACCENT);
   });
 
-  it('keeps the brew hue and passes 4.5:1 on the page background', () => {
+  it('keeps the brew hue, holds chroma in range and passes 7:1 on --ink-800', () => {
     const brews = [
       [{ id: 'campari', ml: 30 }, { id: 'gin', ml: 30 }],
       [{ id: 'blue_curacao', ml: 30 }, { id: 'vodka', ml: 30 }],
@@ -64,22 +58,48 @@ describe('brewAccent', () => {
       if (accent === BRAND_ACCENT) continue;
       const m = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(accent);
       expect(m).not.toBeNull();
-      expect(Number(m?.[1])).toBeCloseTo(0.8, 2);
-      expect(Number(m?.[2])).toBeGreaterThanOrEqual(0.06);
+      expect(Number(m?.[1])).toBeGreaterThanOrEqual(0.62);
       expect(Number(m?.[2])).toBeLessThanOrEqual(0.15);
-      expect(contrast(toRgb(accent), BG)).toBeGreaterThanOrEqual(4.5);
+      expect(Number(m?.[2])).toBeGreaterThan(0.03);
+      const [, , hue] = rgbToOklch([mix?.r ?? 0, mix?.g ?? 0, mix?.b ?? 0]);
+      expect(Math.abs(Number(m?.[3]) - hue)).toBeLessThan(0.1);
+      expect(contrast(toRgb(accent), BG)).toBeGreaterThanOrEqual(7);
     }
   });
 
-  it('every hue stays readable', () => {
+  it('chroma follows 0.7 x the brew, clamped to 0.07..0.15, when the gamut allows', () => {
+    const mix = mixColor([{ id: 'campari', ml: 30 }]);
+    const [, c] = rgbToOklch([mix?.r ?? 0, mix?.g ?? 0, mix?.b ?? 0]);
+    const m = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(brewAccent(mix));
+    expect(Number(m?.[2])).toBeCloseTo(Math.min(0.15, Math.max(0.07, 0.7 * c)), 2);
+  });
+
+  it('every recipe blend and every single-ingredient blend meets 7:1 on --ink-800', () => {
+    const brews = [
+      ...RECIPES.map((r) => r.build.map(([id, ml]) => ({ id, ml }))),
+      ...INGREDIENTS.map((i) => [{ id: i.id, ml: i.amt }]),
+    ];
+    const low: string[] = [];
+    for (const b of brews) {
+      const accent = brewAccent(mixColor(b));
+      const ratio = contrast(toRgb(accent), BG);
+      if (ratio < 7) low.push(`${b.map((e) => e.id).join('+')} ${accent} ${ratio.toFixed(2)}`);
+    }
+    expect(low).toEqual([]);
+  });
+
+  it('every hue stays readable at the accent lightness range', () => {
     for (let h = 0; h < 360; h += 15) {
-      for (const c of [0.06, 0.15]) {
-        expect(contrast(oklchToRgb(0.8, c, h), BG)).toBeGreaterThanOrEqual(4.5);
+      for (const c of [0.07, 0.15]) {
+        const mix = { css: '', ...(() => { const [r, g, b] = oklchToRgb(0.6, c, h); return { r, g, b }; })(), a: 1 };
+        const accent = brewAccent(mix);
+        if (accent === BRAND_ACCENT) continue;
+        expect(contrast(toRgb(accent), BG), `${h} ${c}`).toBeGreaterThanOrEqual(7);
       }
     }
   });
 
   it('brand accent is readable too', () => {
-    expect(contrast(toRgb(BRAND_ACCENT), BG)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(toRgb(BRAND_ACCENT), BG)).toBeGreaterThanOrEqual(7);
   });
 });

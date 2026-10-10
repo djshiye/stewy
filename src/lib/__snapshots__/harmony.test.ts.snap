@@ -7,7 +7,7 @@ exports[`harmony score lock (must not move across refactors) > classics 1`] = `
     "great",
   ],
   "bloody_mary": [
-    80,
+    84,
     "great",
   ],
   "cosmopolitan": [
@@ -15,8 +15,8 @@ exports[`harmony score lock (must not move across refactors) > classics 1`] = `
     "great",
   ],
   "cuba_libre": [
-    74,
-    "good",
+    85,
+    "great",
   ],
   "daiquiri": [
     91,
@@ -39,7 +39,7 @@ exports[`harmony score lock (must not move across refactors) > classics 1`] = `
     "great",
   ],
   "manhattan": [
-    87,
+    89,
     "great",
   ],
   "margarita": [
@@ -47,15 +47,15 @@ exports[`harmony score lock (must not move across refactors) > classics 1`] = `
     "great",
   ],
   "martini": [
-    79,
-    "good",
+    83,
+    "great",
   ],
   "mojito": [
     91,
     "legendary",
   ],
   "moscow_mule": [
-    86,
+    88,
     "great",
   ],
   "negroni": [
@@ -63,11 +63,11 @@ exports[`harmony score lock (must not move across refactors) > classics 1`] = `
     "legendary",
   ],
   "old_fashioned": [
-    79,
-    "good",
+    86,
+    "great",
   ],
   "pina_colada": [
-    85,
+    87,
     "great",
   ],
   "whiskey_sour": [
@@ -84,32 +84,32 @@ exports[`harmony score lock (must not move across refactors) > edge brews 1`] = 
     "legendary",
   ],
   "bitters_only": [
-    70,
-    "good",
+    54,
+    "poor",
   ],
   "coconut_rum": [
-    77,
-    "good",
+    42,
+    "poor",
   ],
   "coffee_citrus": [
-    36,
+    5,
     "bad",
   ],
   "coffee_orange": [
-    66,
-    "ok",
+    26,
+    "bad",
   ],
   "cream_lemon_gin": [
-    70,
-    "good",
+    35,
+    "bad",
   ],
   "cream_lime": [
-    30,
+    3,
     "bad",
   ],
   "cream_mezcal": [
-    53,
-    "poor",
+    37,
+    "bad",
   ],
   "egg_sour": [
     90,
@@ -124,8 +124,8 @@ exports[`harmony score lock (must not move across refactors) > edge brews 1`] = 
     "poor",
   ],
   "nine_ingredients": [
-    77,
-    "good",
+    43,
+    "poor",
   ],
   "only_salt": [
     42,
@@ -144,12 +144,12 @@ exports[`harmony score lock (must not move across refactors) > edge brews 1`] = 
     "poor",
   ],
   "seven_ingredients": [
-    80,
+    84,
     "great",
   ],
   "single_lime": [
-    62,
-    "ok",
+    44,
+    "poor",
   ],
   "single_syrup": [
     20,
@@ -164,32 +164,32 @@ exports[`harmony score lock (must not move across refactors) > edge brews 1`] = 
     "great",
   ],
   "soda_and_tonic": [
-    82,
-    "great",
+    66,
+    "ok",
   ],
   "tiny_amounts": [
     93,
     "legendary",
   ],
   "unknown_ids": [
-    74,
-    "good",
+    58,
+    "ok",
   ],
   "very_bitter": [
-    67,
-    "ok",
-  ],
-  "very_sour": [
-    77,
-    "good",
-  ],
-  "very_sweet": [
-    55,
+    45,
     "poor",
   ],
+  "very_sour": [
+    52,
+    "poor",
+  ],
+  "very_sweet": [
+    34,
+    "bad",
+  ],
   "very_sweet_liqueur": [
-    65,
-    "ok",
+    54,
+    "poor",
   ],
   "zero_volume": [
     42,
@@ -200,25 +200,25 @@ exports[`harmony score lock (must not move across refactors) > edge brews 1`] = 
 
 exports[`harmony score lock (must not move across refactors) > seeded sweep 1`] = `
 [
-  "52 79 71 64 82 77 66 62 73 84 60 73 68 74 83 75 69 72 55 53",
-  "75 85 73 70 75 65 46 70 68 62 67 60 64 63 80 66 78 67 59 87",
-  "59 72 75 63 68 78 80 81 79 91 87 62 65 56 42 70 67 54 90 54",
-  "78 88 79 80 75 63 87 88 88 65 79 63 84 34 82 63 82 75 89 74",
-  "50 64 88 58 76 91 20 79 80 49 20 85 80 57 62 65 63 75 54 86",
-  "81 61 61 59 78 78 70 71 88 79 72 54 80 60 72 78 40 77 67 34",
-  "61 87 40 59 72 88 65 61 75 85 58 81 85 76 55 79 64 63 62 59",
-  "61 60 73 52 80 52 91 78 78 56 58 53 76 83 59 45 78 70 83 76",
-  "66 74 72 62 44 64 79 63 64 80 81 61 68 69 92 90 77 68 83 69",
-  "73 83 79 76 85 83 68 83 74 77 80 86 80 76 57 90 55 69 69 79",
-  "60 82 49 75 86 74 77 85 84 79 77 79 49 68 59 82 63 70 61 49",
-  "83 79 59 60 70 70 87 70 71 75 84 86 91 45 65 70 64 75 63 45",
-  "78 91 74 64 65 73 81 85 79 78 77 65 74 34 58 42 81 67 73 87",
-  "87 84 72 68 66 72 60 71 67 34 79 57 80 68 78 77 79 73 78 64",
-  "59 74 78 72 72 81 80 74 66 49 49 82 80 66 62 78 69 82 76 38",
-  "82 72 74 61 50 75 77 82 74 75 84 76 78 38 61 61 77 92 86 73",
-  "70 70 87 75 82 78 78 53 76 92 82 86 56 50 81 66 86 49 71 50",
-  "73 81 73 89 87 63 62 83 77 78 70 84 20 92 85 77 69 72 78 62",
-  "75 78 78 74 78 66 90 38 82 77 86 77 67 62 70 85 63 77 59 70",
-  "69 76 63 69 64 81 77 77 71 57 78 83 65 78 79 80 61 81 46 71",
+  "41 60 49 30 60 43 50 28 51 59 29 51 37 86 83 84 50 59 5 12",
+  "68 85 82 35 56 40 51 54 34 40 33 58 44 58 46 32 59 73 24 88",
+  "19 29 75 81 52 59 49 53 42 91 50 51 31 40 3 36 58 3 90 15",
+  "80 89 83 80 45 44 89 57 66 31 51 44 56 34 82 44 57 82 67 67",
+  "34 30 72 37 60 91 20 69 52 44 20 66 80 38 58 49 33 53 30 67",
+  "81 3 33 34 62 56 53 55 69 48 75 26 36 26 56 47 24 77 58 34",
+  "54 87 24 44 56 88 54 18 59 66 39 53 48 54 24 79 14 44 58 19",
+  "11 58 42 36 49 41 60 56 50 13 23 10 57 43 28 8 56 27 83 82",
+  "35 40 44 28 9 29 57 20 48 86 62 27 46 58 67 65 36 43 46 74",
+  "42 67 63 44 85 73 37 58 22 82 58 82 84 57 29 90 39 19 58 42",
+  "44 66 44 82 88 43 84 85 59 79 55 66 44 81 67 82 81 54 39 44",
+  "83 63 44 10 14 48 71 42 52 82 44 86 66 3 58 54 33 59 58 44",
+  "83 66 40 48 49 75 86 60 79 71 61 58 49 18 37 3 81 58 43 89",
+  "50 56 41 46 35 56 44 55 36 3 85 58 80 75 83 84 51 57 56 51",
+  "37 49 44 56 38 65 80 43 38 44 33 54 64 32 21 44 58 66 42 38",
+  "45 56 58 3 29 44 77 66 11 44 84 54 62 38 47 30 37 73 61 54",
+  "51 54 87 44 48 56 47 37 49 70 82 55 37 17 59 35 70 22 61 44",
+  "57 65 57 90 83 13 58 83 70 44 48 56 20 61 85 55 35 78 38 28",
+  "80 85 83 58 62 52 62 38 82 77 67 46 45 58 42 85 44 46 25 15",
+  "41 44 47 41 58 37 70 61 49 58 59 85 49 38 54 61 24 53 44 34",
 ]
 `;

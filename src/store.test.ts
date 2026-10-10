@@ -171,6 +171,12 @@ describe('persistence', () => {
     expect(loadState(fake({ [STORAGE_KEY]: '{oops', [LEGACY_KEY]: legacy })).name).toBe('Old');
   });
 
+  it('moves the old default name to the new one', () => {
+    expect(DEFAULT_NAME).toBe('Untitled brew');
+    expect(parseStored(JSON.stringify({ brew: [], name: 'Untitled Brew' }))?.name).toBe('Untitled brew');
+    expect(parseStored(JSON.stringify({ brew: [], name: 'Untitled Brew 2' }))?.name).toBe('Untitled Brew 2');
+  });
+
   it('survives garbage and blocked storage', () => {
     expect(loadState(fake({ [STORAGE_KEY]: 'not json' }))).toEqual(initialState());
     expect(loadState(fake({ [STORAGE_KEY]: '{"brew":5}' }))).toEqual(initialState());

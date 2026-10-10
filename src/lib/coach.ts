@@ -18,6 +18,8 @@ export interface CoachSuggestion {
   delta: number;
   /** Score the brew would have after adding. */
   score: number;
+  /** True when this adds more of something already in the brew ("More orange slice"). */
+  inBrew: boolean;
 }
 
 /** Amounts worth trying for an ingredient: half and full default pour, or one piece. */
@@ -66,7 +68,10 @@ export function topSuggestions(brew: BrewEntry[], n = 3): CoachSuggestion[] {
   const all: CoachSuggestion[] = [];
   for (const ing of INGREDIENTS) {
     const d = deltas.get(ing.id);
-    if (d && d.delta > 0) all.push({ ing, ml: d.ml, delta: d.delta, score: base.score + d.delta });
+    if (d && d.delta > 0) all.push({
+      ing, ml: d.ml, delta: d.delta, score: base.score + d.delta,
+      inBrew: brew.some((e) => e.id === ing.id),
+    });
   }
   all.sort((a, b) => b.delta - a.delta);
   const main = all.filter((s) => s.ing.group !== 'Garnish');

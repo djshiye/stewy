@@ -2,7 +2,7 @@
    localStorage under stewy.cellar.v1. Pure helpers are exported for tests. */
 import { useCallback, useEffect, useState } from 'react';
 import type { BrewEntry } from './data/types';
-import { cleanBrew, DEFAULT_NAME } from './store';
+import { cleanBrew, DEFAULT_NAME, migrateName } from './store';
 
 export interface CellarItem {
   id: string;
@@ -20,7 +20,7 @@ export const CELLAR_KEY = 'stewy.cellar.v1';
 export const CELLAR_LIMIT = 100;
 const MAX_NAME = 40;
 
-const cleanName = (name: string) => name.trim().slice(0, MAX_NAME).trim() || DEFAULT_NAME;
+const cleanName = (name: string) => migrateName(name.trim().slice(0, MAX_NAME).trim()) || DEFAULT_NAME;
 
 /** Fresh id; falls back to a random string where crypto.randomUUID is missing. */
 export function newId(): string {
