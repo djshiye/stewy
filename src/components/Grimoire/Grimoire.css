@@ -141,8 +141,24 @@
   border-top: 1px solid var(--line);
   scroll-padding-bottom: var(--s4);
 }
+/* once the index has scrolled, its top edge fades instead of cutting a row off hard */
+@property --grim-fade { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@supports (animation-timeline: scroll()) {
+  .grim__scroll {
+    animation: grim-fade-top linear both;
+    animation-timeline: scroll(self);
+    animation-range: 0 24px;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--grim-fade));
+    mask-image: linear-gradient(180deg, transparent, #000 var(--grim-fade));
+  }
+}
+@keyframes grim-fade-top {
+  from { --grim-fade: 0px; }
+  to { --grim-fade: 20px; }
+}
 
 .grim__grid {
+  --cell-h: 315px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -162,6 +178,10 @@
   animation: grim-in 460ms var(--ease-out) both;
   animation-delay: calc(var(--i) * 24ms);
   transition: background-color var(--t-hover) var(--ease-out);
+  /* 55 glasses: only the screenful in view is styled and painted. The size is the cell's real
+     height at each breakpoint (below), so the scroll length and scrollIntoView stay true. */
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto var(--cell-h);
 }
 .grim-cell:nth-child(4n) {
   border-right: 0;
@@ -178,7 +198,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -1px;
+  top: 0;
   height: 2px;
   background: var(--accent);
   transform: scaleX(0);
@@ -671,6 +691,9 @@
   .grim-cell {
     padding: var(--s4) var(--s4) var(--s3);
   }
+  .grim__grid {
+    --cell-h: 265px;
+  }
   .grim-cell__stage {
     height: 132px;
   }
@@ -692,8 +715,16 @@
   }
 }
 
-/* short desktop windows: keep the whole build above the load button */
+/* short desktop windows: a slimmer header gives the index two whole rows, and the build stays
+   above the load button */
 @media (min-width: 1000px) and (max-height: 820px) {
+  .grim__head { padding-top: var(--s5); }
+  .grim__title h2 { font-size: 32px; line-height: 36px; }
+  .grim__title p { display: none; }
+  .grim__chips { padding-top: var(--s3); }
+  .grim__scroll { margin-top: var(--s4); }
+  .grim__grid { --cell-h: 283px; }
+  .grim-cell__stage { height: 140px; }
   .grim-detail__scroll {
     padding-top: 52px;
   }
@@ -716,9 +747,15 @@
     padding-top: var(--s3);
   }
 }
+@media (min-width: 1000px) and (max-width: 1279px) and (max-height: 820px) {
+  .grim__grid { --cell-h: 273px; }
+}
 
 /* ---------- phones and tablets: a bottom sheet, one column of chrome ---------- */
 @media (max-width: 999px) {
+  .grim__grid {
+    --cell-h: 261px;
+  }
   .grim {
     display: flex;
     flex-direction: column;
@@ -792,8 +829,16 @@
   }
 }
 
+@media (pointer: coarse) {
+  /* the chip row clips sideways scroll, so room for the 44px hit box (the chips stay 36px) sits in its padding */
+  .grim__chips { padding-bottom: 4px; }
+  .grim__clear { position: relative; }
+  .grim__clear::before { content: ''; position: absolute; inset: -10px; }
+}
+
 @media (max-width: 599px) {
   .grim__grid {
+    --cell-h: 277px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .grim-cell:nth-child(3n) {
