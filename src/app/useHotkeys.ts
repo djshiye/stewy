@@ -50,7 +50,9 @@ export function useHotkeys(handlers: Hotkeys): void {
         return;
       }
 
-      if (e.altKey || e.shiftKey || isTyping(e.target)) return;
+      if (e.altKey || isTyping(e.target)) return;
+      // '/' needs Shift on many layouts (German, French, ...); the letter keys do not
+      if (e.shiftKey && key !== '/') return;
       if (document.body.classList.contains('is-locked')) return;
 
       switch (key) {

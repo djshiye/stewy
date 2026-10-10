@@ -51,6 +51,19 @@ describe('useHotkeys', () => {
     expect(h.onSearch).toHaveBeenCalledOnce();
   });
 
+  it('fires / when it needs Shift (German, French and similar layouts), but no letter key with Shift', () => {
+    const h = handlers();
+    render(<Harness h={h} />);
+    fireEvent.keyDown(document.body, { key: '/', shiftKey: true });
+    expect(h.onSearch).toHaveBeenCalledOnce();
+    for (const key of ['G', 'C', 'S']) fireEvent.keyDown(document.body, { key, shiftKey: true });
+    fireEvent.keyDown(document.body, { key: '/', altKey: true });
+    expect(h.onGrimoire).not.toHaveBeenCalled();
+    expect(h.onCellar).not.toHaveBeenCalled();
+    expect(h.onServe).not.toHaveBeenCalled();
+    expect(h.onSearch).toHaveBeenCalledOnce();
+  });
+
   it('undoes and redoes with Ctrl or Cmd outside text fields', () => {
     const h = handlers();
     render(<Harness h={h} />);

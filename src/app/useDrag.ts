@@ -33,6 +33,8 @@ export function useDrag(hitRef: RefObject<HTMLElement | null>, onDrop: (ing: Ing
     if (ev.pointerType === 'touch' || ev.button !== 0) return;
     teardown.current?.();
     const sx = ev.clientX, sy = ev.clientY;
+    // only the pointer that started the drag may move, drop or cancel it (a resting palm must not)
+    const pid = ev.pointerId;
     let active = false;
 
     // capture guarantees pointerup/cancel delivery even if released off-window
@@ -52,13 +54,24 @@ export function useDrag(hitRef: RefObject<HTMLElement | null>, onDrop: (ing: Ing
     const cleanup = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', cleanup);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('keydown', onKey);
+      try {
+        if ((ev.target as Element).hasPointerCapture?.(pid)) (ev.target as Element).releasePointerCapture(pid);
+      } catch { /* already released */ }
       document.body.classList.remove('is-dragging');
       teardown.current = null;
       setDragging(null);
       setDragOver(false);
     };
+    const cancel = (e: PointerEvent) => {
+      if (e.pointerId === pid) cleanup();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cleanup();
+    };
     const move = (e: PointerEvent) => {
+      if (e.pointerId !== pid) return;
       if (!active && Math.hypot(e.clientX - sx, e.clientY - sy) > THRESHOLD) {
         active = true;
         document.body.classList.add('is-dragging');
@@ -71,6 +84,7 @@ export function useDrag(hitRef: RefObject<HTMLElement | null>, onDrop: (ing: Ing
       }
     };
     const up = (e: PointerEvent) => {
+      if (e.pointerId !== pid) return;
       const dropped = active && inPot(e);
       if (active) {
         // swallow the click that follows a completed drag; self-disarm in case
@@ -87,7 +101,8 @@ export function useDrag(hitRef: RefObject<HTMLElement | null>, onDrop: (ing: Ing
     place(ev.clientX, ev.clientY);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', cleanup);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('keydown', onKey);
   }, [hitRef]);
 
   return { dragging, dragOver, start, ghostRef };
