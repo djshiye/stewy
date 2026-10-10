@@ -1,0 +1,563 @@
+/* Stage: the cast-iron cauldron and its room (DESIGN.md section 6).
+   One frame (.stg-pot, 720 x 600 units) holds every layer. --u is one unit in pixels, so the
+   HTML effects scale with the pot. Only transform and opacity ever animate. The shell already
+   pauses CSS animations on body.is-dragging / body.is-hidden and removes them under reduced
+   motion; the base (unanimated) state of every effect below is therefore its resting look. */
+
+.stage {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  container-type: inline-size;
+}
+
+@media (min-width: 1000px) {
+  .stage {
+    container-type: size;
+  }
+}
+
+/* ---------- the frame ---------- */
+.stg-pot {
+  --stage-hint-h: 46px;
+  position: relative;
+  flex: none;
+  width: min(100cqw, 1120px);
+  aspect-ratio: 720 / 600;
+  container-type: inline-size;
+}
+
+@media (min-width: 1000px) {
+  .stg-pot {
+    width: min(100cqw, calc((100cqh - var(--stage-hint-h)) * 1.2), 1000px);
+  }
+}
+
+@media (max-width: 999px) {
+  .stage {
+    justify-content: flex-start;
+    padding-bottom: var(--s2);
+  }
+
+  /* the pot is scaled so both handles stay inside the viewport (they sit 5% in from the frame) */
+  .stg-pot {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+    margin-top: -10px;
+  }
+
+  /* the sky fades in under the top bar instead of being cut off */
+  .stg-back {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 44px);
+    mask-image: linear-gradient(180deg, transparent 0, #000 44px);
+  }
+}
+
+.stg-pot > * {
+  --u: calc(100cqw / 720);
+}
+
+.stg-back,
+.stg-room,
+.stg-embers,
+.stg-ambient,
+.stg-pour {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stg-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* the surface layer covers just the opening (viewBox 136 134 448 114 of 720 x 600) */
+.stg-surface {
+  inset: auto;
+  left: 18.8889%;
+  top: 22.3333%;
+  width: 62.2222%;
+  height: 19%;
+}
+
+/* ---------- the room: the brew is the light ---------- */
+.stg-room {
+  transition: opacity var(--t-scene) var(--ease-out);
+}
+
+.is-empty .stg-room {
+  opacity: 0.3;
+}
+
+.stg-bloom {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * 150);
+  width: calc(var(--u) * 980);
+  height: calc(var(--u) * 640);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--brew-rgb), 0.46),
+    rgba(var(--brew-rgb), 0.17) 46%,
+    rgba(var(--brew-rgb), 0.05) 72%,
+    transparent
+  );
+  animation: stg-breathe 6s ease-in-out infinite;
+}
+
+/* a soft shaft: a conic gradient has soft edges, so no blur is needed */
+.stg-shaft {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * -70);
+  width: calc(var(--u) * 1000);
+  height: calc(var(--u) * 262);
+  transform: translateX(-50%);
+  background: conic-gradient(
+    from -36deg at 50% 100%,
+    transparent 0deg,
+    rgba(var(--brew-rgb), 0.15) 36deg,
+    transparent 72deg
+  );
+  -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 96%);
+  mask-image: linear-gradient(0deg, #000 10%, transparent 96%);
+}
+
+.stg-pool {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * 566);
+  width: calc(var(--u) * 860);
+  height: calc(var(--u) * 120);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--brew-rgb), 0.5),
+    rgba(var(--brew-rgb), 0.17) 55%,
+    transparent
+  );
+}
+
+.stg-embers {
+  animation: stg-ember 2.8s ease-in-out infinite;
+}
+
+.stg-ember-bed,
+.stg-ember-core {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * 558);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+.stg-ember-bed {
+  width: calc(var(--u) * 420);
+  height: calc(var(--u) * 54);
+  background: radial-gradient(closest-side, rgba(255, 150, 70, 0.62), rgba(255, 100, 40, 0.22) 58%, transparent);
+}
+
+.stg-ember-core {
+  width: calc(var(--u) * 190);
+  height: calc(var(--u) * 20);
+  background: radial-gradient(closest-side, rgba(255, 214, 150, 0.9), rgba(255, 150, 70, 0.4) 60%, transparent);
+}
+
+/* ---------- the halo: turns slowly, frames the pot ---------- */
+.stg-halo {
+  position: absolute;
+  inset: 0;
+  animation: stg-turn 360s linear infinite;
+}
+
+.stg-gauge-on,
+.stg-gauge-label {
+  transition: opacity var(--t-settle) var(--ease-out), fill var(--t-settle) var(--ease-out);
+}
+
+.stg-gauge-dot {
+  transition: transform 900ms var(--ease-out), opacity var(--t-settle) var(--ease-out);
+}
+
+.stg-twinkle {
+  animation: stg-twinkle 7s ease-in-out infinite;
+}
+
+/* ---------- the iron's light: states ---------- */
+.stg-light {
+  transition: opacity var(--t-scene) var(--ease-out);
+}
+
+.is-empty .stg-light {
+  opacity: 0.32;
+}
+
+.stg-lip-glow {
+  opacity: 0.88;
+  transition: opacity var(--t-settle) var(--ease-out);
+}
+
+.is-brimming .stg-lip-glow {
+  opacity: 1;
+}
+
+.stg-brim,
+.stg-invite,
+.stg-invite-lit {
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+}
+
+.is-brimming .stg-brim {
+  opacity: 1;
+}
+
+.is-dragging .stg-invite {
+  opacity: 0.75;
+}
+
+.is-over .stg-invite {
+  opacity: 1;
+}
+
+.is-over .stg-invite-lit {
+  opacity: 1;
+}
+
+/* ---------- the surface ---------- */
+.stg-liquid {
+  transform: translateY(calc(var(--depth) * 1px));
+  transition:
+    transform 900ms var(--ease-out),
+    opacity var(--t-scene) var(--ease-out);
+}
+
+.is-empty .stg-liquid {
+  opacity: 0;
+}
+
+.stg-flow {
+  animation: stg-turn 110s linear infinite;
+}
+
+.stg-flow--b {
+  animation-duration: 170s;
+  animation-direction: reverse;
+}
+
+.stg-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stg-bob 3.6s ease-in-out infinite;
+}
+
+.stg-garnish {
+  animation: stg-float 7s ease-in-out infinite;
+}
+
+.stg-garnish-pop {
+  animation: stg-pop 520ms var(--ease-spring) both;
+}
+
+/* empty pot: a faint shimmer ring on the dark interior */
+.stg-shimmer {
+  position: absolute;
+  left: 23.6%;
+  top: 23.2%;
+  width: 52.8%;
+  height: 16.8%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(var(--brew-rgb), 0.55);
+  background: radial-gradient(closest-side, rgba(var(--brew-rgb), 0.12), transparent);
+  opacity: 0;
+  transition: opacity var(--t-scene) var(--ease-out);
+  pointer-events: none;
+}
+
+.is-empty .stg-shimmer {
+  opacity: 0.7;
+  animation: stg-shimmer 5s ease-in-out infinite;
+}
+
+/* ---------- steam and motes ---------- */
+.stg-steam {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--u));
+  width: calc(var(--w) * var(--u));
+  height: calc(var(--h) * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 247, 236, 0.15),
+    rgba(var(--brew-rgb), 0.13) 56%,
+    transparent
+  );
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: stg-steam var(--dur) ease-out var(--delay) infinite;
+}
+
+.is-empty .stg-steam {
+  display: none;
+}
+
+.stg-mote {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--u));
+  width: calc(var(--s) * 1px);
+  height: calc(var(--s) * 1px);
+  border-radius: 50%;
+  background: var(--brew-hi);
+  opacity: 0;
+  animation: stg-rise var(--dur) linear var(--delay) infinite;
+}
+
+.is-empty .stg-mote {
+  display: none;
+}
+
+/* ---------- pours: droplet, ripple pair, sparks ---------- */
+.stg-pour {
+  --surf-y: calc((192 + var(--depth)) * var(--u));
+}
+
+.stg-pour > i {
+  position: absolute;
+  left: calc(var(--lx) * var(--u));
+  top: var(--surf-y);
+  display: block;
+  opacity: 0;
+}
+
+.stg-drop {
+  width: calc(var(--u) * 11);
+  height: calc(var(--u) * 17);
+  border-radius: 50% 50% 50% 50% / 64% 64% 36% 36%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.85), transparent 34%),
+    var(--c);
+  animation: stg-drop 480ms cubic-bezier(0.5, 0, 0.9, 0.55) both;
+}
+
+.stg-ripple {
+  width: calc(var(--u) * 150);
+  height: calc(var(--u) * 40);
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--c) 50%, #fff);
+  transform: translate(-50%, -50%) scale(0.1);
+  animation: stg-ripple 1150ms var(--ease-out) 440ms both;
+}
+
+.stg-ripple--2 {
+  border-width: 1.5px;
+  border-color: rgba(255, 255, 255, 0.7);
+  animation-delay: 620ms;
+}
+
+.stg-flash {
+  width: calc(var(--u) * 130);
+  height: calc(var(--u) * 34);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 40%, #fff), transparent);
+  transform: translate(-50%, -50%);
+  animation: stg-flash 700ms var(--ease-out) 440ms both;
+}
+
+.stg-spark {
+  width: calc(var(--s) * 1px);
+  height: calc(var(--s) * 1px);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--c) 45%, #ffe9c8);
+  animation: stg-spark var(--sd) ease-out 460ms both;
+}
+
+/* ---------- hint pill ---------- */
+.stg-hint {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 32px;
+  margin-top: calc(var(--s3) * -1);
+  padding: 0 var(--s4) 0 var(--s3);
+  border-radius: var(--r-pill);
+  color: var(--tx-2);
+  font-size: 13px;
+  line-height: 18px;
+  background: rgba(7, 9, 13, 0.4);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  transition:
+    color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+  max-width: calc(100% - var(--s4));
+}
+
+@media (max-width: 999px) {
+  .stg-hint {
+    margin-top: calc(var(--s4) * -1);
+  }
+}
+
+/* in a narrow column the line wraps, so the pill becomes a small rounded plate */
+@container (max-width: 470px) {
+  .stg-hint {
+    height: auto;
+    min-height: 32px;
+    padding: 6px var(--s3);
+    border-radius: var(--r-md);
+    text-align: center;
+    text-wrap: balance;
+  }
+}
+
+.stg-hint-icon {
+  display: grid;
+  flex: none;
+  color: var(--accent);
+}
+
+.stg-hint-icon > svg {
+  grid-area: 1 / 1;
+  transition: opacity 160ms var(--ease-out);
+}
+
+.stg-hint-drop,
+.stg-hint-text--over,
+.stg-hint-text--touch {
+  display: none;
+}
+
+.stg-hint-drop {
+  display: block;
+  opacity: 0;
+}
+
+@media (max-width: 999px) {
+  .stg-hint-text--desk {
+    display: none;
+  }
+
+  .stg-hint-text--touch {
+    display: inline;
+  }
+}
+
+.is-over .stg-hint {
+  color: var(--tx-1);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.8) inset;
+}
+
+.is-over .stg-hint-text--desk,
+.is-over .stg-hint-text--touch {
+  display: none;
+}
+
+.is-over .stg-hint-text--over {
+  display: inline;
+}
+
+.is-over .stg-hint-up {
+  opacity: 0;
+}
+
+.is-over .stg-hint-drop {
+  opacity: 1;
+}
+
+/* ---------- keyframes (transform and opacity only) ---------- */
+@keyframes stg-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes stg-breathe {
+  0%, 100% { opacity: 0.82; }
+  50% { opacity: 1; }
+}
+
+@keyframes stg-ember {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes stg-twinkle {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@keyframes stg-bob {
+  0%, 100% { transform: scale(0.88); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes stg-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(1.3px) rotate(1.2deg); }
+}
+
+@keyframes stg-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes stg-shimmer {
+  0%, 100% { opacity: 0.45; transform: scale(0.985); }
+  50% { opacity: 1; transform: scale(1.01); }
+}
+
+@keyframes stg-steam {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - var(--u) * 130)) scale(1.5); }
+}
+
+@keyframes stg-rise {
+  0% { opacity: 0; transform: translate(0, 0); }
+  14% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(calc(var(--drift) * var(--u)), calc(var(--rise) * var(--u) * -1)); }
+}
+
+@keyframes stg-drop {
+  0% { opacity: 0; transform: translate(-50%, calc((172 + var(--depth)) * var(--u) * -1)) scale(0.8, 1.1); }
+  10% { opacity: 1; }
+  88% { opacity: 1; transform: translate(-50%, -50%) scale(1, 1.25); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7, 0.3); }
+}
+
+@keyframes stg-ripple {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+@keyframes stg-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  22% { opacity: 0.85; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+}
+
+@keyframes stg-spark {
+  0% { opacity: 0; transform: translate(-50%, -50%); }
+  12% { opacity: 1; }
+  50% { transform: translate(calc(-50% + var(--dx) * var(--u) * 0.7), calc(-50% + var(--dy) * var(--u))); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx) * var(--u)), calc(-50% + var(--dy) * var(--u) * 0.1 + 8px)); }
+}
+
+/* the gauge's numerals only earn their place when the pot is big enough to read them */
+@container (max-width: 520px) {
+  .stg-gauge-label {
+    display: none;
+  }
+}
