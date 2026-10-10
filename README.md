@@ -10,7 +10,7 @@ light the room, and see exactly how the score is built.
 **Live:** [stewy.pages.dev](https://stewy.pages.dev)
 
 <p align="center">
-  <img src="docs/screens/desktop.png" alt="Stewy on a desktop: a Negroni glowing in the cauldron, the recipe card on the left, the score breakdown on the right and the back bar below" width="100%" />
+  <img src="docs/screens/desktop.jpg" alt="Stewy on a desktop: a Negroni glowing in the cauldron, the recipe card on the left, the score breakdown on the right and the back bar below" width="100%" />
 </p>
 
 ## What it does
@@ -21,7 +21,7 @@ light the room, and see exactly how the score is built.
   a ripple and a few sparks. Garnishes float on the surface.
 - **The back bar.** 77 ingredients as real bottles, jars and carafes on a lit
   shelf, in tabs, with search on `/`. Each bottle tells you what it would do:
-  a green `+N` when it would raise the score, a red dot only when it would
+  a green `+N` when it would raise the score by 2 or more, a red dot only when it would
   actually clash (curdle, muddy). Drag one into the pot, or tap it to pour.
 - **The pour dial.** A hardware-style dial with a 64-segment LED ring. Drag it,
   scroll it, use the arrow keys (Shift for fine steps) or pick a preset. It shows
@@ -31,7 +31,7 @@ light the room, and see exactly how the score is built.
   have a bar, an eight-axis flavour radar shows the shape of the drink, and
   meters place it between sweet and sour, light and strong. "Try adding" only
   appears when something helps by 3 points or more.
-- **It knows the classics.** 55 classics, each scoring between 80 and 92. The engine
+- **It knows the classics.** 55 classics, each scoring 82 to 92. The engine
   recognises them in your pot and understands drink shapes (spirit-forward,
   sour, highball, dessert), so a Negroni and a Mojito are judged on their own terms.
 - **The serve card.** Glassware, ice and garnish are inferred from what you
@@ -44,12 +44,17 @@ light the room, and see exactly how the score is built.
 - **Measures.** ml, cl, oz or parts across the whole app. Bitters count in
   dashes and garnishes in pieces. Measures can be scrubbed directly on the recipe card.
 - **Undo everything.** Full undo and redo history, plus undo on every removal toast.
+- **Any screen.** A two-column desktop, a tablet layout, a phone layout with a
+  fixed dock for the shelf, a phone-landscape layout, and a scaled-up interface
+  on very large displays. Touch targets are at least 44px on touch devices.
 - **Installable.** A PWA that works offline after the first visit.
-- **Accessible.** Every drag has a tap or keyboard equivalent, score changes are
-  announced to screen readers, and reduced motion is respected throughout.
+- **Accessible.** Every drag has a tap or keyboard equivalent, a skip link leads
+  the tab order, sheets trap focus, score changes and measure steps are announced to
+  screen readers, text meets 4.5:1 contrast (apart from the decorative engraving on
+  the pot) and reduced motion is respected throughout.
 
 <p align="center">
-  <img src="docs/screens/phone.png" alt="Stewy on a phone: the cauldron fills the first screen, the score sits under it and the bottles live in a dock" width="320" />
+  <img src="docs/screens/phone.jpg" alt="Stewy on a phone: the cauldron fills the first screen, the score sits under it and the bottles live in a dock" width="320" />
 </p>
 
 ### Keyboard
@@ -59,10 +64,12 @@ light the room, and see exactly how the score is built.
 | `Ctrl/Cmd + Z` | Undo |
 | `Ctrl/Cmd + Shift + Z`, `Ctrl + Y` | Redo |
 | `/` | Search the shelf |
+| `Tab` | First stop is "Skip to main content" |
 | `G` | Open the Grimoire |
 | `C` | Open the Cellar |
 | `S` | Serve |
-| `Esc` | Close the top sheet |
+| `Esc` | Close the top sheet (in the Grimoire on a phone, step back to the index first) |
+| Arrow keys on a measure | Step the amount; `Enter` opens the pour dial |
 
 ## How the score works
 
@@ -76,7 +83,7 @@ volume-weighted profile of the whole drink and starts from a base of 55. Then:
 - **Structure** rewards recognisable shapes: a spirit-forward stirred drink,
   a sour, a highball, a dessert drink. A brew with no shape loses points here.
 - **Penalties** cover the things no bartender would pour: too sweet or too sour
-  with no counterweight, one-note drinks, crowded pots of eight spirits, and real
+  with no counterweight, one-note drinks, pots crowded past six ingredients, and real
   clashes such as dairy with citrus, which curdles at any dilution.
 
 The calibration is pinned by tests in [`calibration.test.ts`](src/lib/calibration.test.ts):

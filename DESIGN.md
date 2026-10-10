@@ -1,6 +1,6 @@
 # Stewy v3 design system: "Midnight Apothecary"
 
-Stewy is a late-night back bar. One cast-iron cauldron, a dark room, and the brew inside is
+Stewy is a late-night back bar. One cast-iron pot, a dark room, and the brew inside is
 the only light source. Everything else is quiet, tinted, hairline chrome that stays out of
 its way.
 
@@ -11,10 +11,10 @@ onto the winner.
 
 ## 1. Principles
 
-1. **The potion lights the room.** The live, volume-weighted brew colour is the scene's
+1. **The brew lights the room.** The live, volume-weighted brew colour is the scene's
    light. It tints the surface of the brew, the bloom above the pot, the floor pool, the rim
    light on the iron, the logo's brew surface, and a derived UI accent.
-2. **One hero.** The cauldron is the brightest, largest, most alive thing on screen. Chrome
+2. **One hero.** The pot is the brightest, largest, most alive thing on screen. Chrome
    never competes with it: no gilding, no neon, no gradient text, no outer glows.
 3. **Instrument-grade controls.** Measures are set with tactile, hardware-feeling controls
    (LED tick scales, a rotary pour dial, scrubbable measure pills), with precise tabular
@@ -24,6 +24,24 @@ onto the winner.
 5. **Restraint.** Two type families, one accent, one radius scale, one icon family. Sentence
    case everywhere. Motion only when it means something.
 6. **Dark only.** The candlelit night is the brand. There is no light theme.
+
+### Copy and terminology
+
+- **Sentence case everywhere**, including verdict names ("Legendary elixir", "Masterful brew",
+  "A fine potion", "Drinkable draught", "Murky concoction", "Cursed sludge"). Proper names of
+  drinks keep their capitals ("Old Fashioned").
+- **No em or en dashes, no exclamation marks.** British spelling ("flavour", "colour",
+  "recognised").
+- **The vessel is "the pot"** in all UI copy and actions ("Load into the pot", "Pour into the
+  pot", "Drag a bottle up into the pot"). "Cauldron" is for marketing only: `index.html`
+  metadata, the README and the social card.
+- **The user's current drink is "your brew"** ("Your brew", "Untitled brew", "Your own brew.").
+  Use "drink" for cocktails in general sentences. Never call it a "mix".
+- **The score is "score"** everywhere in user-facing text, never "harmony".
+- **Empty states say what to do next** in one plain sentence, and read the same way across the
+  cards ("None" for a missing value, "Waiting" for a meter with nothing to measure).
+- **Errors say what happened and what to try**: "That link could not be opened. Ask for it
+  again, and check it was copied in full." Placeholders end with the ellipsis character.
 
 ## 2. Colour
 
@@ -39,7 +57,7 @@ onto the winner.
 | `--ink-500` | `#3a4254` | scrollbars, disabled outlines |
 | `--tx-1` | `#f1eee8` | primary text (warm white) |
 | `--tx-2` | `#a9b1bf` | secondary text |
-| `--tx-3` | `#7d8696` | labels and captions (12px and up only) |
+| `--tx-3` | `#939cac` | labels and captions (12px and up only), at least 4.5:1 on every card surface |
 | `--line` | `rgba(190, 205, 230, 0.09)` | hairlines |
 | `--line-2` | `rgba(190, 205, 230, 0.16)` | control outlines |
 
@@ -134,13 +152,18 @@ scene only.
 **No `backdrop-filter`** anywhere on mobile. On desktop only on the fixed toast. Scrims are
 flat `rgba(7, 9, 13, 0.72)`.
 
-**Motion.** Transform and opacity only. All of it is disabled under
+**Motion.** Every animation (keyframes, springs, ambient loops) moves only `transform` and
+`opacity`. Hover and state feedback may fade colour, `background-color`, `border-color`,
+`box-shadow`, `stroke` and `fill` with a short transition (`--t-hover`, 160 ms); these are
+transitions, never loops. The one longer colour transition is the scene recolour, written
+through registered `@property` variables (600 ms), and it is switched off while a measure
+pill is scrubbed so each step does not restyle the tree. All motion is disabled under
 `prefers-reduced-motion` (`<MotionConfig reducedMotion="user">` plus a CSS block).
 - `--ease-out: cubic-bezier(.2, .8, .2, 1)` for state changes.
 - `--ease-spring: cubic-bezier(.34, 1.4, .64, 1)` for things that settle (thumbs, bottle lift).
 - `motion` springs: `{ type: 'spring', stiffness: 420, damping: 34 }` for UI,
   `{ stiffness: 160, damping: 22 }` for the dial knob.
-- Durations: hover 120 to 200 ms, settle 350 ms, sheet enter 420 ms, scene recolour 600 ms.
+- Durations: hover 160 ms, settle 350 ms, sheet enter 420 ms, scene recolour 600 ms.
 - Ambient loops (swirl, bubbles, steam, motes, embers) pause while a drag is in flight and while
   the tab is hidden (`body.is-dragging`, `body.is-hidden`).
 - Every animation has a reason: feedback (pour ripple, LED ticks, row enter), state change
@@ -152,14 +175,21 @@ scrim 40, sheet 50, drag ghost 60.
 **Icons.** `@phosphor-icons/react`, weight `regular`, 18 px in chrome, 20 px in the dock.
 No emoji anywhere in the UI.
 
+**Touch and focus.** Under `(pointer: coarse)` every control has a hit area of at least 44 x 44
+px, either the control itself or an invisible expansion of it. Keyboard focus never lands under
+the fixed dock (`scroll-padding-bottom`). The first Tab stop is a "Skip to main content" link
+(hidden until focused, it slides in on transform); the shelf is a labelled `<aside>`
+(complementary) and the recipe, pot and analysis live in `<main id="main">`. Sheets trap focus,
+skip parked radios and inert regions, and return focus to the control that opened them.
+
 ## 5. Layout
 
-### Desktop (1000 to 1920 wide; the app shell is `100dvh`, no page scroll)
+### Desktop (1000 wide and up; the app shell is `100dvh`, no page scroll)
 ```
 60  [sigil] Stewy        [ ml | cl | oz | parts ]          undo redo | Grimoire  Cellar(7)  share
     +-------------+--------------------------------------------+---------------------+
     | Your brew   |                (toast)                     |  (90)  Legendary    |
-    | Negroni     |                                            |        Elixir       |
+    | Negroni     |                                            |        elixir       |
     | strip       |        celestial halo (fill gauge)         |  radar | breakdown  |
     | rows with   |     ( glowing brew in the cast-iron pot )  |  55 +22 +9 +9 -4 =90|
     | measure     |                                            |  balance meter      |
@@ -167,25 +197,43 @@ No emoji anywhere in the UI.
     | stats x3    |                                            |  Try adding x3      |
     | [Serve][x]  |     "Drag a bottle up into the pot..."     |                     |
     +-------------+--------------------------------------------+---------------------+
-224 | Spirits 13  Liqueurs 18 ...           +2 raises the score   - clashes   [search /] |
+224 | Spirits 14  Liqueurs 24 ...           +2 raises the score   - clashes   [search /] |
     |  bottles standing on a lit glass slab (horizontal scroll, edge fades)            |
     |  names under the slab                                                            |
     +----------------------------------------------------------------------------------+
 ```
-Columns `336px / 1fr / 380px`, gap 24, page padding 24. At 1000 to 1279: `300px / 1fr / 340px`,
-gap 16, the radar hides and the breakdown becomes a 2 x 2 grid. On short viewports (below
-820 px tall) the cards scroll internally; the stats row and the Serve button stay pinned at
-the card bottom.
+Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall (204px below
+820px of height).
 
-### Mobile (below 1000 wide; 390 x 844 is the design target)
+- **1000 to 1279 wide:** `300px / 1fr / 340px`, gap 16. The radar hides and the breakdown is a
+  2 x 2 grid. From 1000 to 1099 the columns are `280px / 1fr / 316px` and the pot may overflow
+  its column by 56px (handles and halo sit behind the side cards).
+- **1280 and up, below 820px tall:** the radar is replaced by the same 2 x 2 breakdown. Below
+  680px tall the two meters go next and "Start from a classic" shows two picks.
+- **Short viewports (below 820px tall):** the recipe card tightens its padding and hides the sub
+  line on a filled card (an empty card keeps its hint). Rows fit as described under the recipe
+  card; the stats row and the Serve button stay pinned at the card bottom.
+- **Very large screens:** the whole interface is scaled with `zoom` so a 2560 x 1440 display
+  reads like 1600 x 900: factor 1.6 from 2200 x 1200, factor 2 from 3200 x 1800 (`--ui-zoom`).
+  Sheets and the toaster carry the same zoom; the shell divides its height by it, the drag ghost
+  scales its child only, and the shelf tooltip stands outside the zoom because it positions
+  itself in viewport pixels.
+
+### Tablet (700 to 999 wide)
+The pot is capped at 520px wide, so the cards stay near the first screen. The stage and the
+summary row span the width; the recipe card and the analysis card sit side by side below them.
+Units live in the recipe card, the dock is fixed as on phones. The gauge numerals around the
+pot are hidden below 1000px (they would clip).
+
+### Mobile (below 700 wide, and the stacked layout up to 999; 390 x 844 is the design target)
 ```
 56  [sigil] Stewy                     undo  redo  grimoire  cellar
     +-------------------------------------+
-    |  cauldron, scaled so both handles   |
+    |  pot, scaled so both handles        |
     |  stay inside the viewport           |
     +-------------------------------------+
     | (90) Negroni                 share  |   one verdict: ring + tier line
-    |      Legendary Elixir               |
+    |      Legendary elixir               |
     | Try adding [Orange bitters +2] [..] |   horizontal chip strip
     | +---------------------------------+ |
     | | Your brew     [ml cl oz parts]  | |   units live in the card on phones
@@ -202,16 +250,23 @@ The dock is persistent, so the 77-bottle shelf is never scrolled past. Content g
 padding equal to the dock height plus `env(safe-area-inset-bottom)`. Serve is always one tap
 away in the dock. Toasts sit just above the dock and never cover the row they refer to.
 
+### Phone landscape (up to 999 wide and 500 tall)
+Two columns: the pot sits in a sticky left column as tall as the screen (46vw wide) while the
+summary, recipe and analysis scroll on the right. The top bar is sticky at 48px. The dock moves
+into the right column and shrinks to 144px (shelf tabs are 44px tall inside it). Sheets stay
+bottom sheets here; the pour dial scrolls inside its sheet because its minimum size plus chips
+and preview exceed the height.
+
 ## 6. Components
 
-### Top bar (60px desktop, 56px mobile, one row at every width)
+### Top bar (60px desktop, 56px mobile, 48px phone landscape, one row at every width)
 Sigil (`BrandMark`, its brew surface takes `--accent`), the Newsreader wordmark, a centred
 segmented unit control (sliding thumb, spring) on desktop, then undo, redo (disabled when
 there is nothing to redo), a hairline divider, Grimoire and Cellar (with count) ghost
 buttons, and share. On mobile: icons only, units move into the recipe card, share moves to
 the summary row.
 
-### Stage and cauldron (the hero)
+### Stage and pot (the hero)
 - **Viewpoint and object.** Opaque cast iron seen from slightly above (rim ellipse about
   rx 236 / ry 68 in a 720-wide viewBox): a bulbous belly, rolled lip, riveted hoop, engraved
   moon-and-star sigil on the belly, two shaded metal ring handles, three legs with form and
@@ -235,6 +290,8 @@ the summary row.
   an ember bed between the legs (fire is never visible through the brew), steam as
   radial-gradient ellipses (no SVG filter regions), rising motes.
 - **Empty.** A dark interior with a faint emerald shimmer ring and the hint pill.
+- **Label.** The stage is a section named "The pot"; the pot image describes its contents
+  ("Cast-iron pot holding 93 ml of brew: Gin, Campari, Sweet vermouth").
 - **Feedback.** On drop: a droplet falls into the surface, a ripple pair spreads, a few
   sparks, the scene recolours over 600 ms, the score counts up. While dragging over: the rim
   lights in `--accent` and the hint reads "Release to pour".
@@ -248,21 +305,33 @@ name or the user's own name, editable inline); one sub line ("Recognised classic
 over ice."); a proportional composition strip in ingredient colours; rows; a 3-cell stat grid;
 the Serve button.
 
+- **Row density.** On desktop the rows fit the room the card gives them (`useRowFit`). They step
+  down through three densities, 65px (comfortable), 51px (snug) and 43px (tight), until all of
+  them fit. When even tight rows do not fit, the list is cut to a whole number of rows (it
+  scroll-snaps to rows, with no half row and no fade) and a "N more" strip under it is the only
+  cue; click or Enter scrolls to the rest. A Negroni shows all four rows at 1280 x 720; a
+  six-ingredient Mai Tai shows three with "3 more" there. In page flow (tablet and phone) rows
+  are always comfortable and nothing is hidden.
+
 - **Row.** 44px tile with the real ingredient art and a colour dot, name, descriptor
   ("Spirit, 42% ABV"), and a **measure pill**: a tactile control showing the amount in the
   active unit above a mini LED tick bar. Drag the pill horizontally (or use arrow keys) to
   scrub in unit steps; click or Enter opens the Pour dial in edit mode anchored to the row.
   A remove button is visible on hover and focus on desktop and always on touch. All
-  undoable. Rows enter and leave with layout animation.
+  undoable. Rows enter and leave with layout animation. A sliver below the unit's precision
+  reads "<0.01 oz", "<0.1 parts" or "<1 ml", never "0 oz". Arrow keys announce the new amount
+  ("Gin 1.25 oz") through a status node.
 - **Stats.** Volume in the active unit (parts mode shows total parts, never ml) with ml
-  underneath; strength after dilution; method with time ("Stir, 30 seconds").
+  underneath; strength after dilution; method with time ("Stir, 30 seconds"). Each stat is a
+  `dt` with a value `dd` and a second `dd` for the small line under it.
 - **Actions.** Full-width accent "Serve in a rocks glass" (glass inferred) and an icon-only
   Clear. Clear is undoable.
 - **Empty.** Title "Untitled brew", one line: "Drag a bottle up into the pot, or open the
-  Grimoire to start from a classic." Strip hidden, Serve disabled.
+  Grimoire to start from a classic." Strip hidden, three ghost rows (two on short desktop
+  screens), stats read "0 oz", "0% ABV / no alcohol" and "None / add a bottle", Serve disabled.
 
 ### Analysis panel (right on desktop; below the recipe card on mobile)
-- **Verdict (once).** 96px score ring in the tier colour, numeral, tier name as the heading,
+- **Verdict (once).** 96px score ring in the tier colour, numeral, tier name (sentence case) as the heading,
   one playful line. A thin red / amber / green tier track with a marker under it gives the
   number context.
 - **Profile radar.** 8 fixed axes that always render (so the shape never jumps): Boozy, Sweet,
@@ -275,14 +344,21 @@ the Serve button.
   score says so).
 - **Meters.** Sweet to sour-and-bitter balance meter (marker from `harmony().balance`) and a
   strength meter in three zones (light, classic, strong) using the post-dilution ABV.
-- **Try adding.** The top three simulated additions from `topSuggestions()`, each with its
-  art, name, amount, a `+n` delta and an add button. One name everywhere: "Try adding".
+- **Try adding.** The top three simulated additions from `topSuggestions()` that are worth 3
+  points or more, each with its art, name, amount, a `+n` delta and an add button. One name
+  everywhere: "Try adding". When nothing helps by that much the card says so instead.
 - **Tips.** The engine's plain-language suggestions as a short list.
-- **Empty.** Ring as an empty track with a dash, "Waiting for ingredients", radar axes only.
+- **Radar emphasis.** Only the two strongest axes (value of at least 0.12) are set bold in
+  `--tx-1`; the rest stay quiet.
+- **Empty.** Ring as an empty track with a dash, "Waiting for ingredients", the radar axes only,
+  and "Start from a classic" with three picks (Negroni, Daiquiri, Old Fashioned) that load
+  straight into the pot.
 
 ### Shelf (back bar on desktop; dock on mobile)
-- One scrolling tab row (8 groups with counts, accent underline, proper tablist with
-  arrow-key roving focus), a search field with a `/` shortcut. Typing searches across all
+- One scrolling tab row (8 groups with counts: Spirits 14, Liqueurs 24, Juices 8, Mixers 9,
+  Syrups 9, Bitters 3, Extras 4, Garnish 6; accent underline, proper tablist with arrow-key
+  roving focus), a search field ("Search 77 ingredients…") with a `/` shortcut. Search ignores
+  accents and curly apostrophes. Typing searches across all
   groups and shows matching bottles in one row.
 - Bottles stand on a continuous lit glass slab (bright 1px top edge, translucent body,
   tinted shadow), names (13px, `tx-2`) under the slab. Hover lifts 6px with a spring.
@@ -291,13 +367,14 @@ the Serve button.
   absinthe, liqueur, cordial, vermouth, aperitivo) plus per-ingredient variants (cap, wax,
   label shape) so bourbon, rye and scotch, and white, dark and spiced rum, read apart.
 - **One quiet indicator per bottle**, anchored on the bottle's shoulder: a small `+n` badge
-  when adding it would raise the score by 2 or more, a minus-dot when it would cost 8 or
-  more, nothing otherwise. Bottles already in the pot get a check and their amount under
+  when adding it would raise the score by 2 or more, a minus-dot only when it would genuinely
+  clash with the brew (curdle or muddy it), nothing otherwise. Bottles already in the pot get a check and their amount under
   the name, never an error-looking badge.
 - Tap or Enter opens the Pour dial (add mode). Mouse and pen can drag a bottle up into the
-  pot (a ghost follows the pointer).
+  pot (a ghost follows the pointer; Escape cancels the drag). The hover tooltip rises above the
+  shelf so it never covers the tab row.
 
-### Pour dial (modal 480px on desktop, bottom sheet on mobile)
+### Pour dial (modal 480px on desktop and tablet, bottom sheet on phones)
 - Header: ingredient art, name, descriptor; a unit segmented control (changes the global
   unit).
 - **Instrument.** A 270-degree ring of 64 LED segments (plain SVG lines from one
@@ -306,34 +383,39 @@ the Serve button.
   committed value in edit mode, and a recessed readout (value 40px, unit, conversion line
   "37.5 ml, 3.75 cl"). Lit segments use `--accent`; this is the only glow in the product.
 - Input: drag around the knob, wheel, arrow keys (Shift for fine steps), Home/End,
-  PageUp/PageDown, minus and plus buttons, quick-measure chips (a radio group: 0.25, 0.5,
-  0.75, 1, 1.5, 2 oz equivalents; dashes for bitters, pieces for garnishes).
+  PageUp/PageDown, minus and plus buttons, quick-measure chips (a radio group: 0.5, 0.75, 1,
+  1.5, 2, 3 oz; 15, 22, 30, 45, 60, 90 ml; 1, 1.5, 3, 4.5, 6, 9 cl; 0.5, 1, 1.5, 2, 3 parts;
+  dashes for bitters, pieces for garnishes). Amounts are capped at 1000 ml.
   `role="slider"` with `aria-valuetext` in the active unit. A soft haptic tick on mobile.
 - **Preview.** "91 to 88" with a semantic delta chip and one plain-language reason generated
   by diffing `parts` ("More Campari tips the balance toward bitter.").
 - **Modes.** Add: primary "Pour into the pot". Edit: "Update", "Remove", "Reset to 1 oz".
 
-### Serve sheet (modal about 1020 x 640; full-height sheet on mobile)
+### Serve sheet (modal 1020 x 640 on desktop; 720 wide card on tablets with measures beside the method; full-height sheet on phones)
 Left: the finished drink in its inferred glass at true proportions (rocks wider than tall),
 with a refractive ice cube, the drawn garnish (an expressed peel, not a cartoon spiral), a
 meniscus and condensation, standing on a bar top in a pool of its own colour. Right: the
 Newsreader title, a pill row (tier dot and score, glass, method, ABV after dilution),
 measures as menu lines with dotted leaders (active unit first, ml secondary), a tasting note
-generated from the profile, numbered method steps, garnish, and actions: Save to Cellar
-(primary), Share link (Web Share API on mobile, copy fallback), Copy recipe. Footer: "Brewed
-in Stewy" and the date.
+generated from the profile, numbered method steps, garnish, and actions: Save to the Cellar
+(primary), Share link (Web Share API on touch devices, copy fallback), Copy recipe. On phones
+the three actions share one row (the other two become icon buttons). Saving twice within 1.5
+seconds stores one item. Footer: "Brewed in Stewy" and the date.
 
-### Grimoire (modal about 1180 x 760; full-height sheet on mobile)
-A recipe book, not a card grid: Newsreader heading, search (name or ingredient), filter chips
+### Grimoire (modal 1180 x 760 on desktop; 820 wide card on tablets; full-height sheet on phones)
+A recipe book, not a card grid: Newsreader heading, search ("Try gin or negroni…", name or ingredient), filter chips
 (All, Stirred, Shaken, Built, Sours, Long drinks, Tiki, After dinner). A hairline-ruled
-index grid (4 columns desktop, 2 phone) with no card chrome: each classic drawn large in its
+index grid (4 columns desktop, 3 tablet, 2 phone) with no card chrome: each classic drawn large in its
 own glass with its garnish and real mixed colour, the Newsreader name, three key ingredients,
 the method, and a tier-coloured score dot. Selecting an entry opens its detail (desktop: a
 side pane; phone: a sticky bottom bar) with the full build and an explicit "Load into the
-cauldron" button. Loading shows an undo toast. The classic currently in the pot is marked
-"In the pot".
+pot" button. Loading shows an undo toast ("Loaded Negroni", or "Negroni is already in the pot"
+with no Undo when nothing changes). The classic currently in the pot is marked "In the pot".
+Cells use `content-visibility: auto` so 55 glasses do not all paint at once. On phones the
+detail opens as an overlay over the index: Tab cycles Back, Load and Close, and Escape steps
+back to the index before it closes the sheet.
 
-### Cellar (sheet, list layout)
+### Cellar (sheet, list layout; 560 wide)
 Rows: a mini glass in the saved colour, the Newsreader name (rename inline), score dot,
 saved date, actions (load, rename, delete with undo). Empty state: an empty glass shelf,
 "Nothing saved yet. Serve a brew to keep it here.", and a button to open the Grimoire.
@@ -341,12 +423,16 @@ saved date, actions (load, rename, delete with undo). Empty state: an empty glas
 ### Toasts
 One at a time, 44px, `--r-md`, `--sh-3`, check icon, a plain sentence ("Removed lime juice"),
 an accent Undo button, a `Ctrl Z` hint on desktop. 6 s, pauses on hover and focus.
-`role="status"`. Used for remove, clear, load, delete, save, copy, shared-link open.
+`role="status"`. Used for remove, clear, load, delete, save, copy, shared-link open and for
+errors (clipboard refused, a share link that cannot be opened, a sheet that failed to load,
+which offers Reload). `Ctrl/Cmd+Z` answers a visible Undo toast first.
 
 ### Keyboard
-`Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo, `/` focus shelf search, `G` Grimoire,
-`C` Cellar, `S` serve, `Esc` closes the top sheet. Every drag has a tap or Enter equivalent.
-Score changes are announced through an `aria-live="polite"` region.
+`Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo, `/` (also with Shift, for layouts
+where it needs it) focus shelf search, `G` Grimoire, `C` Cellar, `S` serve, `Esc` closes the top
+sheet. Letter keys stand down while a sheet is open or while typing in a field; undo and redo
+stand down only in text fields. Every drag has a tap or Enter equivalent. Score changes are
+announced through an `aria-live="polite"` region.
 
 ## 7. Architecture
 
@@ -357,13 +443,18 @@ src/
   app/
     useAppModel.ts        derived data (harmony, mix, match, method, stats, glass, deltas, suggestions)
     useBrewTheme.ts       writes the brew and accent variables to :root
-    useDrag.ts            pointer drag system (capture, click swallow, ghost)
+    useDrag.ts            pointer drag system (own pointer id, capture, click swallow, ghost, Escape)
     useToasts.ts          toast state with undo actions
     useHotkeys.ts         global shortcuts
+    useMediaQuery.ts      matchMedia as state
+    lazySheets.ts         lazy sheets with idle and hover prefetch, one error boundary per sheet
+    clipboard.ts          copy with a readable failure
+    SkipLink.tsx          the first Tab stop
   styles/                 tokens.css, base.css, layout.css
   components/
-    ui/                   Button, IconButton, Segmented, Sheet, Toaster, VisuallyHidden
+    ui/                   Button, IconButton, Segmented, Sheet, Toaster, LiveRegion, VisuallyHidden
     TopBar/  Stage/  Shelf/  Recipe/  Analysis/  Dial/  Serve/  Grimoire/  Cellar/
+    Recipe/useRowFit.ts   fits rows to the card (densities, whole rows, "N more")
   icons/
     Icons.tsx             ingredient art and bottle silhouettes
     Glass.tsx             glassware with ice and garnishes
