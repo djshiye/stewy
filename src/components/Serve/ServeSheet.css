@@ -287,6 +287,14 @@
   .serve__foot { padding: var(--s3) var(--s4) var(--s5); }
 }
 
+/* tablets: the sheet is a 720px card, so measures and method sit side by side */
+@media (min-width: 700px) and (max-width: 999px) {
+  .serve__scroll { padding-inline: var(--s8); }
+  .serve__cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s8); }
+  .serve__actions { padding-inline: var(--s8); }
+  .serve__foot { padding-inline: var(--s8); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .serve * { transition: none; }
 }

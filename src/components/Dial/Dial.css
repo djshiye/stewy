@@ -185,6 +185,11 @@
   box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.7) inset;
 }
 
+@media (pointer: coarse) {
+  .dial__chip { position: relative; }
+  .dial__chip::before { content: ''; position: absolute; inset: -5px 0; }
+}
+
 @media (max-height: 880px) { .dial__hint { display: none; } }
 .dial__hint { font-size: 12px; line-height: 16px; color: var(--tx-3); text-align: center; }
 .dial__hint--touch { display: none; }

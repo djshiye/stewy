@@ -151,6 +151,9 @@
 .ui-seg__thumb {
   position: absolute;
   inset: 0;
+  /* an absolutely placed grid child ends at the padding edge unless its end line is explicit,
+     so pin it to exactly the first cell (the thumb slides by whole cells) */
+  grid-area: 1 / 1 / 2 / 2 !important;
   border-radius: var(--r-pill);
   background: var(--ink-600);
   box-shadow:
@@ -193,7 +196,7 @@
   outline: none;
 }
 
-.ui-sheet--dial { width: min(480px, 100%); overflow-y: auto; }
+.ui-sheet--dial { width: min(480px, 100%); overflow-y: auto; overscroll-behavior: contain; }
 .ui-sheet--serve { width: min(1020px, 100%); height: min(640px, 100%); }
 .ui-sheet--grimoire { width: min(1180px, 100%); height: min(760px, 100%); }
 .ui-sheet--cellar { width: min(560px, 100%); height: min(640px, 100%); }
@@ -241,6 +244,24 @@
   .ui-sheet--serve { width: 100%; height: 94dvh; }
   .ui-sheet--grimoire { width: 100%; height: 94dvh; }
   .ui-sheet--cellar { width: 100%; height: min(86dvh, 640px); }
+}
+
+/* tablets (portrait or landscape, tall enough): centred cards with a sensible measure instead
+   of full-bleed bottom sheets. They still slide up and can be dragged away by the handle. */
+@media (min-width: 700px) and (max-width: 999px) and (min-height: 600px) {
+  .ui-sheet-wrap {
+    align-items: center;
+    padding: var(--s6);
+  }
+  .ui-sheet {
+    border-radius: var(--r-lg);
+    padding-bottom: 0;
+    max-height: 100%;
+  }
+  .ui-sheet--dial { width: min(480px, 100%); }
+  .ui-sheet--cellar { width: min(560px, 100%); height: min(640px, 100%); }
+  .ui-sheet--serve { width: min(720px, 100%); height: min(900px, 100%); }
+  .ui-sheet--grimoire { width: min(820px, 100%); height: min(860px, 100%); }
 }
 
 /* ---------- Toaster ---------- */
@@ -336,5 +357,33 @@ body.is-locked .ui-toaster {
   body.is-locked .ui-toaster {
     top: calc(env(safe-area-inset-top) + var(--s3));
     bottom: auto;
+  }
+}
+
+/* ---------- touch: every control reaches 44 x 44 CSS px ----------
+   Small controls keep their look; an invisible ::before grows the hit box (::after carries
+   the tooltip on fine pointers only, so it is free here). */
+@media (pointer: coarse) {
+  .ui-ibtn--md { width: 44px; height: 44px; }
+  .ui-ibtn--sm::before { content: ''; position: absolute; inset: -6px; }
+  .ui-btn--sm::before,
+  .ui-toast__action::before { content: ''; position: absolute; inset: -6px -2px; }
+  .ui-toast__action { position: relative; }
+  .ui-seg--sm .ui-seg__opt::before { content: ''; position: absolute; inset: -9px 0; }
+  .ui-seg--md .ui-seg__opt::before { content: ''; position: absolute; inset: -7px 0; }
+
+  /* controls owned by other components, same technique (their layout is untouched) */
+  .shelf__tab::before { content: ''; position: absolute; inset: -4px 0; }
+  .grim-chip,
+  .rc__title { position: relative; }
+  .grim-chip::before { content: ''; position: absolute; inset: -4px 0; }
+  .rc__title::before { content: ''; position: absolute; inset: -6px 0; }
+}
+
+/* very large screens: sheets and toasts carry the same zoom as the shell (layout.css) */
+@media (min-width: 2200px) and (min-height: 1200px) {
+  .ui-sheet-wrap,
+  .ui-toaster {
+    zoom: var(--ui-zoom);
   }
 }
