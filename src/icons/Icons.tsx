@@ -422,7 +422,6 @@ function paperLabel(p: string, o: LabelOpts): ReactNode {
     default: d = `M${f(x)} ${y}H${f(x + w)}V${f(y + h)}H${f(x)}Z`; break;
   }
   const lg = `${p}l`;
-  const u = h / 100; // content scale
   const content: ReactNode[] = [];
   const ty = kind === 'arch' ? y + w * 0.42 : y + h * 0.2;
   content.push(<rect key="t" x={f(x + w * 0.2)} y={f(ty)} width={f(w * 0.6)} height={f(Math.max(1.5, h * 0.1))} rx="0.5" fill={ink} opacity="0.88" />);
@@ -445,7 +444,6 @@ function paperLabel(p: string, o: LabelOpts): ReactNode {
     const s = Math.max(0.9, r * 0.07);
     content.push(<circle key="d1" cx={f(cx - s * 3)} cy={f(my)} r={s} fill={accent} />, <circle key="d2" cx={cx} cy={f(my)} r={s} fill={accent} />, <circle key="d3" cx={f(cx + s * 3)} cy={f(my)} r={s} fill={accent} />);
   }
-  void u;
   return (
     <g>
       <defs><Lin id={lg} stops={[[0, '#000', 0.4], [0.2, '#000', 0.06], [0.45, '#fff', 0.1], [0.78, '#000', 0.04], [1, '#000', 0.5]]} /></defs>
@@ -473,7 +471,6 @@ interface Shape {
   spec?: { y: number; h: number; rot?: number };
   /** vertical ridges between these ys */
   ridge?: [number, number];
-  /** where the label may reach toward the shoulder (label y shift allowed) */
 }
 
 type ShapeFn = (n: number, w: number) => Shape;
@@ -715,14 +712,14 @@ const JUG: ShapeFn = (n, w) => { const h = 12.8 + w; return { lip: 6.4, lipY: 50
 
 /** Carafes for juices: one silhouette per fruit family. */
 type CarafeKind = 'carafe' | 'ball' | 'decanter' | 'tall';
-const CARAFES: Record<CarafeKind, { start: [number, number]; segs: Seg[]; hw: number; fill: number; neck: [number, number]; tag: [number, number]; spec: { y: number; h: number; rot?: number }; cap: CapKind; capHW: number }> = {
-  carafe: { start: [7.6, 34], hw: 15.4, fill: 52, neck: [5.6, 42], tag: [10, 74], spec: { y: 56, h: 32 }, cap: 'none', capHW: 6,
+const CARAFES: Record<CarafeKind, { start: [number, number]; segs: Seg[]; hw: number; fill: number; neck: [number, number]; tag: [number, number]; spec: { y: number; h: number; rot?: number }; cap: CapKind }> = {
+  carafe: { start: [7.6, 34], hw: 15.4, fill: 52, neck: [5.6, 42], tag: [10, 74], spec: { y: 56, h: 32 }, cap: 'none',
     segs: [['L', 5.6, 39], ['C', 5.2, 52, 15.4, 50, 15.4, 68], ...base(15.4, 3.4)] },
-  ball: { start: [6.4, 38], hw: 17.4, fill: 60, neck: [4.8, 44], tag: [9, 80], spec: { y: 64, h: 24, rot: 8 }, cap: 'stopper', capHW: 4.8,
+  ball: { start: [6.4, 38], hw: 17.4, fill: 60, neck: [4.8, 44], tag: [9, 80], spec: { y: 64, h: 24, rot: 8 }, cap: 'stopper',
     segs: [['L', 4.8, 44], ['C', 4.6, 56, 17.4, 56, 17.4, 78], ['C', 17.4, 94, 12, B, 6, B], ['L', 0, B]] },
-  decanter: { start: [5, 28], hw: 13.6, fill: 52, neck: [4.4, 40], tag: [8, 72], spec: { y: 56, h: 34 }, cap: 'stopper', capHW: 4.4,
+  decanter: { start: [5, 28], hw: 13.6, fill: 52, neck: [4.4, 40], tag: [8, 72], spec: { y: 56, h: 34 }, cap: 'stopper',
     segs: [['L', 4.4, 38], ['C', 4.6, 48, 13.6, 46, 13.6, 60], ...base(13.6, 3)] },
-  tall: { start: [5.2, 30], hw: 11.8, fill: 48, neck: [4.6, 40], tag: [7, 76], spec: { y: 52, h: 38 }, cap: 'cork', capHW: 5,
+  tall: { start: [5.2, 30], hw: 11.8, fill: 48, neck: [4.6, 40], tag: [7, 76], spec: { y: 52, h: 38 }, cap: 'cork',
     segs: [['L', 4.8, 38], ['C', 4.8, 44, 11.8, 42, 11.8, 54], ...base(11.8, 2.6)] },
 };
 
@@ -874,10 +871,7 @@ function carafe(p: string, ing: Ingredient): Built {
       </g>
     </g>
   );
-  const hwCap = c.capHW;
-  const lookCap: Look = { ...look };
-  void hwCap;
-  const b = standing(p, ing, { ...sh, lip: kind === 'carafe' ? 5.6 : c.start[0] }, lookCap, { front: tag, top: ty - 9 });
+  const b = standing(p, ing, { ...sh, lip: kind === 'carafe' ? 5.6 : c.start[0] }, look, { front: tag, top: ty - 9 });
   return b;
 }
 
@@ -1298,10 +1292,10 @@ function grow(b: Built, k: number): Built {
 
 /** Objects that stand on a surface reuse the shelf drawing, scaled to the tile. */
 function standingTile(b: Built): ReactNode {
-  const s = clampN(43 / (104 - b.top), 0.3, 1);
+  const s = clampN(46 / (104 - b.top), 0.3, 1);
   return (
     <TileSvg>
-      <g transform={`translate(${f(24 - 24 * s)} ${f(46.6 - 104 * s)}) scale(${f(s)})`}>{b.el}</g>
+      <g transform={`translate(${f(24 - 24 * s)} ${f(47.6 - 104 * s)}) scale(${f(s)})`}>{b.el}</g>
     </TileSvg>
   );
 }
