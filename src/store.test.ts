@@ -22,6 +22,13 @@ describe('brew actions', () => {
     expect(s.brew).toEqual([{ id: 'gin', ml: 60 }, { id: 'lime_juice', ml: 22.5 }]);
   });
 
+  it('starts a new step when a merged setAmount follows an unrelated commit', () => {
+    let s = run(initialState(), add('gin', 30), { type: 'setAmount', id: 'gin', ml: 35 }, add('campari', 30));
+    s = reducer(s, { type: 'setAmount', id: 'gin', ml: 40, merge: true });
+    expect(s.past).toHaveLength(4);
+    expect(reducer(s, { type: 'undo' }).brew).toEqual([{ id: 'gin', ml: 35 }, { id: 'campari', ml: 30 }]);
+  });
+
   it('ignores unknown ingredients and bad amounts', () => {
     const s = initialState();
     expect(reducer(s, add('nope', 30))).toBe(s);

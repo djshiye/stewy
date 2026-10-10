@@ -5,7 +5,7 @@ import type { Ingredient } from '../../data/types';
 import type { AppModel } from '../../app/types';
 import { ING_BY_ID } from '../../data/ingredients';
 import { GLASS_LABEL } from '../../lib/serve';
-import { UNIT_ORDER, UNITS, totalLabel, trim, type UnitKey } from '../../lib/units';
+import { UNIT_ORDER, UNITS, totalLabel, type UnitKey } from '../../lib/units';
 import {
   METHOD_AFTER, METHOD_SENTENCE, METHOD_TIME, METHOD_VERB,
 } from '../../lib/profile';
@@ -15,6 +15,7 @@ import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
 import { Segmented } from '../ui/Segmented';
 import { useScrollFade } from '../Analysis/useScrollFade';
+import { describeIngredient } from '../Dial/describe';
 import { MeasurePill } from './MeasurePill';
 import './RecipeCard.css';
 
@@ -32,20 +33,6 @@ export interface RecipeCardProps {
 const SPRING = { type: 'spring', stiffness: 420, damping: 34 } as const;
 
 const UNIT_OPTIONS = UNIT_ORDER.map((u) => ({ value: u, label: UNITS[u].label }));
-
-const GROUP_NOUN: Record<Ingredient['group'], string> = {
-  Spirits: 'Spirit', Liqueurs: 'Liqueur', Juices: 'Juice', Mixers: 'Mixer',
-  Syrups: 'Syrup', Bitters: 'Bitters', Extras: 'Extra', Garnish: 'Garnish',
-};
-
-/** "Spirit, 42% ABV", "Fortified wine, 16% ABV", "Garnish". */
-function describeIngredient(ing: Ingredient): string {
-  let noun = GROUP_NOUN[ing.group];
-  if (/vermouth|lillet/i.test(ing.name)) noun = 'Fortified wine';
-  else if (/prosecco|champagne/i.test(ing.name)) noun = 'Sparkling wine';
-  else if (ing.group === 'Liqueurs' && (ing.tags.bitter ?? 0) >= 2) noun = 'Bitter liqueur';
-  return ing.abv > 0 && !ing.unit ? `${noun}, ${trim(ing.abv, 1)}% ABV` : noun;
-}
 
 const ARCHETYPE_LINE = {
   sour: 'A sour, sharp and sweet in balance.',

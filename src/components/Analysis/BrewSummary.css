@@ -2,6 +2,7 @@
 
 .bs {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* the chip strip scrolls; it must not widen the row above it */
   gap: var(--s4);
   padding-top: var(--s1);
 }

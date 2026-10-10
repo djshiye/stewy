@@ -1,9 +1,9 @@
 import type { Ingredient } from '../../data/types';
 import { trim } from '../../lib/units';
 
-/** What to call an ingredient under its name, where the shelf data has no blurb of its own. */
+/** What to call an ingredient under its name (recipe card rows and the pour dial share this). */
 const KIND_BY_ID: Record<string, string> = {
-  campari: 'Bitter aperitivo', aperol: 'Aperitivo', sweet_vermouth: 'Fortified wine',
+  campari: 'Bitter liqueur', aperol: 'Aperitivo', sweet_vermouth: 'Fortified wine',
   dry_vermouth: 'Fortified wine', lillet_blanc: 'Aromatised wine', amaro: 'Bitter liqueur',
   chartreuse: 'Herbal liqueur', benedictine: 'Herbal liqueur', triple_sec: 'Orange liqueur',
   grand_marnier: 'Orange liqueur', prosecco: 'Sparkling wine', champagne: 'Sparkling wine',
@@ -17,5 +17,6 @@ const KIND_BY_GROUP: Record<string, string> = {
 
 export function describeIngredient(ing: Ingredient): string {
   const kind = KIND_BY_ID[ing.id] ?? KIND_BY_GROUP[ing.group] ?? ing.group;
-  return ing.abv > 0 ? `${kind}, ${trim(ing.abv, 1)}% ABV` : kind;
+  // counted items (dashes, pieces) carry no ABV line
+  return ing.abv > 0 && !ing.unit ? `${kind}, ${trim(ing.abv, 1)}% ABV` : kind;
 }

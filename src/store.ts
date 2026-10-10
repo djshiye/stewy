@@ -73,6 +73,13 @@ function commit(state: BrewState, brew: BrewEntry[], name: string = state.name):
   return { ...state, brew, name, past, future: [] };
 }
 
+/** True when the last undo entry differs from the current state only in this row's amount. */
+function continuesStep(state: BrewState, id: string): boolean {
+  const prev = state.past[state.past.length - 1];
+  if (!prev || prev.name !== state.name || prev.brew.length !== state.brew.length) return false;
+  return state.brew.every((e, i) => prev.brew[i].id === e.id && (e.id === id || prev.brew[i].ml === e.ml));
+}
+
 export function reducer(state: BrewState, action: BrewAction): BrewState {
   switch (action.type) {
     case 'add': {
@@ -89,7 +96,7 @@ export function reducer(state: BrewState, action: BrewAction): BrewState {
       const ml = round1(action.ml);
       if (ml === ex.ml) return state;
       const brew = ml > 0 ? state.brew.map((e) => (e.id === action.id ? { ...e, ml } : e)) : state.brew.filter((e) => e.id !== action.id);
-      if (action.merge && state.past.length) return { ...state, brew, future: [] };
+      if (action.merge && continuesStep(state, action.id)) return { ...state, brew, future: [] };
       return commit(state, brew);
     }
     case 'nudge': {
