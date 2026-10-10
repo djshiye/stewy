@@ -299,8 +299,8 @@
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
-    rgba(255, 247, 236, 0.15),
-    rgba(var(--brew-rgb), 0.13) 56%,
+    rgba(255, 247, 236, 0.24),
+    rgba(var(--brew-rgb), 0.2) 56%,
     transparent
   );
   opacity: 0;

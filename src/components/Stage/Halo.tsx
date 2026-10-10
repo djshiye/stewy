@@ -21,7 +21,7 @@ function moonLit(r: number, p: number): string | null {
 const MOONS = Array.from({ length: 8 }, (_, i) => {
   const p = i / 8;
   const a = (i / 8) * 360 - 90 + 22.5;
-  return { a, p, lit: moonLit(7.5, p), waning: p > 0.5 };
+  return { a, p, lit: moonLit(9, p), waning: p > 0.5 };
 });
 
 const TICKS = (() => {
@@ -49,7 +49,6 @@ const STARS = (() => {
     y: f(-30 + r() * 420),
     r: f(0.7 + r() * 0.9, 2),
     o: f(0.2 + r() * 0.4, 2),
-    spark: i % 11 === 0,
     twinkle: i % 3 === 0,
   }));
 })();
@@ -68,9 +67,9 @@ export const Halo = memo(function Halo() {
         </g>
         {MOONS.map((m, i) => (
           <g key={i} transform={`translate(${HALO.cx} ${HALO.cy}) rotate(${f(m.a)}) translate(${R - 39} 0) rotate(90)`}>
-            <circle r="7.5" fill="none" strokeWidth="1" strokeOpacity=".38" style={{ stroke: 'var(--brew-hi)' }} />
+            <circle r="9" strokeWidth="1" strokeOpacity=".42" style={{ stroke: 'var(--brew-hi)', fill: 'rgba(var(--brew-rgb), .14)' }} />
             {m.lit && (
-              <path d={m.lit} style={{ fill: 'var(--brew-hi)' }} fillOpacity=".34" transform={m.waning ? 'scale(-1 1)' : undefined} />
+              <path d={m.lit} style={{ fill: 'var(--brew-hi)' }} fillOpacity=".62" transform={m.waning ? 'scale(-1 1)' : undefined} />
             )}
           </g>
         ))}
@@ -79,10 +78,6 @@ export const Halo = memo(function Halo() {
   );
 });
 
-function Sparkle({ x, y, o }: { x: number; y: number; o: number }) {
-  return <path transform={`translate(${x} ${y})`} d="M0-5 1.2-1.2 5 0 1.2 1.2 0 5-1.2 1.2-5 0-1.2-1.2Z" fill="#dfe8f7" opacity={o} />;
-}
-
 /** Faint stars behind everything. A few twinkle together: those are a second <svg>, so the
     animation is an opacity change on a composited element, not a repaint of the sky. */
 export const Stars = memo(function Stars() {
@@ -90,12 +85,12 @@ export const Stars = memo(function Stars() {
     <>
       <svg className="stg-svg stg-stars" viewBox={`0 0 ${VB_W} ${VB_H}`} aria-hidden="true" focusable="false">
         {STARS.filter((s) => !s.twinkle).map((s, i) =>
-          s.spark ? <Sparkle key={i} x={s.x} y={s.y} o={s.o} /> : <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#dfe8f7" opacity={s.o} />,
+          <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#dfe8f7" opacity={s.o} />,
         )}
       </svg>
       <svg className="stg-svg stg-stars stg-twinkle" viewBox={`0 0 ${VB_W} ${VB_H}`} aria-hidden="true" focusable="false">
         {STARS.filter((s) => s.twinkle).map((s, i) =>
-          s.spark ? <Sparkle key={i} x={s.x} y={s.y} o={s.o + 0.2} /> : <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#dfe8f7" opacity={s.o + 0.2} />,
+          <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#dfe8f7" opacity={s.o + 0.2} />,
         )}
       </svg>
     </>
