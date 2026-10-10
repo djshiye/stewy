@@ -25,3 +25,7 @@
   Cache-Control: public, max-age=86400
 /icon-512.png
   Cache-Control: public, max-age=86400
+
+# service worker must always revalidate so updates roll out
+/sw.js
+  Cache-Control: no-cache
