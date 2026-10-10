@@ -356,7 +356,9 @@ the Serve button.
   numbers, and an equation strip that sums to the ring: `55 + 22 + 9 + 9 - 4 = 91` (a capped
   score says so).
 - **Meters.** Sweet to sour-and-bitter balance meter (marker from `harmony().balance`) and a
-  strength meter in three zones (light, classic, strong) using the post-dilution ABV.
+  strength meter in three zones (light, classic, strong) using the post-dilution ABV. The two
+  share a subgrid so their lanes sit on one baseline; when the meters row is under 320px wide
+  (1000 to 1099 desktops, 360 phones) "after shaking" drops to a second line both columns reserve.
 - **Try adding.** The top three simulated additions from `topSuggestions()` that are worth 3
   points or more, each with its art, name, amount, a `+n` delta and an add button. One name
   everywhere: "Try adding". When nothing helps by that much the card says so instead.
@@ -423,8 +425,9 @@ own glass with its garnish and real mixed colour, the Newsreader name, three key
 the method, and a tier-coloured score dot. Selecting an entry opens its detail (desktop: a
 side pane; phone: a sticky bottom bar) with the full build and an explicit "Load into the
 pot" button. Loading shows an undo toast ("Loaded Negroni", or "Negroni is already in the pot"
-with no Undo when nothing changes). The classic currently in the pot is marked "In the pot".
-Cells use `content-visibility: auto` so 55 glasses do not all paint at once. On phones the
+with no Undo when nothing changes). The classic currently in the pot is marked "In the pot",
+and the index opens scrolled to it, landing on a whole row (never a cut fragment under the
+header); nothing is preselected, so the desktop pane starts on "Pick a classic". Cells use `content-visibility: auto` so 55 glasses do not all paint at once. On phones the
 detail opens as an overlay over the index: Tab cycles Back, Load and Close, and Escape steps
 back to the index before it closes the sheet.
 
