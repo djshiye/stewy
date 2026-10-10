@@ -275,13 +275,15 @@
     position: sticky;
     bottom: 0;
     z-index: 2;
-    flex-wrap: wrap;
-    padding: var(--s3) var(--s4) var(--s3);
+    align-items: center;
+    padding: var(--s3) var(--s4);
     background: #10141b;
     box-shadow: 0 -16px 24px -8px rgba(16, 20, 27, 0.9);
   }
-  .serve__save { flex: 1 0 100%; }
-  .serve__actions .ui-btn:not(.serve__save) { height: 40px; font-size: 14px; }
+  /* one row: the primary action and two square icon buttons, all 48px tall
+     (the sheet itself pads for the bottom safe area) */
+  .serve__save { flex: 1 1 0; min-width: 0; height: 48px; }
+  .serve__actions .serve__icon { width: 48px; height: 48px; }
   .serve__foot { padding: var(--s3) var(--s4) var(--s5); }
 }
 

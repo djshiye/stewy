@@ -10,6 +10,8 @@ import {
 import { tastingNote } from '../../lib/tasting';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { useIsDesktop } from '../../app/useMediaQuery';
 import { VisuallyHidden } from '../ui/VisuallyHidden';
 import './ServeSheet.css';
 
@@ -32,6 +34,7 @@ const titleSize = (name: string) => (name.length > 26 ? 'xs' : name.length > 14 
 
 export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: ServeSheetProps) {
   const { brew, name, unit, h, mix } = model;
+  const desktop = useIsDesktop();
   const card = useMemo(() => serveCard(brew, name, unit), [brew, name, unit]);
   const steps = useMemo(() => methodSteps(card), [card]);
   const lines = useMemo(() => measureLines(brew, unit), [brew, unit]);
@@ -40,6 +43,7 @@ export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: Se
   const garnish = useMemo(() => garnishFor(card.garnish), [card.garnish]);
   const today = useMemo(() => new Date(), [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const copy = () => onCopy(recipeText(card, shareUrl({ brew, name })));
   const glassLabel = GLASS_LABEL[card.glass];
   const title = card.name.trim() || 'Untitled brew';
 
@@ -125,17 +129,37 @@ export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: Se
             <Button variant="primary" size="lg" className="serve__save" icon={<BookmarkSimple size={18} />} onClick={onSave}>
               Save to Cellar
             </Button>
-            <Button variant="secondary" size="lg" icon={<ShareNetwork size={18} />} onClick={onShare}>
-              Share link
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              icon={<Copy size={18} />}
-              onClick={() => onCopy(recipeText(card, shareUrl({ brew, name })))}
-            >
-              Copy recipe
-            </Button>
+            {desktop ? (
+              <>
+                <Button variant="secondary" size="lg" icon={<ShareNetwork size={18} />} onClick={onShare}>
+                  Share link
+                </Button>
+                <Button variant="secondary" size="lg" icon={<Copy size={18} />} onClick={copy}>
+                  Copy recipe
+                </Button>
+              </>
+            ) : (
+              <>
+                <IconButton
+                  variant="outline"
+                  size="lg"
+                  className="serve__icon"
+                  label="Share link"
+                  tooltip="Share link"
+                  icon={<ShareNetwork size={20} />}
+                  onClick={onShare}
+                />
+                <IconButton
+                  variant="outline"
+                  size="lg"
+                  className="serve__icon"
+                  label="Copy recipe"
+                  tooltip="Copy recipe"
+                  icon={<Copy size={20} />}
+                  onClick={copy}
+                />
+              </>
+            )}
           </div>
 
           <p className="serve__foot">

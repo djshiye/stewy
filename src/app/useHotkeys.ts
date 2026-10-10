@@ -9,10 +9,15 @@ export interface Hotkeys {
   onServe(): void;
 }
 
+/** True while the key lands in something you type into (jsdom lacks isContentEditable, hence the closest). */
 const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null;
   if (!el || !el.tagName) return false;
-  return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+  return (
+    el.isContentEditable ||
+    /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) ||
+    el.closest('[contenteditable]:not([contenteditable="false"])') !== null
+  );
 };
 
 /**

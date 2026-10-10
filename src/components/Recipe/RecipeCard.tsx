@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Martini, PencilSimple, Trash, X } from '@phosphor-icons/react';
+import { CaretDown, Martini, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import type { Ingredient } from '../../data/types';
 import type { AppModel } from '../../app/types';
 import { ING_BY_ID } from '../../data/ingredients';
@@ -17,6 +17,7 @@ import { Segmented } from '../ui/Segmented';
 import { useScrollFade } from '../Analysis/useScrollFade';
 import { describeIngredient } from '../Dial/describe';
 import { MeasurePill } from './MeasurePill';
+import { useRowFit } from './useRowFit';
 import './RecipeCard.css';
 
 export interface RecipeCardProps {
@@ -164,6 +165,7 @@ export function RecipeCard(props: RecipeCardProps) {
   const desktop = useIsDesktop();
   const empty = brew.length === 0;
   const rowsRef = useScrollFade<HTMLDivElement>();
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   const rows = brew.flatMap((e) => {
     const ing = ING_BY_ID[e.id];
@@ -171,6 +173,7 @@ export function RecipeCard(props: RecipeCardProps) {
   });
   const liquids = rows.filter((r) => !r.ing.unit);
   const count = rows.length;
+  const { density, overflow, hidden, showMore } = useRowFit(wrapRef, rowsRef, count, desktop);
 
   const open = (ing: Ingredient, el: HTMLElement) => {
     const row = el.closest('[data-row]') ?? el;
@@ -219,7 +222,8 @@ export function RecipeCard(props: RecipeCardProps) {
         )}
       </header>
 
-      <div className="rc__rows" ref={rowsRef}>
+      <div className="rc__rowwrap" ref={wrapRef} data-overflow={overflow ? '' : undefined}>
+      <div className="rc__rows" ref={rowsRef} data-density={density}>
         {empty ? (
           <ul className="rc__ghosts" aria-hidden="true">
             {[0, 1, 2].map((i) => (
@@ -272,6 +276,19 @@ export function RecipeCard(props: RecipeCardProps) {
             </AnimatePresence>
           </ul>
         )}
+      </div>
+      <button
+        type="button"
+        className="rc__more"
+        data-show={hidden > 0 ? '' : undefined}
+        aria-label={`Show ${hidden} more ${hidden === 1 ? 'ingredient' : 'ingredients'}`}
+        tabIndex={hidden > 0 ? 0 : -1}
+        aria-hidden={hidden > 0 ? undefined : true}
+        onClick={showMore}
+      >
+        {hidden} more
+        <CaretDown size={12} weight="bold" aria-hidden="true" />
+      </button>
       </div>
 
       <footer className="rc__foot">

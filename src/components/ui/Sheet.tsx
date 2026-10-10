@@ -122,7 +122,10 @@ function SheetLayer({ onClose, labelledBy, size, className, hideClose, children 
       const i = stack.indexOf(token);
       if (i >= 0) stack.splice(i, 1);
       unlockPage();
-      if (prev && prev.isConnected) prev.focus({ preventScroll: true });
+      // back to whatever opened the sheet; when that was nothing in particular (a hotkey from the
+      // page itself) just let go of the sheet's element so focus settles on the body
+      if (prev && prev !== document.body && prev.isConnected) prev.focus({ preventScroll: true });
+      else if (dlg?.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
     };
   }, [present]);
 
