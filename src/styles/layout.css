@@ -42,7 +42,7 @@
     grid-template-columns: var(--col-l) minmax(0, 1fr) var(--col-r);
     grid-template-rows: minmax(0, 1fr);
     gap: var(--col-gap);
-    padding: var(--s2) var(--gutter) 0;
+    padding: var(--s2) var(--gutter) var(--s3);
   }
 
   .slot--recipe { grid-column: 1; grid-row: 1; }
@@ -93,9 +93,16 @@
 
 /* ---------- mobile (below 1000): one stack and a fixed dock ---------- */
 @media (max-width: 999px) {
+  /* clip, not hidden: hidden would turn body into a scroll container and break sticky */
   html,
   body {
     overflow-x: hidden;
+    overflow-x: clip;
+  }
+
+  /* keyboard focus must never land under the fixed dock */
+  html {
+    scroll-padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom) + var(--s4));
   }
 
   .app {
@@ -162,9 +169,92 @@
   }
 }
 
-/* very short phones (landscape): let the dock shrink */
-@media (max-width: 999px) and (max-height: 500px) {
+/* ---------- tablets (700 to 999): the pot is capped, recipe and analysis sit side by side ---------- */
+@media (min-width: 700px) and (max-width: 999px) {
+  .counter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--s4);
+  }
+
+  .slot--stage,
+  .slot--summary {
+    grid-column: 1 / -1;
+  }
+
+  .slot--recipe {
+    order: 3;
+    grid-column: 1;
+  }
+
+  .slot--analysis {
+    order: 4;
+    grid-column: 2;
+  }
+}
+
+/* ---------- phone landscape: pot on the left (sticky, as tall as the screen), the rest scrolls ----------
+   The dock moves to the right column so the pot keeps the whole height. */
+@media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
   :root {
-    --dock-h: 148px;
+    --top-h: 48px;
+    --dock-h: 144px;
+    --land-pot: 46vw;
+  }
+
+  .counter {
+    display: grid;
+    grid-template-columns: calc(var(--land-pot) - var(--gutter)) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--s4);
+    row-gap: var(--s3);
+  }
+
+  .slot--stage {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    position: sticky;
+    top: var(--top-h);
+    height: calc(100dvh - var(--top-h));
+    margin-right: 0;
+  }
+
+  .slot--summary { grid-column: 2; grid-row: 1; }
+  .slot--recipe { grid-column: 2; grid-row: 2; }
+  .slot--analysis { grid-column: 2; grid-row: 3; }
+
+  .stage {
+    height: 100%;
+  }
+
+  .dock {
+    left: var(--land-pot);
+    border-radius: var(--r-lg) 0 0 0;
+  }
+}
+
+/* ---------- very large screens: scale the whole interface ----------
+   zoom (current Chrome, Safari, Firefox) scales layout, text and pointer coordinates together.
+   dvh stays physical, so the shell divides its height by the factor. Sheets and the toaster are
+   siblings of .app, so they carry the same zoom (ui.css); the drag ghost scales its child only
+   (its position is written in raw viewport pixels). */
+@media (min-width: 2200px) and (min-height: 1200px) {
+  .app {
+    zoom: var(--ui-zoom);
+    height: calc(100dvh / var(--ui-zoom));
+  }
+
+  .drag-ghost > * {
+    zoom: var(--ui-zoom);
+  }
+
+  /* the tooltip positions itself from viewport pixels, so it stands outside the zoom */
+  .app .shelf-tip {
+    zoom: calc(1 / var(--ui-zoom));
+  }
+
+  .app .shelf-tip > * {
+    zoom: var(--ui-zoom);
   }
 }

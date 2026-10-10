@@ -37,17 +37,31 @@
   }
 }
 
+/* narrow desktop: the pot may overflow its column a little (the stage never clips, the halo
+   and handles sit behind the side cards) so it stays the largest thing on screen */
+@media (min-width: 1000px) and (max-width: 1099px) {
+  .stg-pot {
+    width: min(calc(100cqw + 56px), calc((100cqh - var(--stage-hint-h)) * 1.2));
+  }
+}
+
 @media (max-width: 999px) {
   .stage {
     justify-content: flex-start;
     padding-bottom: var(--s2);
   }
 
-  /* the pot is scaled so both handles stay inside the viewport (they sit 5% in from the frame) */
+  /* the pot is scaled so both handles stay inside the viewport (they sit 5% in from the frame).
+     Flex centring splits any overflow evenly, so no margins are needed. The cap keeps the legs
+     and the first card clear of the dock on short or wide screens (tablets): top bar, dock,
+     hint pill and a peek of the summary come off the height, 520px is the widest it needs. */
   .stg-pot {
-    width: calc(100% + 24px);
-    margin-inline: -12px;
-    margin-top: -10px;
+    --stage-hint-h: 46px;
+    width: min(
+      calc(100% + 24px),
+      520px,
+      max(320px, calc((100dvh - var(--top-h) - var(--dock-h) - 200px) * 1.2))
+    );
   }
 
   /* the sky fades in under the top bar instead of being cut off */
@@ -594,5 +608,29 @@
 @container (max-width: 520px) {
   .stg-gauge-label {
     display: none;
+  }
+}
+
+/* below the desktop layout the frame is clipped by the top bar edge, which would slice the
+   top numeral, so the scale reads by its ticks alone */
+@media (max-width: 999px) {
+  .stg-gauge-label {
+    display: none;
+  }
+}
+
+/* phone landscape: the pot takes the whole visible height of the left column */
+@media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
+  .stage {
+    justify-content: center;
+    padding-bottom: 0;
+  }
+
+  .stg-pot {
+    width: min(calc(100% + 24px), calc((100dvh - var(--top-h) - 56px) * 1.2));
+  }
+
+  .stg-hint {
+    margin-top: 0;
   }
 }
