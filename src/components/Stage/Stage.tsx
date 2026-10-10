@@ -77,6 +77,7 @@ export function Stage({ model, pours, dragging, dragOver, potRef }: StageProps) 
           <Drop size={16} weight="regular" className="stg-hint-drop" />
         </span>
         <span className="stg-hint-text stg-hint-text--desk">Drag a bottle up into the pot, or tap one to set a measure</span>
+        <span className="stg-hint-text stg-hint-text--short">Drag a bottle into the pot, or tap one</span>
         <span className="stg-hint-text stg-hint-text--touch">Tap a bottle below to pour</span>
         <span className="stg-hint-text stg-hint-text--over">Release to pour</span>
       </p>

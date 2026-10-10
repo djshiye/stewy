@@ -412,24 +412,35 @@
   transition:
     color 200ms var(--ease-out),
     box-shadow 200ms var(--ease-out);
+  width: fit-content;
   max-width: calc(100% - var(--s4));
+  white-space: nowrap;
 }
 
 @media (max-width: 999px) {
   .stg-hint {
     margin-top: calc(var(--s4) * -1);
-  }
-}
-
-/* in a narrow column the line wraps, so the pill becomes a small rounded plate */
-@container (max-width: 470px) {
-  .stg-hint {
     height: auto;
     min-height: 32px;
     padding: 6px var(--s3);
     border-radius: var(--r-md);
-    text-align: center;
-    text-wrap: balance;
+  }
+}
+
+/* in a narrow column the desktop line swaps for a shorter one so the pill stays on one line */
+.stg-hint-text--short {
+  display: none;
+}
+
+@media (min-width: 1000px) {
+  @container (max-width: 500px) {
+    .stg-hint-text--desk {
+      display: none;
+    }
+
+    .stg-hint-text--short {
+      display: inline;
+    }
   }
 }
 
@@ -484,6 +495,7 @@
 }
 
 .is-over .stg-hint-text--desk,
+.is-over .stg-hint-text--short,
 .is-over .stg-hint-text--touch {
   display: none;
 }
