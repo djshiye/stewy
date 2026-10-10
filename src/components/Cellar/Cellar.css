@@ -1,8 +1,14 @@
 /* The Cellar: brews kept on this device. A hairline-ruled list, a mini glass per row,
    the name set in Newsreader. Tokens only. */
 
+/* The sheet follows its content up to a ceiling, past which the list scrolls. */
+.ui-sheet.cellar-sheet {
+  height: auto;
+  max-height: min(640px, 100%);
+}
+
 .cellar {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -29,7 +35,7 @@
 }
 
 .cellar__scroll {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -236,6 +242,10 @@
 
 /* ---------- phones ---------- */
 @media (max-width: 999px) {
+  .ui-sheet.cellar-sheet {
+    height: auto;
+    max-height: min(86dvh, 640px);
+  }
   .cellar__head {
     padding: 36px 64px var(--s4) var(--s4);
   }
