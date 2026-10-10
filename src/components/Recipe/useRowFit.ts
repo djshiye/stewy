@@ -45,9 +45,11 @@ export function useRowFit(
       // measured from the wrapper, not the scroller, so resizing the scroller cannot feed back
       const whole = Math.max(1, Math.floor((avail - MORE_STRIP) / ROW_HEIGHT.tight));
       el.style.maxHeight = over ? `${whole * ROW_HEIGHT.tight}px` : '';
-      const bottom = el.getBoundingClientRect().bottom + 2;
+      // layout offsets, not bounding boxes: a row that is still sliding into place carries a
+      // transform, which would count it as past the edge until the next scroll or resize
+      const bottom = el.scrollTop + el.clientHeight + 2;
       const rows = el.querySelectorAll<HTMLElement>('[data-row]');
-      setHidden(Array.from(rows).filter((r) => r.getBoundingClientRect().bottom > bottom).length);
+      setHidden(Array.from(rows).filter((r) => r.offsetTop + r.offsetHeight > bottom).length);
     };
     update();
     el.addEventListener('scroll', update, { passive: true });
