@@ -1,48 +1,30 @@
-<svg viewBox="0 0 660 170" xmlns="http://www.w3.org/2000/svg" fill="none">
+<svg viewBox="0 0 564 190" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="Stewy">
+  <title>Stewy</title>
   <defs>
-    <radialGradient id="brew" cx="0.5" cy="0.4" r="0.8">
-      <stop offset="0" stop-color="#a8ffe0"/>
-      <stop offset="0.55" stop-color="#3ddc97"/>
-      <stop offset="1" stop-color="#1c8a61"/>
-    </radialGradient>
-    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#3ddc97" stop-opacity="0.4"/>
-      <stop offset="1" stop-color="#3ddc97" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="fire" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#ffcf7d" stop-opacity="0.85"/>
-      <stop offset="0.55" stop-color="#ff8a3c" stop-opacity="0.45"/>
-      <stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#f2d68c"/>
-      <stop offset="1" stop-color="#3ddc97"/>
-    </linearGradient>
-    <mask id="moonm">
-      <circle cx="18" cy="14.5" r="6" fill="#fff"/>
-      <circle cx="20.6" cy="12.9" r="5.2" fill="#000"/>
-    </mask>
+    <radialGradient id="lb" cx="0.5" cy="0.4" r="0.8"><stop offset="0" stop-color="#6aeab4"/><stop offset="0.55" stop-color="#3ddc97"/><stop offset="1" stop-color="#0f5a3c"/></radialGradient>
+    <radialGradient id="la" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#3ddc97" stop-opacity="0.4"/><stop offset="1" stop-color="#3ddc97" stop-opacity="0"/></radialGradient>
+    <radialGradient id="lf" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffcf7d" stop-opacity="0.8"/><stop offset="0.55" stop-color="#ff8a3c" stop-opacity="0.4"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></radialGradient>
+    <mask id="lm"><circle cx="18" cy="14.5" r="6" fill="#fff"/><circle cx="20.6" cy="12.9" r="5.2" fill="#000"/></mask>
+    <linearGradient id="lp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10151d"/><stop offset="1" stop-color="#07090d"/></linearGradient>
   </defs>
-
-  <g transform="translate(12,15) scale(2.2)">
-    <ellipse cx="32" cy="55.5" rx="15" ry="6.5" fill="url(#fire)"/>
-    <path d="M15.8 30.5 Q14.5 45 26 51.5 Q32 54 38 51.5 Q49.5 45 48.2 30.5 Z" fill="#201409" stroke="rgba(217,178,94,0.55)" stroke-width="1.4"/>
-    <path d="M22.5 52.3 l-2.4 4.6 q-0.7 1.6 1 1.6 h3.6 q1.4 0 1.1 -1.5 l-1 -4.9 Z" fill="#2a1d12"/>
-    <path d="M41.5 52.3 l2.4 4.6 q0.7 1.6 -1 1.6 h-3.6 q-1.4 0 -1.1 -1.5 l1 -4.9 Z" fill="#2a1d12"/>
-    <ellipse cx="32" cy="26" rx="11" ry="6.5" fill="url(#aura)"/>
-    <ellipse cx="32" cy="29.5" rx="16.4" ry="4.8" fill="#2a1d12" stroke="#d9b25e" stroke-width="1.8"/>
-    <ellipse cx="32" cy="29.6" rx="13" ry="3.4" fill="url(#brew)"/>
-    <ellipse cx="30" cy="29" rx="6.5" ry="1.7" fill="#a8ffe0" opacity="0.55"/>
-    <circle cx="26.5" cy="26.3" r="1.7" fill="#bfffe4" opacity="0.9"/>
-    <circle cx="33.8" cy="24.6" r="1.2" fill="#bfffe4" opacity="0.75"/>
-    <circle cx="30.2" cy="22" r="0.9" fill="#bfffe4" opacity="0.6"/>
-    <circle cx="16.5" cy="49" r="1" fill="#ffb45e" opacity="0.9"/>
-    <circle cx="47.5" cy="47" r="0.8" fill="#ff9a3c" opacity="0.8"/>
-    <circle cx="18" cy="14.5" r="6" fill="#f2d68c" mask="url(#moonm)"/>
-    <path d="M47.5 9.5 l1.5 4.2 4.2 1.5 -4.2 1.5 -1.5 4.2 -1.5 -4.2 -4.2 -1.5 4.2 -1.5 Z" fill="#7fe6c4"/>
-    <circle cx="42" cy="22.5" r="1" fill="#f2d68c" opacity="0.8"/>
-  </g>
-
-  <text x="172" y="102" font-family="Cinzel Decorative Black, Cinzel Decorative" font-weight="900" font-size="66" fill="url(#word)">Stewy</text>
-  <text x="177" y="140" font-family="IM FELL English" font-style="italic" font-size="24" fill="#cab795">the enchanted cocktail cauldron</text>
+  <rect width="564" height="190" rx="24" fill="url(#lp)"/>
+  <rect x="0.5" y="0.5" width="563" height="189" rx="23.5" stroke="rgba(190,205,230,0.16)"/>
+  <g transform="translate(-2.97,-2.15) scale(2.9)">
+    <ellipse cx="32" cy="55.5" rx="15" ry="6.5" fill="url(#lf)"/>
+    <path d="M15.8 30.5 Q14.5 45 26 51.5 Q32 54 38 51.5 Q49.5 45 48.2 30.5 Z" fill="#161b24" stroke="rgba(190,205,230,0.4)" stroke-width="1.3"/>
+    <path d="M22.5 52.3 l-2.4 4.6 q-0.7 1.6 1 1.6 h3.6 q1.4 0 1.1 -1.5 l-1 -4.9 Z" fill="#1e2430"/>
+    <path d="M41.5 52.3 l2.4 4.6 q0.7 1.6 -1 1.6 h-3.6 q-1.4 0 -1.1 -1.5 l1 -4.9 Z" fill="#1e2430"/>
+    <ellipse cx="32" cy="26" rx="11" ry="6.5" fill="url(#la)"/>
+    <ellipse cx="32" cy="29.5" rx="16.4" ry="4.8" fill="#10141b" stroke="rgba(190,205,230,0.55)" stroke-width="1.7"/>
+    <ellipse cx="32" cy="29.6" rx="13" ry="3.4" fill="url(#lb)"/>
+    <ellipse cx="30" cy="29" rx="6.5" ry="1.7" fill="#6aeab4" opacity="0.55"/>
+    <circle cx="26.5" cy="26.3" r="1.7" fill="#6aeab4" opacity="0.85"/>
+    <circle cx="33.8" cy="24.6" r="1.2" fill="#6aeab4" opacity="0.7"/>
+    <circle cx="30.2" cy="22" r="0.9" fill="#6aeab4" opacity="0.55"/>
+    <circle cx="16.5" cy="49" r="1" fill="#ffb45e" opacity="0.85"/>
+    <circle cx="47.5" cy="47" r="0.8" fill="#ff9a3c" opacity="0.75"/>
+    <circle cx="18" cy="14.5" r="6" fill="#ece3cf" mask="url(#lm)"/>
+    <path d="M47.5 9.5 l1.5 4.2 4.2 1.5 -4.2 1.5 -1.5 4.2 -1.5 -4.2 -4.2 -1.5 4.2 -1.5 Z" fill="#6aeab4"/>
+    <circle cx="42" cy="22.5" r="1" fill="#ece3cf" opacity="0.75"/></g>
+  <path transform="translate(178,124) scale(1.18)" d="M48.9 -68.36 42.02 -69.49 48.25 -74.75H49.21L52.88 -50.46L51.42 -50.16L40.75 -67.09L44.85 -62.13Q40.97 -65.95 36.96 -67.72Q32.94 -69.48 28.72 -69.48Q22.51 -69.48 19.77 -66.66Q17.03 -63.83 17.03 -59.33Q17.03 -56.15 18.52 -54Q20.01 -51.85 22.58 -50.36Q25.16 -48.88 28.45 -47.72Q31.75 -46.57 35.36 -45.34Q38.98 -44.11 42.56 -42.49Q46.15 -40.87 49.11 -38.37Q52.07 -35.88 53.86 -32.12Q55.64 -28.35 55.64 -22.79Q55.64 -15.48 51.69 -10.07Q47.74 -4.66 41.15 -1.71Q34.55 1.24 26.53 1.24Q21.21 1.24 16.86 0.58Q12.51 -0.08 7.8 -1.87L3.71 -21.98H5.31L19.03 -1.08L10.21 -6.92Q14.68 -4.43 18.29 -3.1Q21.9 -1.76 25.86 -1.76Q31.92 -1.76 35.86 -3.51Q39.8 -5.25 41.73 -8.39Q43.66 -11.53 43.66 -15.77Q43.66 -19.84 41.87 -22.5Q40.07 -25.16 37.11 -26.91Q34.15 -28.67 30.58 -29.95Q27.02 -31.23 23.46 -32.53Q19.9 -33.84 16.69 -35.39Q13.49 -36.95 11 -39.13Q8.52 -41.32 7.08 -44.47Q5.64 -47.61 5.64 -52.07Q5.64 -58.42 8.81 -63.05Q11.97 -67.68 17.76 -70.21Q23.54 -72.74 31.35 -72.74Q36.34 -72.74 40.43 -71.69Q44.52 -70.64 48.9 -68.36Z M81.16 -14.56Q81.16 -11.12 83.3 -9.4Q85.43 -7.69 89.4 -7.69Q91.66 -7.69 94.17 -8.04Q96.67 -8.4 100.04 -9.31V-7.36Q94.99 -3.97 91.59 -2.11Q88.18 -0.24 85.56 0.5Q82.94 1.24 80.2 1.24Q76.25 1.24 73.19 -0.28Q70.14 -1.8 68.38 -5.01Q66.62 -8.23 66.62 -13.28V-42.64L59.36 -48V-49.04Q59.9 -49.39 61.45 -50.26Q63 -51.13 65.19 -52.4Q67.38 -53.67 69.96 -55.17Q72.54 -56.67 75.23 -58.25Q77.93 -59.83 80.39 -61.28H81.16V-49.68ZM75.71 -44.25V-51.2H98.39L97.44 -44.25Z M126.43 -52.41Q132.4 -52.41 136.66 -50.04Q140.92 -47.66 143.36 -43.13Q145.8 -38.59 146.27 -32.12H112.66V-35.72H139.41L132.88 -33.4Q132.51 -39.29 131.53 -42.76Q130.55 -46.23 128.9 -47.77Q127.25 -49.3 124.8 -49.3Q121.69 -49.3 119.47 -47.44Q117.26 -45.58 116.11 -41.54Q114.95 -37.5 114.95 -30.96Q114.95 -23.01 116.9 -18.11Q118.85 -13.22 122.64 -10.98Q126.43 -8.74 131.96 -8.74Q134.69 -8.74 137.15 -9.4Q139.61 -10.07 141.88 -11.5Q144.15 -12.94 146.18 -15.25L147.26 -14.39Q143.88 -8.57 140.49 -5.15Q137.1 -1.74 133.38 -0.26Q129.66 1.21 125.2 1.21Q118.09 1.21 112.6 -1.8Q107.11 -4.81 104.01 -10.59Q100.91 -16.36 100.91 -24.62Q100.91 -32.09 103.85 -38.41Q106.79 -44.73 112.5 -48.57Q118.2 -52.41 126.43 -52.41Z M221.34 -48.16 214.83 -49.55V-51.2H231.3V-49.55L225.57 -48.14L211.72 0.75H204.33L187.1 -39.93L190.34 -40.67L174.75 0.75H167.36L152.3 -47.59L146.62 -49.61V-51.2H174.01V-49.55L167.61 -47.9L178.24 -10.99L175.37 -8.12L190.09 -52.06H197.66L214.58 -11.47L211.58 -8.14Z M268.13 -12.71 260.88 3.55 234.54 -47.59 228.86 -49.61V-51.2H257.2V-49.55L250.8 -47.9ZM244.25 23.04Q240.74 23.04 238.44 21.17Q236.15 19.3 236.15 15.76Q236.15 14.16 236.7 13.03Q237.24 11.89 238.06 11.28Q238.87 10.67 239.59 10.67Q240.08 10.67 241.19 11.23Q242.29 11.79 243.98 12.36Q245.67 12.92 247.83 12.92Q250.49 12.92 252.4 12.34Q254.31 11.76 255.76 10.26Q257.22 8.75 258.48 5.98L261.5 -0.78L265.66 -10.61L278.78 -48.16L272.27 -49.55V-51.2H288.61V-49.55L282.88 -48.14L262.34 4.95Q259.65 11.85 256.92 15.78Q254.19 19.72 251.11 21.38Q248.04 23.04 244.25 23.04Z" fill="#f1eee8"/>
 </svg>

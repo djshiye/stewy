@@ -1,57 +1,21 @@
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
   <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#251712"/>
-      <stop offset="1" stop-color="#120b0e"/>
-    </linearGradient>
-    <radialGradient id="brew" cx="0.5" cy="0.4" r="0.8">
-      <stop offset="0" stop-color="#a8ffe0"/>
-      <stop offset="0.55" stop-color="#3ddc97"/>
-      <stop offset="1" stop-color="#1c8a61"/>
-    </radialGradient>
-    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#3ddc97" stop-opacity="0.4"/>
-      <stop offset="1" stop-color="#3ddc97" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="fire" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#ffcf7d" stop-opacity="0.85"/>
-      <stop offset="0.55" stop-color="#ff8a3c" stop-opacity="0.45"/>
-      <stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/>
-    </radialGradient>
-    <mask id="moonm">
-      <circle cx="18" cy="14.5" r="6" fill="#fff"/>
-      <circle cx="20.6" cy="12.9" r="5.2" fill="#000"/>
-    </mask>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#161c26"/><stop offset="1" stop-color="#07090d"/></linearGradient>
+    <radialGradient id="brew" cx="0.5" cy="0.4" r="0.8"><stop offset="0" stop-color="#6aeab4"/><stop offset="0.6" stop-color="#3ddc97"/><stop offset="1" stop-color="#16905f"/></radialGradient>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#3ddc97" stop-opacity="0.5"/><stop offset="1" stop-color="#3ddc97" stop-opacity="0"/></radialGradient>
+    <radialGradient id="fire" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffcf7d" stop-opacity="0.85"/><stop offset="0.6" stop-color="#ff8a3c" stop-opacity="0.4"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></radialGradient>
+    <mask id="moon"><circle cx="17" cy="15" r="7.4" fill="#fff"/><circle cx="20.8" cy="12.4" r="6" fill="#000"/></mask>
   </defs>
-
   <rect width="64" height="64" rx="14" fill="url(#tile)"/>
-  <rect x="2" y="2" width="60" height="60" rx="12.4" stroke="rgba(217,178,94,0.5)" stroke-width="1.5"/>
-
-  <!-- hearth glow -->
-  <ellipse cx="32" cy="55.5" rx="15" ry="6.5" fill="url(#fire)"/>
-
-  <!-- cauldron body + feet -->
-  <path d="M15.8 30.5 Q14.5 45 26 51.5 Q32 54 38 51.5 Q49.5 45 48.2 30.5 Z" fill="#201409" stroke="rgba(217,178,94,0.55)" stroke-width="1.4"/>
-  <path d="M22.5 52.3 l-2.4 4.6 q-0.7 1.6 1 1.6 h3.6 q1.4 0 1.1 -1.5 l-1 -4.9 Z" fill="#2a1d12"/>
-  <path d="M41.5 52.3 l2.4 4.6 q0.7 1.6 -1 1.6 h-3.6 q-1.4 0 -1.1 -1.5 l1 -4.9 Z" fill="#2a1d12"/>
-
-  <!-- brew aura + gilded rim + glowing surface -->
-  <ellipse cx="32" cy="26" rx="11" ry="6.5" fill="url(#aura)"/>
-  <ellipse cx="32" cy="29.5" rx="16.4" ry="4.8" fill="#2a1d12" stroke="#d9b25e" stroke-width="1.8"/>
-  <ellipse cx="32" cy="29.6" rx="13" ry="3.4" fill="url(#brew)"/>
-  <ellipse cx="30" cy="29" rx="6.5" ry="1.7" fill="#a8ffe0" opacity="0.55"/>
-
-  <!-- rising bubbles -->
-  <circle cx="26.5" cy="26.3" r="1.7" fill="#bfffe4" opacity="0.9"/>
-  <circle cx="33.8" cy="24.6" r="1.2" fill="#bfffe4" opacity="0.75"/>
-  <circle cx="30.2" cy="22" r="0.9" fill="#bfffe4" opacity="0.6"/>
-
-  <!-- embers -->
-  <circle cx="16.5" cy="49" r="1" fill="#ffb45e" opacity="0.9"/>
-  <circle cx="47.5" cy="47" r="0.8" fill="#ff9a3c" opacity="0.8"/>
-
-  <!-- crescent moon + star sparkles -->
-  <circle cx="18" cy="14.5" r="6" fill="#f2d68c" mask="url(#moonm)"/>
-  <path d="M47.5 9.5 l1.5 4.2 4.2 1.5 -4.2 1.5 -1.5 4.2 -1.5 -4.2 -4.2 -1.5 4.2 -1.5 Z" fill="#7fe6c4"/>
-  <circle cx="42" cy="22.5" r="1" fill="#f2d68c" opacity="0.8"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" stroke="rgba(190,205,230,0.3)" stroke-width="2"/>
+  <ellipse cx="32" cy="55" rx="17" ry="6" fill="url(#fire)"/>
+  <path d="M23 49 l-3 6.5 q-0.8 2 1.2 2 h4.6 q1.8 0 1.4 -1.8 l-1 -5.6 Z M41 49 l3 6.5 q0.8 2 -1.2 2 h-4.6 q-1.8 0 -1.4 -1.8 l1 -5.6 Z" fill="#2a3140"/>
+  <path d="M11.5 29 Q9.5 45 24 52 Q32 55 40 52 Q54.5 45 52.5 29 Z" fill="#232b38" stroke="#7f8ca4" stroke-width="2"/>
+  <ellipse cx="32" cy="25" rx="14" ry="8" fill="url(#aura)"/>
+  <ellipse cx="32" cy="29" rx="21" ry="6.6" fill="#0c1017" stroke="#c3d0e6" stroke-width="3"/>
+  <ellipse cx="32" cy="29.2" rx="16" ry="4" fill="url(#brew)"/>
+  <circle cx="26" cy="24.5" r="2.4" fill="#6aeab4"/>
+  <circle cx="35.5" cy="22" r="1.8" fill="#6aeab4" opacity="0.85"/>
+  <circle cx="17" cy="15" r="7.4" fill="#ece3cf" mask="url(#moon)"/>
+  <path d="M48 8 l2 5.6 5.6 2 -5.6 2 -2 5.6 -2 -5.6 -5.6 -2 5.6 -2 Z" fill="#6aeab4"/>
 </svg>
