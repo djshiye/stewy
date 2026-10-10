@@ -1,0 +1,15 @@
+/* Fades the edge of a scroll area that has more content past it (see useScrollFade). */
+
+.ap__body[data-more-above],
+.ap__body[data-more-below],
+.rc__rows[data-more-above],
+.rc__rows[data-more-below] {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+}
+.ap__body[data-more-above],
+.rc__rows[data-more-above] { --fade-top: 20px; }
+.ap__body[data-more-below],
+.rc__rows[data-more-below] { --fade-bottom: 28px; }

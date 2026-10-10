@@ -1,0 +1,59 @@
+/* The score ring: tier colour is semantic, the only colour on the numeral's ring. */
+.score-ring {
+  --tone: var(--tx-3);
+  position: relative;
+  flex: none;
+}
+.score-ring[data-tone='good'] { --tone: var(--good); }
+.score-ring[data-tone='warn'] { --tone: var(--warn); }
+.score-ring[data-tone='bad'] { --tone: var(--bad); }
+
+.score-ring svg {
+  transform: rotate(-90deg);
+}
+.score-ring__track,
+.score-ring__arc {
+  fill: none;
+  stroke-width: 6;
+}
+.score-ring__track {
+  stroke: var(--ink-700);
+}
+.score-ring__arc {
+  stroke: var(--tone);
+  stroke-linecap: round;
+  transition: stroke var(--t-scene) var(--ease-out);
+}
+
+.score-ring__num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.score-ring__num b {
+  font-size: 36px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tx-1);
+}
+.score-ring__num small {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  color: var(--tx-3);
+}
+.score-ring[data-size='64'] .score-ring__num b {
+  font-size: 24px;
+  line-height: 24px;
+  letter-spacing: -0.02em;
+}
+.score-ring__dash {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tx-3);
+}

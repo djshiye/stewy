@@ -1,9 +1,22 @@
-// PLACEHOLDER written by the shell builder. The analysis owner replaces this file.
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Martini, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import type { Ingredient } from '../../data/types';
 import type { AppModel } from '../../app/types';
-import type { UnitKey } from '../../lib/units';
 import { ING_BY_ID } from '../../data/ingredients';
-import { amountLabel } from '../../lib/units';
+import { GLASS_LABEL } from '../../lib/serve';
+import { UNIT_ORDER, UNITS, totalLabel, trim, type UnitKey } from '../../lib/units';
+import {
+  METHOD_AFTER, METHOD_SENTENCE, METHOD_TIME, METHOD_VERB,
+} from '../../lib/profile';
+import { useIsDesktop } from '../../app/useMediaQuery';
+import { IngredientIcon } from '../../icons/Icons';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { Segmented } from '../ui/Segmented';
+import { useScrollFade } from '../Analysis/useScrollFade';
+import { MeasurePill } from './MeasurePill';
+import './RecipeCard.css';
 
 export interface RecipeCardProps {
   model: AppModel;
@@ -16,59 +29,304 @@ export interface RecipeCardProps {
   onServe(): void;
 }
 
-export function RecipeCard(props: RecipeCardProps) {
-  const { model, onName, onEdit, onRemove, onClear, onServe } = props;
-  return (
-    <section
-      aria-label="Your brew"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        padding: 20,
-        borderRadius: 16,
-        background: 'linear-gradient(180deg,#171a22,#10131a)',
-        boxShadow: 'var(--sh-2), 0 0 0 1px var(--line) inset',
-        overflow: 'auto',
-      }}
-    >
-      <span style={{ color: 'var(--tx-3)', fontSize: 12 }}>Your brew</span>
+const SPRING = { type: 'spring', stiffness: 420, damping: 34 } as const;
+
+const UNIT_OPTIONS = UNIT_ORDER.map((u) => ({ value: u, label: UNITS[u].label }));
+
+const GROUP_NOUN: Record<Ingredient['group'], string> = {
+  Spirits: 'Spirit', Liqueurs: 'Liqueur', Juices: 'Juice', Mixers: 'Mixer',
+  Syrups: 'Syrup', Bitters: 'Bitters', Extras: 'Extra', Garnish: 'Garnish',
+};
+
+/** "Spirit, 42% ABV", "Fortified wine, 16% ABV", "Garnish". */
+function describeIngredient(ing: Ingredient): string {
+  let noun = GROUP_NOUN[ing.group];
+  if (/vermouth|lillet/i.test(ing.name)) noun = 'Fortified wine';
+  else if (/prosecco|champagne/i.test(ing.name)) noun = 'Sparkling wine';
+  else if (ing.group === 'Liqueurs' && (ing.tags.bitter ?? 0) >= 2) noun = 'Bitter liqueur';
+  return ing.abv > 0 && !ing.unit ? `${noun}, ${trim(ing.abv, 1)}% ABV` : noun;
+}
+
+const ARCHETYPE_LINE = {
+  sour: 'A sour, sharp and sweet in balance.',
+  'spirit-forward': 'Spirit-forward and aromatic.',
+  highball: 'A long, tall drink.',
+  sparkling: 'Bright and sparkling.',
+  dessert: 'Rich, creamy and dessert-like.',
+} as const;
+
+/** The one line under the title. */
+function subLine(model: AppModel): string {
+  const { match, h, method, brew } = model;
+  if (match && match.sim >= 0.98) {
+    const same = match.recipe.name.toLowerCase() === model.name.trim().toLowerCase();
+    return `Recognised classic${same ? '' : `: ${match.recipe.name}`}. ${METHOD_SENTENCE[method]}`;
+  }
+  if (brew.length === 1) return 'A single pour.';
+  const lead = match
+    ? `Close to a ${match.recipe.name}.`
+    : h?.archetype
+      ? ARCHETYPE_LINE[h.archetype]
+      : 'Your own mix.';
+  return `${lead} ${METHOD_SENTENCE[method]}`;
+}
+
+function serveLabel(glass: AppModel['glass']): string {
+  const g = GLASS_LABEL[glass];
+  return `Serve in ${/^[aeiou]/.test(g) ? 'an' : 'a'} ${g}`;
+}
+
+/** Long names step down a size so a title stays on one line where it can. */
+const titleSize = (name: string) => (name.length <= 13 ? 'lg' : name.length <= 17 ? 'md' : 'sm');
+
+/** The drink name: click to edit, Enter or blur commits, Esc cancels. */
+function Title({ name, onName, compact }: { name: string; onName(n: string): void; compact: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const input = useRef<HTMLInputElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const cancelled = useRef(false);
+  const refocus = useRef(false);
+
+  useEffect(() => {
+    if (editing) {
+      input.current?.focus();
+      input.current?.select();
+    } else if (refocus.current) {
+      refocus.current = false;
+      button.current?.focus();
+    }
+  }, [editing]);
+
+  const begin = () => {
+    cancelled.current = false;
+    setDraft(name);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    if (cancelled.current) return;
+    const next = draft.trim();
+    if (next && next !== name) onName(next);
+    setEditing(false);
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      refocus.current = true;
+      commit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelled.current = true;
+      refocus.current = true;
+      setEditing(false);
+    }
+  };
+
+  if (editing) {
+    return (
       <input
-        className="serif"
+        ref={input}
+        className="rc__title rc__title--input serif"
+        data-size={titleSize(draft)}
+        data-compact={compact ? '' : undefined}
         aria-label="Drink name"
-        value={model.name}
-        onChange={(e) => onName(e.target.value)}
-        style={{ background: 'none', border: 0, fontSize: 40, lineHeight: '44px', letterSpacing: '-0.015em' }}
+        value={draft}
+        maxLength={40}
+        spellCheck={false}
+        autoComplete="off"
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={onKey}
+        onBlur={commit}
       />
-      <ul style={{ display: 'grid', gap: 4 }}>
-        {model.brew.map((e) => {
-          const ing = ING_BY_ID[e.id];
-          if (!ing) return null;
-          return (
-            <li key={e.id} style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>{ing.name}</span>
-              <span style={{ display: 'flex', gap: 8 }}>
-                <button onClick={(ev) => onEdit(ing, ev.currentTarget.getBoundingClientRect())}>
-                  {amountLabel(e, ing, model.unit)}
-                </button>
-                <button aria-label={`Remove ${ing.name}`} onClick={() => onRemove(e.id)}>x</button>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-        <button
-          onClick={onServe}
-          disabled={!model.brew.length}
-          style={{ flex: 1, height: 46, borderRadius: 10, background: 'var(--accent)', color: 'var(--on-accent)', fontWeight: 600, opacity: model.brew.length ? 1 : 0.4 }}
-        >
-          Serve
-        </button>
-        <button onClick={onClear} disabled={!model.brew.length} aria-label="Clear the pot" style={{ width: 46 }}>
-          Clear
-        </button>
+    );
+  }
+
+  return (
+    <h2 className="rc__heading" data-compact={compact ? '' : undefined} data-size={titleSize(name)}>
+      <button
+        ref={button}
+        type="button"
+        className="rc__title serif"
+        aria-label={`${name}. Rename`}
+        onClick={begin}
+      >
+        {compact ? (
+          <>
+            <PencilSimple size={16} aria-hidden="true" />
+            <span className="rc__rename">Rename</span>
+          </>
+        ) : (
+          <>
+            <span className="rc__name">{name}</span>
+            <PencilSimple className="rc__pencil" size={18} aria-hidden="true" />
+          </>
+        )}
+      </button>
+    </h2>
+  );
+}
+
+export function RecipeCard(props: RecipeCardProps) {
+  const { model, onName, onUnit, onEdit, onSetAmount, onRemove, onClear, onServe } = props;
+  const { brew, unit, stats, method } = model;
+  const desktop = useIsDesktop();
+  const empty = brew.length === 0;
+  const rowsRef = useScrollFade<HTMLDivElement>();
+
+  const rows = brew.flatMap((e) => {
+    const ing = ING_BY_ID[e.id];
+    return ing ? [{ e, ing }] : [];
+  });
+  const liquids = rows.filter((r) => !r.ing.unit);
+  const count = rows.length;
+
+  const open = (ing: Ingredient, el: HTMLElement) => {
+    const row = el.closest('[data-row]') ?? el;
+    onEdit(ing, row.getBoundingClientRect());
+  };
+
+  return (
+    <section className="rc" aria-label="Your brew" data-empty={empty ? '' : undefined}>
+      <header className="rc__head">
+        <div className="rc__meta">
+          <span className="rc__label">Your brew</span>
+          <span className="rc__count">{count === 0 ? 'Empty' : `${count} ${count === 1 ? 'item' : 'items'}`}</span>
+          {!desktop && (
+            <Segmented
+              className="rc__units"
+              size="sm"
+              aria-label="Measuring unit"
+              options={UNIT_OPTIONS}
+              value={unit}
+              onChange={onUnit}
+            />
+          )}
+        </div>
+        <Title name={model.name} onName={onName} compact={!desktop} />
+        <p className="rc__sub">
+          {empty ? 'Drag a bottle up into the pot, or open the Grimoire to start from a classic.' : subLine(model)}
+        </p>
+        {liquids.length > 0 && (
+          <div className="rc__strip" role="img" aria-label="Proportions of the liquids">
+            <AnimatePresence initial={false}>
+              {liquids.map(({ e, ing }) => (
+                <motion.span
+                  key={e.id}
+                  layout
+                  initial={{ opacity: 0, scaleX: 0.4 }}
+                  animate={{ opacity: 1, scaleX: 1 }}
+                  exit={{ opacity: 0, scaleX: 0.4 }}
+                  transition={SPRING}
+                  style={{ flexGrow: e.ml, backgroundColor: ing.color, borderRadius: 3 }}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </header>
+
+      <div className="rc__rows" ref={rowsRef}>
+        {empty ? (
+          <ul className="rc__ghosts" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="ghost" style={{ opacity: 1 - i * 0.3 }}>
+                <span className="ghost__tile" />
+                <span className="ghost__lines"><i /><i /></span>
+                <span className="ghost__pill" />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="rc__list">
+            <AnimatePresence initial={false} mode="popLayout">
+              {rows.map(({ e, ing }) => (
+                <motion.li
+                  key={e.id}
+                  className="row"
+                  data-row=""
+                  layout="position"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={SPRING}
+                >
+                  <div className="row__tile">
+                    <IngredientIcon ing={ing} />
+                    <i className="row__dot" style={{ backgroundColor: ing.color }} aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="row__remove"
+                      aria-label={`Remove ${ing.name}`}
+                      onClick={() => onRemove(e.id)}
+                    >
+                      <X size={12} weight="bold" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="row__text">
+                    <span className="row__name">{ing.name}</span>
+                    <span className="row__desc">{describeIngredient(ing)}</span>
+                  </div>
+                  <MeasurePill
+                    ing={ing}
+                    ml={e.ml}
+                    unit={unit}
+                    onSet={(ml) => onSetAmount(e.id, ml)}
+                    onOpen={(el) => open(ing, el)}
+                  />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </ul>
+        )}
       </div>
+
+      <footer className="rc__foot">
+        <dl className="stats">
+          <div className="stat">
+            <dt>Volume</dt>
+            <dd>{totalLabel(stats.volumeMl, unit)}</dd>
+            <small>
+              {unit === 'ml' ? `${Math.round(stats.finalVolumeMl)} ml served` : `${Math.round(stats.volumeMl)} ml`}
+            </small>
+          </div>
+          <div className="stat">
+            <dt>Strength</dt>
+            <dd>
+              {Math.round(stats.finalAbv)}%<span className="stat__unit"> ABV</span>
+            </dd>
+            <small>{empty ? 'no alcohol yet' : METHOD_AFTER[method]}</small>
+          </div>
+          <div className="stat">
+            <dt>Method</dt>
+            <dd>{empty ? 'None' : METHOD_VERB[method]}</dd>
+            <small>{empty ? 'yet' : METHOD_TIME[method]}</small>
+          </div>
+        </dl>
+        <div className="rc__actions">
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon={<Martini size={20} />}
+            disabled={empty}
+            onClick={onServe}
+          >
+            {serveLabel(model.glass)}
+          </Button>
+          <IconButton
+            variant="outline"
+            size="lg"
+            label="Clear the pot"
+            tooltip="Clear"
+            icon={<Trash size={19} />}
+            disabled={empty}
+            onClick={onClear}
+          />
+        </div>
+      </footer>
     </section>
   );
 }
