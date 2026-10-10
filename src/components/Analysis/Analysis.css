@@ -274,13 +274,23 @@
 
 /* ---------- meters ---------- */
 .ap__meters {
+  container: meters / inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--s4);
+  grid-template-rows: repeat(4, auto);
+  column-gap: var(--s4);
+  row-gap: 0;
   padding-top: 10px;
   border-top: 1px solid var(--line);
 }
-.meter { min-width: 0; }
+/* both meters share the four rows (label, value, lane, ends), so the lanes sit on one baseline
+   even if a value wraps */
+.meter {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  min-width: 0;
+}
 .meter__label {
   display: block;
   font-size: 12px;
@@ -300,6 +310,15 @@
 .meter__value span {
   font-weight: 400;
   color: var(--tx-2);
+}
+/* narrow columns (the 280 to 316px side panels): "after shaking" drops to a line of its own, and the
+   Balance column reserves the same line through the shared rows, so the two lanes stay level */
+@container meters (max-width: 320px) {
+  .meter__value span {
+    display: block;
+    font-size: 12px;
+    line-height: 16px;
+  }
 }
 .meter__lane {
   position: relative;
