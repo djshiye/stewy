@@ -57,6 +57,7 @@ describe('search', () => {
   it('combines with a chip', () => {
     expect(names('tiki', 'gin')).toEqual([]);
     expect(fold('Crème de cassis')).toBe('creme de cassis');
+    expect(fold('Bee\u2019s Knees')).toBe("bee's knees");
   });
 });
 

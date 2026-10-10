@@ -61,7 +61,7 @@ export function Segmented<T extends string>({
         aria-hidden="true"
         className="ui-seg__thumb"
         // an absolutely placed grid child sizes to the cell it is assigned to
-        style={{ gridColumn: 1, gridRow: 1 }}
+        style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}
         initial={false}
         animate={{ x: `${idx * 100}%` }}
         transition={SPRING}

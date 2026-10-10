@@ -52,7 +52,7 @@ function unlockPage() {
 
 /** The real Tab stops: rendered, and not parked out of the order (a roving radio has tabindex -1). */
 const tabbables = (el: HTMLElement) =>
-  Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((n) => n.tabIndex >= 0 && n.getClientRects().length > 0);
+  Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((n) => n.tabIndex >= 0 && n.getClientRects().length > 0 && !n.closest('[inert]'));
 
 /** Whether Tab (or Shift+Tab) from `active` would leave the list's span, so the trap must wrap it. */
 function leavesDialog(list: HTMLElement[], active: Element | null, back: boolean): boolean {

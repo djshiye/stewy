@@ -318,7 +318,7 @@ export function RecipeCard(props: RecipeCardProps) {
           <div className="stat">
             <dt>Method</dt>
             <dd>{empty ? 'None' : METHOD_VERB[method]}</dd>
-            <dd className="stat__sub"><small>{empty ? 'yet' : METHOD_TIME[method]}</small></dd>
+            <dd className="stat__sub"><small>{empty ? 'no method yet' : METHOD_TIME[method]}</small></dd>
           </div>
         </dl>
         <div className="rc__actions">

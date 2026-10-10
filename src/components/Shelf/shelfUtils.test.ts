@@ -15,6 +15,11 @@ describe('shelf search', () => {
     expect(searchIngredients(INGREDIENTS, 'cachaca').length).toBeGreaterThan(0);
   });
 
+  it('treats a curly apostrophe like a straight one', () => {
+    expect(fold('Pimm\u2019s')).toBe("pimm's");
+    expect(searchIngredients(INGREDIENTS, "pimm's").length).toBeGreaterThan(0);
+  });
+
   it('matches flavour notes', () => {
     const r = searchIngredients(INGREDIENTS, 'smoky');
     expect(r.length).toBeGreaterThan(0);

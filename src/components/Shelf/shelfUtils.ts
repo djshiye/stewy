@@ -5,7 +5,7 @@ import type { Delta } from '../../lib/coach';
 
 /** Lowercase and strip diacritics so "cachaca" finds Cachaça. */
 export function fold(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[‘’]/g, "'").toLowerCase();
 }
 
 /** Flavour notes for an ingredient, strongest first (at most `n`). */

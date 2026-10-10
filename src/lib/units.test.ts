@@ -28,6 +28,15 @@ describe('totalLabel', () => {
   });
 });
 
+describe('slivers', () => {
+  it('read as under one step, never zero', () => {
+    expect(totalLabel(0.1, 'oz')).toBe('<0.01 oz');
+    expect(totalLabel(0.4, 'parts')).toBe('<0.1 parts');
+    expect(amountLabel({ id: 'gin', ml: 0.1 }, ING_BY_ID.gin, 'oz')).toBe('<0.01 oz');
+    expect(totalLabel(0, 'oz')).toBe('0 oz');
+  });
+});
+
 describe('counted amounts', () => {
   const label = (id: string, ml: number) => amountLabel({ id, ml }, ING_BY_ID[id], 'oz');
 

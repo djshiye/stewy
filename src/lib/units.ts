@@ -49,10 +49,11 @@ export function totalLabel(totalMl: number, unit: UnitKey): string {
   return measure(totalMl, unit);
 }
 
-/** A volume in a unit ("1.5 oz", "1 part"). */
+/** A volume in a unit ("1.5 oz", "1 part"); a sliver below the unit's precision reads "<0.01 oz", not "0 oz". */
 function measure(ml: number, unit: UnitKey): string {
   const u = UNITS[unit];
   const v = trim(ml / u.toMl, u.dec);
+  if (ml > 0 && parseFloat(v) === 0) return `<${trim(10 ** -u.dec, u.dec)} ${u.label}`;
   return `${v} ${unit === 'parts' && v === '1' ? 'part' : u.label}`;
 }
 

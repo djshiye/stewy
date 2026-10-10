@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { Ingredient } from '../../data/types';
-import { amountInfo, amountLabel, trim, type AmountInfo, type UnitKey } from '../../lib/units';
+import { amountInfo, amountLabel, type UnitKey } from '../../lib/units';
 import { MAX_ML } from '../../store';
 import { VisuallyHidden } from '../ui/VisuallyHidden';
 
@@ -11,14 +11,6 @@ const TICKS = 12;
 /** What the tick bar reads as full: 3 oz of liquid, or 6 pieces. */
 const FULL_ML = 90;
 const FULL_PIECES = 6;
-
-/** The amount as the pill shows it; a sliver too small for the unit's precision reads "<0.1 oz", not "0 oz". */
-function pillLabel(ing: Ingredient, ml: number, unit: UnitKey, info: AmountInfo): string {
-  if (!info.counted && ml > 0 && parseFloat((ml / info.per).toFixed(info.dec)) === 0) {
-    return `<${trim(10 ** -info.dec, info.dec)} ${info.label}`;
-  }
-  return amountLabel({ id: ing.id, ml }, ing, unit);
-}
 
 interface MeasurePillProps {
   ing: Ingredient;
@@ -41,7 +33,7 @@ interface Press {
 /** A tactile measure: the amount above a mini LED scale. Drag sideways or use the arrow keys. */
 export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) {
   const info = amountInfo(ing, unit);
-  const label = pillLabel(ing, ml, unit, info);
+  const label = amountLabel({ id: ing.id, ml }, ing, unit);
   const press = useRef<Press | null>(null);
   const swallow = useRef(false);
   const [scrubbing, setScrubbing] = useState(false);

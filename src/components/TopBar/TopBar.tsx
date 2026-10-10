@@ -31,7 +31,7 @@ export function TopBar({
     <header className="topbar">
       <h1 className="topbar__brand">
         <BrandMark className="topbar__mark" />
-        <span className="topbar__word serif">Stewy</span>
+        <span className="topbar__word serif" translate="no">Stewy</span>
       </h1>
 
       {desktop && (

@@ -34,7 +34,7 @@ export const METHOD_LABEL: Record<Method, string> = {
 const NO_COLOR = 'rgba(255, 255, 255, 0.14)';
 
 /** Lower-case and strip accents, so "pina" finds Piña Colada. */
-export const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+export const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/[‘’]/g, "'").toLowerCase();
 
 const GROUP_RANK: Partial<Record<string, number>> = { Spirits: 0, Liqueurs: 1, Bitters: 3 };
 /** Words that stay capitalised mid-sentence ("Gin, Campari, sweet vermouth"). */

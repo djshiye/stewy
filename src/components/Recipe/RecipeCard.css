@@ -420,6 +420,13 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.stat dd.stat__sub {
+  height: auto;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
 .stat__unit {
   font-size: 13px;
   font-weight: 500;
