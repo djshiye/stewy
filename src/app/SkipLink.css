@@ -1,0 +1,28 @@
+/* The skip link waits just above the viewport and slides in when it takes focus. */
+.skip-link {
+  position: fixed;
+  top: var(--s3);
+  left: var(--s3);
+  z-index: var(--z-toast);
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: var(--ink-700);
+  color: var(--tx-1);
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--line-2) inset, 0 8px 20px -8px rgba(7, 9, 13, 0.8);
+  transform: translateY(calc(-100% - var(--s6)));
+  transition: transform var(--t-hover) var(--ease-out);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link { transition: none; }
+}
+
+/* the target takes focus from the link; it is a landing point, not a control, so it wears no ring */
+#main:focus { outline: none; }

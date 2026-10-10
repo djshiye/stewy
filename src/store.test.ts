@@ -132,16 +132,65 @@ describe('history', () => {
     expect(reducer(s, { type: 'redo' })).toBe(s);
   });
 
-  it('does not record unit or name changes', () => {
+  it('does not record unit changes', () => {
     const s = run(initialState(), add('gin', 45));
-    const t = run(s, { type: 'setUnit', unit: 'ml' }, { type: 'setName', name: 'Renamed' });
+    const t = reducer(s, { type: 'setUnit', unit: 'ml' });
     expect(t.past).toBe(s.past);
     expect(t.future).toBe(s.future);
-    expect(t.unit).toBe('ml');
-    // undo keeps the unit, and restores the name saved with the step
+    // undo keeps the unit
     const u = reducer(t, { type: 'undo' });
     expect(u.unit).toBe('ml');
     expect(u.brew).toEqual([]);
+  });
+
+  it('makes a rename its own undo step, so undoing a brew change keeps the typed name', () => {
+    const s = run(initialState(), add('gin', 30), add('vodka', 30), { type: 'setName', name: 'My Vodka Gin' });
+    expect(s.past).toHaveLength(3);
+    // the first undo reverses the rename only; the brew stays
+    const u1 = reducer(s, { type: 'undo' });
+    expect(u1.name).toBe(DEFAULT_NAME);
+    expect(u1.brew).toHaveLength(2);
+    // renaming again after the undo drops the redo branch
+    const u2 = reducer(reducer(s, { type: 'undo' }), { type: 'undo' });
+    expect(u2.brew).toEqual([{ id: 'gin', ml: 30 }]);
+    expect(reducer(u2, { type: 'redo' }).brew).toHaveLength(2);
+    // undoing a later brew change leaves the name alone
+    const t = reducer(s, add('campari', 30));
+    const back = reducer(t, { type: 'undo' });
+    expect(back.name).toBe('My Vodka Gin');
+    expect(back.brew).toHaveLength(2);
+  });
+
+  it('ignores a rename to the same name', () => {
+    const s = run(initialState(), add('gin', 30));
+    expect(reducer(s, { type: 'setName', name: s.name })).toBe(s);
+  });
+
+  it('records no step for a load that changes nothing', () => {
+    const neg = reducer(initialState(), { type: 'loadRecipe', id: 'negroni' });
+    expect(neg.brew.length).toBeGreaterThan(0);
+    expect(neg.past).toHaveLength(1);
+    expect(reducer(neg, { type: 'loadRecipe', id: 'negroni' })).toBe(neg);
+    expect(reducer(neg, { type: 'loadBrew', brew: neg.brew.map((e) => ({ ...e })), name: neg.name })).toBe(neg);
+    // the same brew under a new name is still a step
+    expect(reducer(neg, { type: 'loadBrew', brew: neg.brew, name: 'Mine' }).past).toHaveLength(2);
+    // a different amount is a step too
+    const tweaked = neg.brew.map((e, i) => (i === 0 ? { ...e, ml: e.ml + 5 } : e));
+    expect(reducer(neg, { type: 'loadBrew', brew: tweaked, name: neg.name }).past).toHaveLength(2);
+  });
+
+  it('rejects prototype keys as a unit', () => {
+    const s = initialState();
+    for (const unit of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      expect(reducer(s, { type: 'setUnit', unit: unit as never })).toBe(s);
+    }
+  });
+
+  it('caps one ingredient at 1000 ml', () => {
+    let s = run(initialState(), add('gin', 900), add('gin', 900));
+    expect(s.brew).toEqual([{ id: 'gin', ml: 1000 }]);
+    s = reducer(s, { type: 'setAmount', id: 'gin', ml: 5000 });
+    expect(s.brew[0].ml).toBe(1000);
   });
 
   it('does not record no-ops', () => {
@@ -163,6 +212,18 @@ describe('history', () => {
 });
 
 describe('persistence', () => {
+  it('ignores a prototype key in the stored unit', () => {
+    for (const unit of ['toString', 'constructor', '__proto__']) {
+      const raw = `{"unit":"${unit}","brew":[{"id":"gin","ml":30}],"name":"x"}`;
+      expect(parseStored(raw)).toMatchObject({ unit: 'oz', name: 'x', brew: [{ id: 'gin', ml: 30 }] });
+    }
+  });
+
+  it('caps stored amounts at 1000 ml', () => {
+    const s = parseStored(JSON.stringify({ unit: 'ml', name: 'x', brew: [{ id: 'gin', ml: 1e300 }, { id: 'vodka', ml: 600 }, { id: 'vodka', ml: 600 }] }));
+    expect(s?.brew).toEqual([{ id: 'gin', ml: 1000 }, { id: 'vodka', ml: 1000 }]);
+  });
+
   it('stores only unit, brew and name', () => {
     const s = run(initialState({ unit: 'cl' }), add('gin', 45), add('vodka', 10), { type: 'undo' });
     expect(JSON.parse(serialize(s))).toEqual({ unit: 'cl', brew: [{ id: 'gin', ml: 45 }], name: DEFAULT_NAME });

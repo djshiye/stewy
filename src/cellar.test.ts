@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addItem, CELLAR_LIMIT, makeItem, parseCellar, removeItem, renameItem, restoreItem, type CellarInput,
-  type CellarItem,
+  addItem, CELLAR_LIMIT, DUPLICATE_SAVE_MS, makeItem, parseCellar, recentDuplicate, removeItem, renameItem,
+  restoreItem, type CellarInput, type CellarItem,
 } from './cellar';
 import { DEFAULT_NAME } from './store';
 
@@ -99,5 +99,26 @@ describe('parseCellar', () => {
   it('caps oversized stores', () => {
     const many = Array.from({ length: CELLAR_LIMIT + 20 }, (_, n) => item(n));
     expect(parseCellar(JSON.stringify(many))).toHaveLength(CELLAR_LIMIT);
+  });
+});
+
+describe('recentDuplicate', () => {
+  const base = makeItem(input('Sour'), new Date('2026-01-05T10:00:00.000Z'), 'a');
+  const later = (ms: number, over: Partial<CellarInput> = {}) =>
+    makeItem({ ...input('Sour'), ...over }, new Date(Date.parse(base.savedAt) + ms), 'b');
+
+  it('finds the same name and brew saved within the window', () => {
+    expect(recentDuplicate([base], later(400))).toBe(base);
+    expect(recentDuplicate([base], later(DUPLICATE_SAVE_MS - 1))).toBe(base);
+  });
+
+  it('lets a deliberate later save through', () => {
+    expect(recentDuplicate([base], later(DUPLICATE_SAVE_MS))).toBeNull();
+    expect(recentDuplicate([base], later(60_000))).toBeNull();
+  });
+
+  it('treats a changed name or brew as a new item', () => {
+    expect(recentDuplicate([base], later(100, { name: 'Other' }))).toBeNull();
+    expect(recentDuplicate([base], later(100, { brew: [{ id: 'gin', ml: 50 }, { id: 'lime_juice', ml: 25 }] }))).toBeNull();
   });
 });

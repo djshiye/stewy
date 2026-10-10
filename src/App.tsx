@@ -2,10 +2,10 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Focus
 import { AnimatePresence } from 'motion/react';
 import type { Ingredient, Recipe } from './data/types';
 import { ING_BY_ID } from './data/ingredients';
-import { useBrewStore } from './store';
+import { reducer, useBrewStore, type BrewAction } from './store';
 import { useCellar, type CellarItem } from './cellar';
 import { VERDICT } from './lib/harmony';
-import { clearShareHash, readSharedBrew, shareUrl } from './lib/share';
+import { clearShareHash, hasShareHash, readSharedBrew, shareUrl } from './lib/share';
 import type { UnitKey } from './lib/units';
 import type { DialRequest, PourEvent } from './app/types';
 import { useAppModel } from './app/useAppModel';
@@ -15,7 +15,8 @@ import { useHotkeys } from './app/useHotkeys';
 import { useIsDesktop } from './app/useMediaQuery';
 import { useToasts, type ToastAction } from './app/useToasts';
 import { copyText } from './app/clipboard';
-import { Cellar, Grimoire, PourDial, ServeSheet, prefetch, prefetchAll, whenIdle, type LazyName } from './app/lazySheets';
+import { Cellar, Grimoire, PourDial, ServeSheet, SurfaceBoundary, prefetch, prefetchAll, whenIdle, type LazyName } from './app/lazySheets';
+import { SkipLink } from './app/SkipLink';
 import { TopBar } from './components/TopBar/TopBar';
 import { Stage } from './components/Stage/Stage';
 import { Shelf } from './components/Shelf/Shelf';
@@ -38,6 +39,14 @@ function warmTarget(el: Element | null): LazyName | null {
   if (/^\s*serve/i.test(label)) return 'serve';
   return btn.closest('.shelf, .dock') ? 'dial' : null;
 }
+
+/** How a surface is named in the message shown when its chunk will not load. */
+const SURFACE_NAME: Record<LazyName, string> = {
+  serve: 'the serve sheet',
+  grimoire: 'the Grimoire',
+  cellar: 'the Cellar',
+  dial: 'the pour dial',
+};
 
 let pourSeq = 0;
 const POUR_MS = 1400;
@@ -62,6 +71,21 @@ export default function App() {
   // mounted, so each sheet's exit animation can play.
   const [ready, setReady] = useState<Record<LazyName, boolean>>({ serve: false, grimoire: false, cellar: false, dial: false });
   const markReady = useCallback((name: LazyName) => setReady((r) => (r[name] ? r : { ...r, [name]: true })), []);
+  // A surface whose chunk would not load: drop it so the next open starts a fresh attempt, and say so.
+  // Some browsers (Chrome) remember a failed import for the life of the page, so the toast also offers
+  // a reload, which always works because the brew is saved.
+  const surfaceFailed = useCallback(
+    (name: LazyName) => {
+      setReady((r) => (r[name] ? { ...r, [name]: false } : r));
+      if (name === 'dial') setDial(null);
+      else setSheet((s) => (s === name ? null : s));
+      push(`Could not load ${SURFACE_NAME[name]}. Check your connection, then reload.`, {
+        label: 'Reload',
+        run: () => location.reload(),
+      });
+    },
+    [push],
+  );
   const warm = useCallback((name: LazyName) => void prefetch(name).then(() => markReady(name), () => {}), [markReady]);
   const warmFromEvent = useCallback(
     (e: PointerEvent | FocusEvent) => {
@@ -74,6 +98,12 @@ export default function App() {
     () => whenIdle(() => void prefetchAll().then(() => setReady({ serve: true, grimoire: true, cellar: true, dial: true }), () => {})),
     [],
   );
+
+  // the latest state, for handlers that must ask the reducer "would this change anything?"
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   const undoAction: ToastAction = useMemo(
     () => ({ label: 'Undo', run: () => dispatch({ type: 'undo' }) }),
@@ -133,6 +163,8 @@ export default function App() {
   );
 
   const closeDial = useCallback(() => setDial(null), []);
+  // an edit dial for a row that has gone (Undo took it out) has nothing left to change
+  if (dial?.mode === 'edit' && !model.brew.some((e) => e.id === dial.ing.id)) setDial(null);
 
   const confirmDial = useCallback(
     (ing: Ingredient, ml: number, mode: 'add' | 'edit') => {
@@ -200,12 +232,12 @@ export default function App() {
         if (err instanceof DOMException && err.name === 'AbortError') return;
       }
     }
-    push((await copyText(url)) ? 'Link copied' : 'Could not copy the link');
+    push((await copyText(url)) ? 'Link copied' : 'Could not copy the link. Allow clipboard access and try again.');
   }, [model.brew, model.name, push]);
 
   const copyRecipe = useCallback(
     async (text: string) => {
-      push((await copyText(text)) ? 'Recipe copied' : 'Could not copy the recipe');
+      push((await copyText(text)) ? 'Recipe copied' : 'Could not copy the recipe. Allow clipboard access and try again.');
     },
     [push],
   );
@@ -222,6 +254,8 @@ export default function App() {
   const openServe = useCallback(() => {
     if (model.brew.length) openSheet('serve');
   }, [model.brew.length, openSheet]);
+  // Undo can empty the pot while the serve sheet is up; there is nothing left to serve
+  if (sheet === 'serve' && !model.brew.length) setSheet(null);
 
   const saveToCellar = useCallback(() => {
     const item = cellar.save({
@@ -230,25 +264,37 @@ export default function App() {
       score: model.h?.score ?? null,
       color: model.mix?.css ?? null,
     });
+    if (!item) {
+      push('Nothing to save yet. Add an ingredient first.');
+      return;
+    }
     push(`Saved ${item.name} to the Cellar`, { label: 'Undo', run: () => cellar.remove(item.id) });
   }, [cellar, model, push]);
 
-  const loadRecipe = useCallback(
-    (r: Recipe) => {
-      dispatch({ type: 'loadRecipe', id: r.id });
-      setSheet(null);
-      push(`Loaded ${r.name}`, undoAction);
+  /** Dispatch a load; when the pot already holds exactly that brew there is nothing to undo, so say so. */
+  const load = useCallback(
+    (action: BrewAction, done: string, already: string) => {
+      const same = reducer(stateRef.current, action) === stateRef.current;
+      dispatch(action);
+      push(same ? already : done, same ? undefined : undoAction);
     },
     [dispatch, push, undoAction],
   );
 
+  const loadRecipe = useCallback(
+    (r: Recipe) => {
+      setSheet(null);
+      load({ type: 'loadRecipe', id: r.id }, `Loaded ${r.name}`, `${r.name} is already in the pot`);
+    },
+    [load],
+  );
+
   const loadFromCellar = useCallback(
     (item: CellarItem) => {
-      dispatch({ type: 'loadBrew', brew: item.brew, name: item.name });
       setSheet(null);
-      push(`Loaded ${item.name}`, undoAction);
+      load({ type: 'loadBrew', brew: item.brew, name: item.name }, `Loaded ${item.name}`, `${item.name} is already in the pot`);
     },
-    [dispatch, push, undoAction],
+    [load],
   );
 
   const deleteFromCellar = useCallback(
@@ -259,14 +305,22 @@ export default function App() {
     [cellar, push],
   );
 
-  // ---- shared link on first load --------------------------------------------
+  // ---- shared link: on first load, and when one is pasted into a tab that is already open ----
   useEffect(() => {
-    const shared = readSharedBrew();
-    if (!shared) return;
-    dispatch({ type: 'loadBrew', brew: shared.brew, name: shared.name });
-    clearShareHash();
-    push('Opened a shared brew', { label: 'Undo', run: () => dispatch({ type: 'undo' }) });
-  }, [dispatch, push]);
+    const openSharedLink = () => {
+      if (!hasShareHash()) return;
+      const shared = readSharedBrew();
+      clearShareHash();
+      if (!shared) {
+        push('That link could not be opened. Ask for it again, and check it was copied in full.');
+        return;
+      }
+      load({ type: 'loadBrew', brew: shared.brew, name: shared.name }, 'Opened a shared brew', 'That shared brew is already in the pot');
+    };
+    openSharedLink();
+    window.addEventListener('hashchange', openSharedLink);
+    return () => window.removeEventListener('hashchange', openSharedLink);
+  }, [load, push]);
 
   // ---- pause ambient loops while the tab is hidden --------------------------
   useEffect(() => {
@@ -299,6 +353,7 @@ export default function App() {
       <div className="grain" aria-hidden="true" />
 
       <div className="app" onPointerOver={warmFromEvent} onFocus={warmFromEvent}>
+        <SkipLink targetId="main">Skip to main content</SkipLink>
         <TopBar
           unit={model.unit}
           onUnit={setUnit}
@@ -312,7 +367,7 @@ export default function App() {
           onShare={share}
         />
 
-        <main className="counter">
+        <main id="main" tabIndex={-1} className="counter">
           <div className="slot slot--stage">
             <Stage model={model} pours={pours} dragging={dragging} dragOver={dragOver} potRef={potRef} />
           </div>
@@ -359,14 +414,16 @@ export default function App() {
       <AnimatePresence>
         {dial && (
           <Suspense key={`${dial.ing.id}:${dial.mode}`} fallback={null}>
-            <PourDial
-              request={dial}
-              model={model}
-              onUnit={setUnit}
-              onConfirm={confirmDial}
-              onRemove={removeFromDial}
-              onClose={closeDial}
-            />
+            <SurfaceBoundary onError={() => surfaceFailed('dial')}>
+              <PourDial
+                request={dial}
+                model={model}
+                onUnit={setUnit}
+                onConfirm={confirmDial}
+                onRemove={removeFromDial}
+                onClose={closeDial}
+              />
+            </SurfaceBoundary>
           </Suspense>
         )}
       </AnimatePresence>
@@ -374,32 +431,38 @@ export default function App() {
       {/* one boundary each, so a chunk still arriving never hides a sheet that is already up */}
       {ready.serve && (
         <Suspense fallback={null}>
-          <ServeSheet
-            open={sheet === 'serve'}
-            model={model}
-            onClose={closeSheet}
-            onSave={saveToCellar}
-            onShare={share}
-            onCopy={copyRecipe}
-          />
+          <SurfaceBoundary onError={() => surfaceFailed('serve')}>
+            <ServeSheet
+              open={sheet === 'serve'}
+              model={model}
+              onClose={closeSheet}
+              onSave={saveToCellar}
+              onShare={share}
+              onCopy={copyRecipe}
+            />
+          </SurfaceBoundary>
         </Suspense>
       )}
       {ready.grimoire && (
         <Suspense fallback={null}>
-          <Grimoire open={sheet === 'grimoire'} currentId={currentId} unit={model.unit} onClose={closeSheet} onLoad={loadRecipe} />
+          <SurfaceBoundary onError={() => surfaceFailed('grimoire')}>
+            <Grimoire open={sheet === 'grimoire'} currentId={currentId} unit={model.unit} onClose={closeSheet} onLoad={loadRecipe} />
+          </SurfaceBoundary>
         </Suspense>
       )}
       {ready.cellar && (
         <Suspense fallback={null}>
-          <Cellar
-            open={sheet === 'cellar'}
-            items={cellar.items}
-            onClose={closeSheet}
-            onLoad={loadFromCellar}
-            onRename={cellar.rename}
-            onDelete={deleteFromCellar}
-            onOpenGrimoire={() => openSheet('grimoire')}
-          />
+          <SurfaceBoundary onError={() => surfaceFailed('cellar')}>
+            <Cellar
+              open={sheet === 'cellar'}
+              items={cellar.items}
+              onClose={closeSheet}
+              onLoad={loadFromCellar}
+              onRename={cellar.rename}
+              onDelete={deleteFromCellar}
+              onOpenGrimoire={() => openSheet('grimoire')}
+            />
+          </SurfaceBoundary>
         </Suspense>
       )}
 

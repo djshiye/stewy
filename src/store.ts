@@ -45,7 +45,15 @@ const LEGACY_DEFAULT_NAME = 'Untitled Brew';
 export const migrateName = (name: string): string => (name === LEGACY_DEFAULT_NAME ? DEFAULT_NAME : name);
 export const HISTORY_LIMIT = 60;
 
+/** The most of one ingredient a brew holds. Share links use the same ceiling. */
+export const MAX_ML = 1000;
+
 const round1 = (v: number) => Math.round(v * 10) / 10;
+const capMl = (ml: number) => Math.min(MAX_ML, ml);
+
+/** True when two brews list the same ingredients in the same order with the same amounts. */
+export const sameBrew = (a: BrewEntry[], b: BrewEntry[]): boolean =>
+  a === b || (a.length === b.length && a.every((e, i) => e.id === b[i].id && e.ml === b[i].ml));
 
 /** Keep only known ingredients with a positive amount, merging duplicates. */
 export function cleanBrew(entries: unknown): BrewEntry[] {
@@ -56,8 +64,8 @@ export function cleanBrew(entries: unknown): BrewEntry[] {
     const ml = round1(Number(e.ml));
     if (!(ml > 0) || !Number.isFinite(ml)) continue;
     const ex = out.find((x) => x.id === e.id);
-    if (ex) ex.ml = round1(ex.ml + ml);
-    else out.push({ id: e.id, ml });
+    if (ex) ex.ml = capMl(round1(ex.ml + ml));
+    else out.push({ id: e.id, ml: capMl(ml) });
   }
   return out;
 }
@@ -66,9 +74,9 @@ export function initialState(partial?: Partial<Pick<BrewState, 'unit' | 'brew' |
   return { unit: 'oz', brew: [], name: DEFAULT_NAME, past: [], future: [], ...partial };
 }
 
-/** Apply a brew/name change as one undoable step. No-ops leave state untouched. */
+/** Apply a brew/name change as one undoable step. No-ops (same brew, same name) leave state untouched. */
 function commit(state: BrewState, brew: BrewEntry[], name: string = state.name): BrewState {
-  if (brew === state.brew && name === state.name) return state;
+  if (sameBrew(brew, state.brew) && name === state.name) return state;
   const past = [...state.past, { brew: state.brew, name: state.name }].slice(-HISTORY_LIMIT);
   return { ...state, brew, name, past, future: [] };
 }
@@ -86,14 +94,14 @@ export function reducer(state: BrewState, action: BrewAction): BrewState {
       const ml = round1(action.ml);
       if (!Object.hasOwn(ING_BY_ID, action.id) || !(ml > 0)) return state;
       const brew = state.brew.some((e) => e.id === action.id)
-        ? state.brew.map((e) => (e.id === action.id ? { ...e, ml: round1(e.ml + ml) } : e))
-        : [...state.brew, { id: action.id, ml }];
+        ? state.brew.map((e) => (e.id === action.id ? { ...e, ml: capMl(round1(e.ml + ml)) } : e))
+        : [...state.brew, { id: action.id, ml: capMl(ml) }];
       return commit(state, brew);
     }
     case 'setAmount': {
       const ex = state.brew.find((e) => e.id === action.id);
       if (!ex) return state;
-      const ml = round1(action.ml);
+      const ml = capMl(round1(action.ml));
       if (ml === ex.ml) return state;
       const brew = ml > 0 ? state.brew.map((e) => (e.id === action.id ? { ...e, ml } : e)) : state.brew.filter((e) => e.id !== action.id);
       if (action.merge && continuesStep(state, action.id)) return { ...state, brew, future: [] };
@@ -104,7 +112,7 @@ export function reducer(state: BrewState, action: BrewAction): BrewState {
       const ing = e && ING_BY_ID[e.id];
       if (!e || !ing) return state;
       const stepMl = isCounted(ing) ? perPiece(ing) : UNITS[state.unit].step * UNITS[state.unit].toMl;
-      const ml = round1(e.ml + action.dir * stepMl);
+      const ml = capMl(round1(e.ml + action.dir * stepMl));
       return commit(
         state,
         ml <= 0
@@ -125,9 +133,10 @@ export function reducer(state: BrewState, action: BrewAction): BrewState {
     case 'loadBrew':
       return commit(state, cleanBrew(action.brew), action.name.trim() || DEFAULT_NAME);
     case 'setUnit':
-      return action.unit in UNITS && action.unit !== state.unit ? { ...state, unit: action.unit } : state;
+      return Object.hasOwn(UNITS, action.unit) && action.unit !== state.unit ? { ...state, unit: action.unit } : state;
     case 'setName':
-      return action.name === state.name ? state : { ...state, name: action.name };
+      // a rename is its own undo step, so undoing a later change never reverts the typed name
+      return commit(state, state.brew, action.name);
     case 'undo': {
       const prev = state.past[state.past.length - 1];
       if (!prev) return state;
@@ -165,7 +174,7 @@ export function parseStored(raw: string | null): BrewState | null {
     const s = JSON.parse(raw) as { unit?: string; brew?: unknown; name?: unknown } | null;
     if (!s || !Array.isArray(s.brew)) return null;
     return initialState({
-      unit: s.unit && s.unit in UNITS ? (s.unit as UnitKey) : 'oz',
+      unit: typeof s.unit === 'string' && Object.hasOwn(UNITS, s.unit) ? (s.unit as UnitKey) : 'oz',
       brew: cleanBrew(s.brew),
       name: typeof s.name === 'string' && s.name ? migrateName(s.name) : DEFAULT_NAME,
     });

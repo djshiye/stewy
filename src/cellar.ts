@@ -1,8 +1,8 @@
 /* The cellar: brews the user chose to keep. Newest first, capped, stored in
    localStorage under stewy.cellar.v1. Pure helpers are exported for tests. */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BrewEntry } from './data/types';
-import { cleanBrew, DEFAULT_NAME, migrateName } from './store';
+import { cleanBrew, DEFAULT_NAME, migrateName, sameBrew } from './store';
 
 export interface CellarItem {
   id: string;
@@ -19,6 +19,8 @@ export type CellarInput = Pick<CellarItem, 'name' | 'brew' | 'score' | 'color'>;
 export const CELLAR_KEY = 'stewy.cellar.v1';
 export const CELLAR_LIMIT = 100;
 const MAX_NAME = 40;
+/** A second save of the same brew inside this window is a double click, not a new item. */
+export const DUPLICATE_SAVE_MS = 1500;
 
 const cleanName = (name: string) => migrateName(name.trim().slice(0, MAX_NAME).trim()) || DEFAULT_NAME;
 
@@ -45,6 +47,22 @@ function normalise(items: CellarItem[]): CellarItem[] {
   return [...items]
     .sort((a, b) => (a.savedAt < b.savedAt ? 1 : a.savedAt > b.savedAt ? -1 : 0))
     .slice(0, CELLAR_LIMIT);
+}
+
+/**
+ * The item a fresh save would only repeat: same name and brew as one saved moments ago.
+ * Null when there is none, so a deliberate second save later still makes a new item.
+ */
+export function recentDuplicate(items: CellarItem[], candidate: CellarItem, windowMs: number = DUPLICATE_SAVE_MS): CellarItem | null {
+  const at = Date.parse(candidate.savedAt);
+  return (
+    items.find(
+      (i) =>
+        i.name === candidate.name &&
+        sameBrew(i.brew, candidate.brew) &&
+        Math.abs(at - Date.parse(i.savedAt)) < windowMs,
+    ) ?? null
+  );
 }
 
 export function addItem(items: CellarItem[], item: CellarItem): CellarItem[] {
@@ -115,6 +133,8 @@ function load(): CellarItem[] {
 
 export function useCellar() {
   const [items, setItems] = useState<CellarItem[]>(load);
+  // the latest list, readable at once from a handler (two clicks can land before React re-renders)
+  const latest = useRef(items);
 
   useEffect(() => {
     try {
@@ -124,17 +144,26 @@ export function useCellar() {
     }
   }, [items]);
 
-  const save = useCallback((input: CellarInput) => {
-    const item = makeItem(input);
-    setItems((prev) => addItem(prev, item));
-    return item;
+  const update = useCallback((fn: (prev: CellarItem[]) => CellarItem[]) => {
+    latest.current = fn(latest.current);
+    setItems(latest.current);
   }, []);
-  const rename = useCallback(
-    (id: string, name: string) => setItems((prev) => renameItem(prev, id, name)),
-    [],
+
+  /** Keep a brew. Null when there is nothing to keep; a repeat of a save made a moment ago returns that item. */
+  const save = useCallback(
+    (input: CellarInput): CellarItem | null => {
+      const item = makeItem(input);
+      if (!item.brew.length) return null;
+      const repeat = recentDuplicate(latest.current, item);
+      if (repeat) return repeat;
+      update((prev) => addItem(prev, item));
+      return item;
+    },
+    [update],
   );
-  const remove = useCallback((id: string) => setItems((prev) => removeItem(prev, id)), []);
-  const restore = useCallback((item: CellarItem) => setItems((prev) => restoreItem(prev, item)), []);
+  const rename = useCallback((id: string, name: string) => update((prev) => renameItem(prev, id, name)), [update]);
+  const remove = useCallback((id: string) => update((prev) => removeItem(prev, id)), [update]);
+  const restore = useCallback((item: CellarItem) => update((prev) => restoreItem(prev, item)), [update]);
 
   return { items, save, rename, remove, restore };
 }

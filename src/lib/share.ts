@@ -1,14 +1,15 @@
 /* Share links: a brew packed into the URL hash. No server, no accounts. */
 import type { BrewEntry } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
+import { MAX_ML } from '../store';
 
 export interface SharedBrew {
   brew: BrewEntry[];
   name: string;
 }
 
-export const MAX_SHARED_ENTRIES = 16;
-const MAX_ML = 1000;
+/** Every ingredient once: duplicates are refused, so any real brew fits. */
+export const MAX_SHARED_ENTRIES = Object.keys(ING_BY_ID).length;
 const MAX_NAME = 40;
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
@@ -48,6 +49,15 @@ export function decodeBrew(fragment: string): SharedBrew | null {
   }
 }
 
+/** True when the fragment looks like an attempt at a share link (has a `b=` part), valid or not. */
+export function hasShareParam(fragment: string): boolean {
+  try {
+    return new URLSearchParams(fragment.replace(/^#/, '')).has('b');
+  } catch {
+    return false;
+  }
+}
+
 const inBrowser = () => typeof location !== 'undefined';
 
 /** Full link for a brew. */
@@ -59,6 +69,11 @@ export function shareUrl(state: SharedBrew, base?: string): string {
 /** The brew in the current page hash, if any. DOM helper. */
 export function readSharedBrew(): SharedBrew | null {
   return inBrowser() ? decodeBrew(location.hash) : null;
+}
+
+/** True when the page hash carries a share link, whether or not it can be read. DOM helper. */
+export function hasShareHash(): boolean {
+  return inBrowser() && hasShareParam(location.hash);
 }
 
 /** Drop the share hash from the address bar without a reload. DOM helper. */
