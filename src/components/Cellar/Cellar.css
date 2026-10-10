@@ -1,0 +1,286 @@
+/* The Cellar: brews kept on this device. A hairline-ruled list, a mini glass per row,
+   the name set in Newsreader. Tokens only. */
+
+.cellar {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cellar__head {
+  flex: none;
+  padding: var(--s8) 72px var(--s5) var(--s8);
+}
+.cellar__head h2 {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+  outline: none;
+}
+.cellar__head p {
+  margin-top: var(--s1);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tx-3);
+}
+
+.cellar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--line);
+}
+
+.cellar__list {
+  position: relative;
+}
+
+.cellar-li {
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.cellar-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s4) var(--s6) var(--s4) var(--s8);
+  animation: cellar-in 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 40ms);
+  transition: background-color var(--t-hover) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cellar-row:hover {
+    background: rgba(190, 205, 230, 0.025);
+  }
+}
+@keyframes cellar-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* the glass stands on a floor line in a pool of its own colour */
+.cellar-row__glass {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: 72px;
+  height: 80px;
+}
+.cellar-row__glass::before {
+  content: '';
+  position: absolute;
+  left: -14%;
+  right: -14%;
+  bottom: -4px;
+  height: 80%;
+  background: radial-gradient(52% 60% at 50% 100%, color-mix(in srgb, var(--c) 32%, transparent), transparent 72%);
+}
+.cellar-row__glass::after {
+  content: '';
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(190, 205, 230, 0.24), transparent);
+}
+.cellar-row__glass svg {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+}
+
+.cellar-row__body {
+  min-width: 0;
+}
+.cellar-row__name,
+.cellar-row__input {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 26px;
+  letter-spacing: -0.01em;
+}
+.cellar-row__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cellar-row__input {
+  display: block;
+  width: 100%;
+  height: 34px;
+  margin: -4px -8px -4px -8px;
+  padding: 0 8px;
+  max-width: calc(100% + 16px);
+  border-radius: var(--r-xs);
+  background: rgba(7, 9, 13, 0.55);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.7) inset;
+  border: 0;
+  outline: none;
+  color: var(--tx-1);
+}
+.cellar-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s1);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--tx-3);
+}
+.cellar-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--tx-1);
+}
+.cellar-score i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tier);
+}
+
+.cellar-row__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.cellar-del:hover {
+  background: rgba(242, 106, 91, 0.12);
+  color: var(--bad);
+}
+
+.cellar__foot {
+  flex: none;
+  padding: var(--s3) var(--s8) var(--s5);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--tx-3);
+}
+
+/* ---------- empty: an empty glass shelf ---------- */
+.cellar-empty {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: center;
+  gap: var(--s4);
+  padding: var(--s6) var(--s8) var(--s12);
+  text-align: center;
+}
+.cellar-shelf {
+  position: relative;
+  width: min(100%, 360px);
+  margin-bottom: var(--s2);
+}
+.cellar-shelf__glasses {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--s5);
+  height: var(--shelf-g, 132px);
+  padding: 0 var(--s4);
+}
+.cellar-shelf__g {
+  flex: 0 1 auto;
+  min-width: 0;
+  width: auto;
+  opacity: 0.8;
+}
+.cellar-shelf__g--rocks { height: 78%; }
+.cellar-shelf__g--coupe { height: 94%; }
+.cellar-shelf__g--highball { height: 100%; }
+.cellar-shelf__g--martini { height: 90%; }
+
+/* the shelf: a lit slab, bright top edge, tinted shadow */
+.cellar-shelf__slab {
+  position: relative;
+  height: 10px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(190, 205, 230, 0.16), rgba(190, 205, 230, 0.04));
+  box-shadow:
+    0 1px 0 rgba(190, 205, 230, 0.34) inset,
+    0 18px 28px -14px rgba(var(--brew-rgb), 0.35);
+}
+.cellar-empty__text {
+  max-width: 28ch;
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 999px) {
+  .cellar__head {
+    padding: 36px 64px var(--s4) var(--s4);
+  }
+  .cellar__head h2 {
+    font-size: 32px;
+    line-height: 36px;
+  }
+  .cellar-shelf {
+    --shelf-g: 100px;
+  }
+  .cellar-shelf__glasses {
+    gap: var(--s3);
+  }
+  .cellar-row {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: var(--s3);
+    padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  }
+  .cellar-row__glass {
+    width: 52px;
+    height: 68px;
+  }
+  .cellar-row__name,
+  .cellar-row__input {
+    font-size: 20px;
+    line-height: 24px;
+  }
+  .cellar-row__name {
+    white-space: normal;
+    text-wrap: balance;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .cellar-row__actions .ui-ibtn--sm {
+    width: 36px;
+    height: 36px;
+  }
+  .cellar-row__actions .ui-btn--sm {
+    height: 36px;
+  }
+  .cellar__foot {
+    padding: var(--s3) var(--s4) var(--s4);
+  }
+  .cellar-empty {
+    padding: var(--s6) var(--s4) var(--s8);
+  }
+}
