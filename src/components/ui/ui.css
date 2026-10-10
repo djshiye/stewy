@@ -379,11 +379,3 @@ body.is-locked .ui-toaster {
   .grim-chip::before { content: ''; position: absolute; inset: -4px 0; }
   .rc__title::before { content: ''; position: absolute; inset: -6px 0; }
 }
-
-/* very large screens: sheets and toasts carry the same zoom as the shell (layout.css) */
-@media (min-width: 2200px) and (min-height: 1200px) {
-  .ui-sheet-wrap,
-  .ui-toaster {
-    zoom: var(--ui-zoom);
-  }
-}
