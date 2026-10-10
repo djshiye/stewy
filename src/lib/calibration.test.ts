@@ -105,9 +105,14 @@ describe('calibration', () => {
 
   it('scoreDeltas stays fast for a 5-ingredient brew', () => {
     const brew = toBrew([['gin', 30], ['campari', 20], ['sweet_vermouth', 20], ['lime_juice', 10], ['soda_water', 40]]);
-    scoreDeltas(brew.map((e) => ({ ...e }))); // warm up
-    const t0 = performance.now();
-    scoreDeltas(brew.map((e) => ({ ...e })));
-    expect(performance.now() - t0).toBeLessThan(3);
+    // median of several runs, so a busy test machine does not make this flaky
+    const runs: number[] = [];
+    for (let i = 0; i < 9; i++) {
+      const t0 = performance.now();
+      scoreDeltas(brew.map((e) => ({ ...e })));
+      runs.push(performance.now() - t0);
+    }
+    runs.sort((a, b) => a - b);
+    expect(runs[4]).toBeLessThan(3);
   });
 });
