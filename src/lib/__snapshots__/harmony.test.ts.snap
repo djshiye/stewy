@@ -1,0 +1,224 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`harmony score lock (must not move across refactors) > classics 1`] = `
+{
+  "aperol_spritz": [
+    89,
+    "great",
+  ],
+  "bloody_mary": [
+    80,
+    "great",
+  ],
+  "cosmopolitan": [
+    84,
+    "great",
+  ],
+  "cuba_libre": [
+    74,
+    "good",
+  ],
+  "daiquiri": [
+    91,
+    "legendary",
+  ],
+  "espresso_martini": [
+    90,
+    "legendary",
+  ],
+  "french_martini": [
+    85,
+    "great",
+  ],
+  "gin_tonic": [
+    91,
+    "legendary",
+  ],
+  "mai_tai": [
+    87,
+    "great",
+  ],
+  "manhattan": [
+    87,
+    "great",
+  ],
+  "margarita": [
+    88,
+    "great",
+  ],
+  "martini": [
+    79,
+    "good",
+  ],
+  "mojito": [
+    91,
+    "legendary",
+  ],
+  "moscow_mule": [
+    86,
+    "great",
+  ],
+  "negroni": [
+    90,
+    "legendary",
+  ],
+  "old_fashioned": [
+    79,
+    "good",
+  ],
+  "pina_colada": [
+    85,
+    "great",
+  ],
+  "whiskey_sour": [
+    90,
+    "legendary",
+  ],
+}
+`;
+
+exports[`harmony score lock (must not move across refactors) > edge brews 1`] = `
+{
+  "big_pour": [
+    91,
+    "legendary",
+  ],
+  "bitters_only": [
+    70,
+    "good",
+  ],
+  "coconut_rum": [
+    77,
+    "good",
+  ],
+  "coffee_citrus": [
+    36,
+    "bad",
+  ],
+  "coffee_orange": [
+    66,
+    "ok",
+  ],
+  "cream_lemon_gin": [
+    70,
+    "good",
+  ],
+  "cream_lime": [
+    30,
+    "bad",
+  ],
+  "cream_mezcal": [
+    53,
+    "poor",
+  ],
+  "egg_sour": [
+    90,
+    "legendary",
+  ],
+  "eight_ingredients": [
+    83,
+    "great",
+  ],
+  "empty_tag_mix": [
+    42,
+    "poor",
+  ],
+  "nine_ingredients": [
+    77,
+    "good",
+  ],
+  "only_salt": [
+    42,
+    "poor",
+  ],
+  "only_soda": [
+    42,
+    "poor",
+  ],
+  "only_unknown": [
+    42,
+    "poor",
+  ],
+  "salt_and_soda": [
+    42,
+    "poor",
+  ],
+  "seven_ingredients": [
+    80,
+    "great",
+  ],
+  "single_lime": [
+    62,
+    "ok",
+  ],
+  "single_syrup": [
+    20,
+    "bad",
+  ],
+  "single_vodka": [
+    39,
+    "bad",
+  ],
+  "smoky_citrus": [
+    86,
+    "great",
+  ],
+  "soda_and_tonic": [
+    82,
+    "great",
+  ],
+  "tiny_amounts": [
+    93,
+    "legendary",
+  ],
+  "unknown_ids": [
+    74,
+    "good",
+  ],
+  "very_bitter": [
+    67,
+    "ok",
+  ],
+  "very_sour": [
+    77,
+    "good",
+  ],
+  "very_sweet": [
+    55,
+    "poor",
+  ],
+  "very_sweet_liqueur": [
+    65,
+    "ok",
+  ],
+  "zero_volume": [
+    42,
+    "poor",
+  ],
+}
+`;
+
+exports[`harmony score lock (must not move across refactors) > seeded sweep 1`] = `
+[
+  "52 79 71 64 82 77 66 62 73 84 60 73 68 74 83 75 69 72 55 53",
+  "75 85 73 70 75 65 46 70 68 62 67 60 64 63 80 66 78 67 59 87",
+  "59 72 75 63 68 78 80 81 79 91 87 62 65 56 42 70 67 54 90 54",
+  "78 88 79 80 75 63 87 88 88 65 79 63 84 34 82 63 82 75 89 74",
+  "50 64 88 58 76 91 20 79 80 49 20 85 80 57 62 65 63 75 54 86",
+  "81 61 61 59 78 78 70 71 88 79 72 54 80 60 72 78 40 77 67 34",
+  "61 87 40 59 72 88 65 61 75 85 58 81 85 76 55 79 64 63 62 59",
+  "61 60 73 52 80 52 91 78 78 56 58 53 76 83 59 45 78 70 83 76",
+  "66 74 72 62 44 64 79 63 64 80 81 61 68 69 92 90 77 68 83 69",
+  "73 83 79 76 85 83 68 83 74 77 80 86 80 76 57 90 55 69 69 79",
+  "60 82 49 75 86 74 77 85 84 79 77 79 49 68 59 82 63 70 61 49",
+  "83 79 59 60 70 70 87 70 71 75 84 86 91 45 65 70 64 75 63 45",
+  "78 91 74 64 65 73 81 85 79 78 77 65 74 34 58 42 81 67 73 87",
+  "87 84 72 68 66 72 60 71 67 34 79 57 80 68 78 77 79 73 78 64",
+  "59 74 78 72 72 81 80 74 66 49 49 82 80 66 62 78 69 82 76 38",
+  "82 72 74 61 50 75 77 82 74 75 84 76 78 38 61 61 77 92 86 73",
+  "70 70 87 75 82 78 78 53 76 92 82 86 56 50 81 66 86 49 71 50",
+  "73 81 73 89 87 63 62 83 77 78 70 84 20 92 85 77 69 72 78 62",
+  "75 78 78 74 78 66 90 38 82 77 86 77 67 62 70 85 63 77 59 70",
+  "69 76 63 69 64 81 77 77 71 57 78 83 65 78 79 80 61 81 46 71",
+]
+`;

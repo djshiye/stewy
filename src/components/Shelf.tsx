@@ -85,7 +85,7 @@ export const Shelf = memo(function Shelf({ h, onPick, onDragStart }: Props) {
                   <button
                     key={ing.id}
                     className={`ing-card${t != null ? ' scored' : ''}`}
-                    title={`${ing.name} — ${describe(ing)}`}
+                    title={`${ing.name}: ${describe(ing)}`}
                     style={{ '--fit': fitColor(t) } as CSSProperties}
                     onClick={() => onPick(ing)}
                     onPointerDown={(e) => onDragStart(ing, e)}

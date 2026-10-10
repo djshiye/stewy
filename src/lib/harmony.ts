@@ -1,5 +1,5 @@
-/* The harmony engine — a 15-dimension flavour-affinity model that scores a
-   brew 0–100, explains itself, and rates how well each shelf reagent would
+/* The harmony engine: a 15-dimension flavour-affinity model that scores a
+   brew 0 to 100, explains itself, and rates how well each shelf reagent would
    fit the current mix. Pure functions, no DOM. */
 import type { BrewEntry, FlavorDim, Ingredient, Recipe } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
@@ -81,6 +81,22 @@ export const VERDICT: Record<Tier, string> = {
   none: 'Awaiting reagents',
 };
 
+/** Points each scoring term contributed (penalties are negative). */
+export interface Parts {
+  base: number;
+  pairing: number;
+  balance: number;
+  structure: number;
+  sweetSour: number;
+  oneNote: number;
+  clash: number;
+  crowd: number;
+}
+
+const NO_PARTS: Parts = {
+  base: 0, pairing: 0, balance: 0, structure: 0, sweetSour: 0, oneNote: 0, clash: 0, crowd: 0,
+};
+
 export interface Harmony {
   score: number;
   tier: Tier;
@@ -88,6 +104,17 @@ export interface Harmony {
   p: Profile;
   F: Profile;
   tot: number;
+  /** What each scoring term added or took away. */
+  parts: Parts;
+  /** -1 (sour or bitter dominated) .. 0 (balanced) .. +1 (sweet dominated); null with no sweet, sour or bitter. */
+  balance: number | null;
+}
+
+/** Signed sweet versus sour+bitter lean of a raw profile. */
+function lean(F: Profile): number | null {
+  const sw = F.sweet ?? 0, so = F.sour ?? 0, bi = F.bitter ?? 0;
+  const sum = sw + so + bi;
+  return sum > 0 ? (sw - (so + bi)) / sum : null;
 }
 
 export function harmony(brew: BrewEntry[]): Harmony | null {
@@ -96,11 +123,15 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   const n = brew.length;
   if (tot <= 0) {
     // only flavourless items (soda, salt, ice)
-    return { score: 42, tier: tierFor(42), p: {}, F, tot };
+    return {
+      score: 42, tier: tierFor(42), p: {}, F, tot,
+      parts: { ...NO_PARTS, base: 42 }, balance: null,
+    };
   }
   const dims = Object.keys(F) as FlavorDim[];
   const p: Profile = {};
   for (const d of dims) p[d] = (F[d] ?? 0) / tot;
+  const parts: Parts = { ...NO_PARTS, base: 55 };
 
   let pair = 0;
   for (let i = 0; i < dims.length; i++)
@@ -108,28 +139,30 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
       pair += aff(dims[i], dims[j]) * (p[dims[i]] ?? 0) * (p[dims[j]] ?? 0);
 
   let score = 55 + pair * 80;
+  parts.pairing = pair * 80;
 
   const sw = F.sweet ?? 0, so = F.sour ?? 0, bi = F.bitter ?? 0;
   if (sw > 0 && (so > 0 || bi > 0)) {
     const bal = 1 - Math.abs(sw - (so + bi)) / (sw + so + bi);
     score += bal * 10;
+    parts.balance = bal * 10;
   }
 
   const hasBase = (F.boozy ?? 0) > 0;
   const hasBalancer = so > 0 || bi > 0;
-  if (hasBase) score += 5;
-  if (hasBase && hasBalancer) score += 4;
+  if (hasBase) { score += 5; parts.structure += 5; }
+  if (hasBase && hasBalancer) { score += 4; parts.structure += 4; }
 
   // too sweet / too sour without a counterweight
   const psw = sw / tot, pso = so / tot, pbi = bi / tot;
-  if (psw > 0.45 && pso + pbi < 0.1) score -= 14;
-  else if (psw > 0.32 && pso + pbi < 0.08) score -= 8;
-  if (pso > 0.5 && psw < 0.1 && pbi < 0.1) score -= 12;
+  if (psw > 0.45 && pso + pbi < 0.1) { score -= 14; parts.sweetSour -= 14; }
+  else if (psw > 0.32 && pso + pbi < 0.08) { score -= 8; parts.sweetSour -= 8; }
+  if (pso > 0.5 && psw < 0.1 && pbi < 0.1) { score -= 12; parts.sweetSour -= 12; }
 
   // one-note (dominated by a single dimension)
   let sumsq = 0;
   for (const d of dims) sumsq += (p[d] ?? 0) ** 2;
-  if (sumsq > 0.55) score -= (sumsq - 0.55) * 34;
+  if (sumsq > 0.55) { score -= (sumsq - 0.55) * 34; parts.oneNote = -(sumsq - 0.55) * 34; }
 
   // structural clashes (curdling / muddy pairings) beyond pairwise affinity.
   // Gated on meaningful cream (p>0.10) so egg-white sours & coconut pass.
@@ -139,18 +172,19 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   const pcof = (F.coffee ?? 0) / tot;
   let clash = 0;
   if (pc > 0.10) {
-    clash += Math.min(pc, pacid);        // cream + acid → curdle
-    clash += Math.min(pc, psmk) * 0.7;   // cream + smoke → muddy
+    clash += Math.min(pc, pacid);        // cream + acid: curdle
+    clash += Math.min(pc, psmk) * 0.7;   // cream + smoke: muddy
   }
   clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
   score -= clash * 95;
+  parts.clash = -clash * 95;
 
   // crowd / lonely
-  if (n > 6) score -= (n - 6) * 4;
-  if (n === 1) score -= 6;
+  if (n > 6) { score -= (n - 6) * 4; parts.crowd -= (n - 6) * 4; }
+  if (n === 1) { score -= 6; parts.crowd -= 6; }
 
   const final = clamp(Math.round(score), 3, 99);
-  return { score: final, tier: tierFor(final), p, F, tot };
+  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F) };
 }
 
 /** Fit of a candidate ingredient against the current mix profile → 0..1. */
@@ -179,7 +213,7 @@ export interface Suggestion {
 
 export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] {
   if (!brew.length || !h)
-    return [{ text: 'Drag a reagent into the cauldron to begin the brew.', kind: '' }];
+    return [{ text: 'Add an ingredient to start your drink.', kind: '' }];
   const F = h.F, tot = h.tot || 1;
   const out: Suggestion[] = [];
   const p = (d: FlavorDim) => (F[d] ?? 0) / tot;
@@ -187,25 +221,25 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
   const n = brew.length;
 
   if (!has('boozy') && brew.some((e) => ING_BY_ID[e.id]?.abv === 0))
-    out.push({ text: 'No base spirit yet — add a spirit for backbone (or keep it a mocktail).', kind: 'warn' });
+    out.push({ text: 'No base spirit yet. Add one for backbone, or keep it a mocktail.', kind: 'warn' });
   if (p('sweet') > 0.32 && p('sour') + p('bitter') < 0.1)
-    out.push({ text: 'Reads sweet — a splash of citrus or bitters would balance it.', kind: 'warn' });
+    out.push({ text: 'Leans sweet. A splash of citrus or bitters would balance it.', kind: 'warn' });
   if (p('sour') > 0.45 && p('sweet') < 0.1)
-    out.push({ text: 'Sharp and sour — sweeten with a little syrup.', kind: 'warn' });
+    out.push({ text: 'Very sharp. A little syrup would soften it.', kind: 'warn' });
   if (p('bitter') > 0.4 && p('sweet') < 0.08)
-    out.push({ text: 'Quite bitter — a touch of sweetness rounds it out.', kind: 'warn' });
+    out.push({ text: 'Quite bitter. A touch of sweetness would round it out.', kind: 'warn' });
   if (has('creamy') && (has('citrus') || has('sour')) && (F.creamy ?? 0) > tot * 0.12)
-    out.push({ text: 'Cream + citrus can curdle — pick one lane.', kind: 'bad' });
+    out.push({ text: 'Cream and citrus can curdle. Pick one or the other.', kind: 'bad' });
   if (n === 1)
-    out.push({ text: 'Add a modifier — citrus, something sweet, or bitters — to build a cocktail.', kind: '' });
+    out.push({ text: 'Add a modifier like citrus, something sweet or bitters to make it a cocktail.', kind: '' });
   if (n > 7)
-    out.push({ text: 'That is a lot of ingredients — try removing one or two for clarity.', kind: 'warn' });
+    out.push({ text: 'That is a lot of ingredients. Try removing one or two for clarity.', kind: 'warn' });
 
   if (!out.length || h.score >= 80)
     out.unshift({
       text: h.score >= 90
-        ? 'A masterwork — pour it into a goblet and take a bow.'
-        : 'Beautifully balanced — ready to pour.',
+        ? 'A masterpiece. Pour it and take a bow.'
+        : 'Beautifully balanced and ready to pour.',
       kind: 'good',
     });
 
@@ -232,11 +266,20 @@ export function resemblance(brew: BrewEntry[]): { recipe: Recipe; sim: number } 
   return best && best.sim >= 0.85 ? best : null;
 }
 
-/** Short flavour blurb for an ingredient ("boozy · smoky · herbal · 43% ABV"). */
+/** Top three flavour notes of an ingredient (value 1 or more), strongest first. */
+export function flavorNotes(ing: Ingredient): FlavorDim[] {
+  return (Object.keys(ing.tags) as FlavorDim[])
+    .sort((a, b) => (ing.tags[b] ?? 0) - (ing.tags[a] ?? 0))
+    .slice(0, 3)
+    .filter((d) => (ing.tags[d] ?? 0) >= 1);
+}
+
+/** Short flavour blurb for an ingredient ("Boozy, smoky and herbal"). */
 export function describe(ing: Ingredient): string {
-  const sorted = (Object.keys(ing.tags) as FlavorDim[])
-    .sort((a, b) => (ing.tags[b] ?? 0) - (ing.tags[a] ?? 0));
-  const parts = sorted.slice(0, 3).filter((d) => (ing.tags[d] ?? 0) >= 1);
-  const flavor = parts.length ? parts.join(' · ') : 'neutral';
-  return ing.abv ? `${flavor} · ${ing.abv}% ABV` : flavor;
+  const notes = flavorNotes(ing);
+  if (!notes.length) return 'Neutral';
+  const text = notes.length > 1
+    ? `${notes.slice(0, -1).join(', ')} and ${notes[notes.length - 1]}`
+    : notes[0];
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }

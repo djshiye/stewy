@@ -47,7 +47,7 @@ export function AmountDialog({ ing, unit, onClose, onAdd }: Props) {
           <span className="pop-icon"><IngredientIcon ing={ing} /></span>
           <div>
             <div className="pop-name">{ing.name}</div>
-            <div className="pop-desc">{describe(ing)}</div>
+            <div className="pop-desc">{ing.abv ? `${describe(ing)}, ${ing.abv}% ABV` : describe(ing)}</div>
           </div>
         </div>
 

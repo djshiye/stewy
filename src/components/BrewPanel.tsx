@@ -3,7 +3,7 @@ import type { BrewAction } from '../store';
 import type { BrewEntry } from '../data/types';
 import type { Harmony } from '../lib/harmony';
 import { ING_BY_ID } from '../data/ingredients';
-import { amountLabel, trim, UNITS, type UnitKey } from '../lib/units';
+import { amountLabel, totalLabel, type UnitKey } from '../lib/units';
 import { IngredientIcon } from '../icons/Icons';
 import { HarmonyCard } from './HarmonyCard';
 
@@ -18,10 +18,7 @@ export const BrewPanel = memo(function BrewPanel({ brew, unit, dispatch, h }: Pr
   const totalMl = brew.reduce((s, e) => s + e.ml, 0);
   const alc = brew.reduce((s, e) => s + e.ml * (ING_BY_ID[e.id]?.abv ?? 0), 0);
   const abv = totalMl > 0 ? alc / totalMl : 0;
-  const u = UNITS[unit];
-  const volLabel = unit === 'parts'
-    ? `${Math.round(totalMl)} ml`
-    : `${trim(totalMl / u.toMl, u.dec)} ${u.label}`;
+  const volLabel = totalLabel(totalMl, unit);
 
   return (
     <aside className="panel panel-left">

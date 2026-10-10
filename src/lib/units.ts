@@ -21,15 +21,21 @@ export const UNIT_ORDER: UnitKey[] = ['ml', 'cl', 'oz', 'parts'];
 
 /** ml per single piece / dash for count-based ingredients. */
 export const PER: Record<string, number> = {
-  angostura: 0.9, orange_bitters: 0.9, mint: 1, cucumber: 2,
+  angostura: 0.9, orange_bitters: 0.9, peychauds: 0.9, mint: 1, cucumber: 2,
   sugar_cube: 4, salt: 1, cherry: 3, orange_slice: 3, olive: 3,
 };
 export const NOUN: Record<string, string> = {
-  angostura: 'dash', orange_bitters: 'dash', mint: 'leaf', cucumber: 'slice',
+  angostura: 'dash', orange_bitters: 'dash', peychauds: 'dash', mint: 'leaf', cucumber: 'slice',
   sugar_cube: 'cube', salt: 'rim', cherry: 'cherry', orange_slice: 'slice', olive: 'olive',
 };
 
 export const isCounted = (ing: Ingredient) => ing.unit === 'dash' || ing.unit === 'piece';
+
+/** ml per piece for a counted ingredient; ingredients not listed in PER fall back by unit. */
+export const perPiece = (ing: Ingredient) => PER[ing.id] ?? (ing.unit === 'dash' ? 0.9 : 1);
+
+/** Singular noun for a counted ingredient ("dash", "leaf"). */
+export const nounOf = (ing: Ingredient) => NOUN[ing.id] ?? (ing.unit === 'dash' ? 'dash' : 'piece');
 
 /** Format a number to `dec` decimals with trailing zeros trimmed. */
 export function trim(v: number, dec: number): string {
@@ -37,17 +43,36 @@ export function trim(v: number, dec: number): string {
   return Number.isNaN(n) ? '0' : String(n);
 }
 
+/** Label for the total volume: ml, cl or oz, or whole-and-fractional parts (30 ml each). */
+export function totalLabel(totalMl: number, unit: UnitKey): string {
+  if (unit === 'ml') return `${Math.round(totalMl)} ml`;
+  return measure(totalMl, unit);
+}
+
+/** A volume in a unit ("1.5 oz", "1 part"). */
+function measure(ml: number, unit: UnitKey): string {
+  const u = UNITS[unit];
+  const v = trim(ml / u.toMl, u.dec);
+  return `${v} ${unit === 'parts' && v === '1' ? 'part' : u.label}`;
+}
+
+/** Plural of a count noun ("dash" to "dashes", "cherry" to "cherries"). */
+export function plural(noun: string, n: number): string {
+  if (n === 1) return noun;
+  if (noun === 'leaf') return 'leaves';
+  if (/(s|sh|ch|x)$/.test(noun)) return `${noun}es`;
+  if (/[^aeiou]y$/.test(noun)) return `${noun.slice(0, -1)}ies`;
+  return `${noun}s`;
+}
+
 /** Human label for one brew entry ("1.5 oz", "2 dashes", "rim"). */
 export function amountLabel(e: BrewEntry, ing: Ingredient, unit: UnitKey): string {
   if (isCounted(ing)) {
     if (e.id === 'salt') return 'rim';
-    const per = PER[e.id] ?? 1;
-    const cnt = Math.max(1, Math.round(e.ml / per));
-    const noun = NOUN[e.id] ?? 'pc';
-    return `${cnt} ${noun}${cnt > 1 ? 's' : ''}`;
+    const cnt = Math.max(1, Math.round(e.ml / perPiece(ing)));
+    return `${cnt} ${plural(nounOf(ing), cnt)}`;
   }
-  const u = UNITS[unit];
-  return `${trim(e.ml / u.toMl, u.dec)} ${u.label}`;
+  return measure(e.ml, unit);
 }
 
 export interface AmountInfo {
@@ -65,7 +90,7 @@ export interface AmountInfo {
 export function amountInfo(ing: Ingredient, unit: UnitKey): AmountInfo {
   if (isCounted(ing)) {
     return {
-      counted: true, per: PER[ing.id] ?? 1, label: NOUN[ing.id] ?? 'pc',
+      counted: true, per: perPiece(ing), label: nounOf(ing),
       chips: [1, 2, 3, 4, 6, 8], dec: 0, step: 1,
     };
   }
