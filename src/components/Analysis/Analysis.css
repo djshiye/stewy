@@ -30,6 +30,7 @@
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 10px;
   padding: var(--s4) var(--s5);
 }
