@@ -225,7 +225,7 @@ export function PourDial({ request, model, onUnit, onConfirm, onRemove, onClose 
     : explainChange(before, after, ing.name, kind);
   const delta = before && after ? after.score - before.score : null;
   const amountNow = amountText(value, unitText, range.counted, range.dec);
-  const withLabel = nothing ? 'Without it' : `With ${amountNow}`;
+  const withLabel = nothing ? 'Without it' : !edit && inBrew ? `Adding ${amountNow}` : `With ${amountNow}`;
 
   const announce = useSettled(
     `${amountNow}. ${before ? `Score now ${before.score}.` : ''} ${after ? `With this, ${after.score}.` : 'The pot would be empty.'}`,
