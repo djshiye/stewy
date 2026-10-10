@@ -8,7 +8,7 @@
      to fit, everything else has a compact dedicated icon in the same style.
 
    Rules: every gradient and clip id comes from one useId() per icon, and there are no SVG
-   filters (up to ~80 icons are on screen at once). Brand marks live at the bottom. */
+   filters (up to ~80 icons are on screen at once). The brand mark lives in Brand.tsx. */
 import { memo, useId } from 'react';
 import type { ReactNode } from 'react';
 import type { BottleShape, Ingredient } from '../data/types';
@@ -1049,7 +1049,7 @@ const mintDefs = (p: string) => <Lin id={`${p}a`} stops={[[0, '#9be0a0'], [0.5, 
 /** A tumbler with a sprig of mint standing in water. */
 function mintGlass(p: string, ing: Ingredient): Built {
   const leaf = (x: number, y: number, rot: number, sc: number, k: number) => mintLeaf(p, x, y, rot, sc, k);
-  const stem = (d: string, k: number) => <path key={k} d={d} stroke="#3d8a4a" strokeWidth="1.3" strokeLinecap="round" fill="none" />;
+  const stem = (d: string, k: number) => <path key={`s${k}`} d={d} stroke="#3d8a4a" strokeWidth="1.3" strokeLinecap="round" fill="none" />;
   const y0 = B - 10;
   const behind = (
     <g>
@@ -1362,125 +1362,3 @@ export const IngredientIcon = memo(function IngredientIcon({ ing, variant = 'til
   }
   return buildTile(p, ing);
 });
-
-/* ------------------------------------------------------------------ */
-/* 9. Brand (kept until the shell moves BrandMark to Brand.tsx)         */
-/* ------------------------------------------------------------------ */
-
-/** Brand mark — the canonical Stewy sigil: a gold-rimmed cauldron of glowing
-    brew beneath a crescent moon and star sparkle (matches favicon + logo). */
-export function BrandMark() {
-  const uid = useId();
-  const brewId = `${uid}b`, auraId = `${uid}a`, fireId = `${uid}f`, moonId = `${uid}m`;
-  return (
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
-      <defs>
-        <radialGradient id={brewId} cx="0.5" cy="0.4" r="0.8">
-          <stop offset="0" stopColor="#a8ffe0" />
-          <stop offset="0.55" stopColor="#3ddc97" />
-          <stop offset="1" stopColor="#1c8a61" />
-        </radialGradient>
-        <radialGradient id={auraId} cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#3ddc97" stopOpacity="0.4" />
-          <stop offset="1" stopColor="#3ddc97" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id={fireId} cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#ffcf7d" stopOpacity="0.85" />
-          <stop offset="0.55" stopColor="#ff8a3c" stopOpacity="0.45" />
-          <stop offset="1" stopColor="#ff8a3c" stopOpacity="0" />
-        </radialGradient>
-        <mask id={moonId}>
-          <circle cx="18" cy="14.5" r="6" fill="#fff" />
-          <circle cx="20.6" cy="12.9" r="5.2" fill="#000" />
-        </mask>
-      </defs>
-      <ellipse cx="32" cy="55.5" rx="15" ry="6.5" fill={`url(#${fireId})`} />
-      <path d="M15.8 30.5 Q14.5 45 26 51.5 Q32 54 38 51.5 Q49.5 45 48.2 30.5 Z" fill="#201409" stroke="rgba(217,178,94,0.55)" strokeWidth="1.4" />
-      <path d="M22.5 52.3 l-2.4 4.6 q-0.7 1.6 1 1.6 h3.6 q1.4 0 1.1 -1.5 l-1 -4.9 Z" fill="#2a1d12" />
-      <path d="M41.5 52.3 l2.4 4.6 q0.7 1.6 -1 1.6 h-3.6 q-1.4 0 -1.1 -1.5 l1 -4.9 Z" fill="#2a1d12" />
-      <ellipse cx="32" cy="26" rx="11" ry="6.5" fill={`url(#${auraId})`} />
-      <ellipse cx="32" cy="29.5" rx="16.4" ry="4.8" fill="#2a1d12" stroke="#d9b25e" strokeWidth="1.8" />
-      <ellipse cx="32" cy="29.6" rx="13" ry="3.4" fill={`url(#${brewId})`} />
-      <ellipse cx="30" cy="29" rx="6.5" ry="1.7" fill="#a8ffe0" opacity="0.55" />
-      <circle cx="26.5" cy="26.3" r="1.7" fill="#bfffe4" opacity="0.9" />
-      <circle cx="33.8" cy="24.6" r="1.2" fill="#bfffe4" opacity="0.75" />
-      <circle cx="30.2" cy="22" r="0.9" fill="#bfffe4" opacity="0.6" />
-      <circle cx="16.5" cy="49" r="1" fill="#ffb45e" opacity="0.9" />
-      <circle cx="47.5" cy="47" r="0.8" fill="#ff9a3c" opacity="0.8" />
-      <circle cx="18" cy="14.5" r="6" fill="#f2d68c" mask={`url(#${moonId})`} />
-      <path d="M47.5 9.5 l1.5 4.2 4.2 1.5 -4.2 1.5 -1.5 4.2 -1.5 -4.2 -4.2 -1.5 4.2 -1.5 Z" fill="#7fe6c4" />
-      <circle cx="42" cy="22.5" r="1" fill="#f2d68c" opacity="0.8" />
-    </svg>
-  );
-}
-
-/** Rotating "summoning circle" behind the cauldron — a celestial almanac:
-    runic tick ring, a counter-turning ring of moon phases and star sparkles,
-    and a soft sunburst at the heart. */
-export function MagicCircle() {
-  const C = 100;
-  const P = (deg: number, rad: number): [string, string] => [
-    (C + rad * Math.cos((deg * Math.PI) / 180)).toFixed(1),
-    (C + rad * Math.sin((deg * Math.PI) / 180)).toFixed(1),
-  ];
-  const ticks = [];
-  for (let d = 0; d < 360; d += 15) {
-    const o = P(d, 90), i = P(d, d % 45 === 0 ? 80 : 85);
-    ticks.push(<line key={d} x1={o[0]} y1={o[1]} x2={i[0]} y2={i[1]} />);
-  }
-  const dots = [];
-  for (let d = 0; d < 360; d += 30) {
-    const p = P(d, 71);
-    dots.push(<circle key={d} cx={p[0]} cy={p[1]} r="1.6" />);
-  }
-
-  // moon-phase ring: new → waxing half → full → waning half, twice around
-  const MOON = 'rgba(242,214,140,0.75)';
-  const moons = [];
-  for (let i = 0; i < 8; i++) {
-    const deg = i * 45;
-    const [x, y] = P(deg, 57);
-    const phase = i % 4;
-    moons.push(
-      <g key={i} transform={`translate(${x} ${y}) rotate(${deg})`}>
-        {phase === 0 && <circle r="3.6" fill="none" stroke={MOON} strokeWidth="1" />}
-        {phase === 1 && <path d="M0,-3.6 A3.6,3.6 0 0,1 0,3.6 Z" fill={MOON} />}
-        {phase === 2 && <circle r="3.6" fill={MOON} />}
-        {phase === 3 && <path d="M0,-3.6 A3.6,3.6 0 0,0 0,3.6 Z" fill={MOON} />}
-      </g>,
-    );
-  }
-  // four-point star sparkles between the moons
-  const sparks = [];
-  for (let i = 0; i < 8; i++) {
-    const [x, y] = P(i * 45 + 22.5, 57);
-    sparks.push(
-      <path key={i} transform={`translate(${x} ${y})`}
-        d="M0,-4.4 L1.1,-1.1 L4.4,0 L1.1,1.1 L0,4.4 L-1.1,1.1 L-4.4,0 L-1.1,-1.1 Z"
-        fill="rgba(127,230,196,0.55)" />,
-    );
-  }
-  // sunburst rays at the heart (mostly veiled by the cauldron)
-  const rays = [];
-  for (let d = 0; d < 360; d += 30) {
-    const a = P(d, 30), b = P(d, 42);
-    rays.push(<line key={d} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} />);
-  }
-
-  return (
-    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
-      <circle cx="100" cy="100" r="94" stroke="rgba(217,178,94,0.5)" strokeWidth="1" />
-      <circle cx="100" cy="100" r="90" stroke="rgba(217,178,94,0.28)" strokeWidth="0.6" strokeDasharray="2 4" />
-      <circle cx="100" cy="100" r="80" stroke="rgba(127,230,196,0.45)" strokeWidth="1" />
-      <g stroke="rgba(217,178,94,0.5)" strokeWidth="0.9">{ticks}</g>
-      <g fill="rgba(127,230,196,0.6)">{dots}</g>
-      <g className="mc-inner">
-        <circle cx="100" cy="100" r="65" stroke="rgba(242,214,140,0.32)" strokeWidth="0.8" fill="none" />
-        <circle cx="100" cy="100" r="48" stroke="rgba(242,214,140,0.22)" strokeWidth="0.6" strokeDasharray="1.5 5" fill="none" />
-        {moons}
-        {sparks}
-        <g stroke="rgba(242,214,140,0.3)" strokeWidth="1" strokeLinecap="round">{rays}</g>
-      </g>
-    </svg>
-  );
-}

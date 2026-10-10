@@ -22,9 +22,4 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-  {
-    // Decorative, intentionally random-per-mount effects (memoised, never affect state).
-    files: ['src/components/StarField.tsx', 'src/components/Cauldron.tsx'],
-    rules: { 'react-hooks/purity': 'off' },
-  },
 );

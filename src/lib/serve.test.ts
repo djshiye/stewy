@@ -176,6 +176,13 @@ describe('serveCard, methodLine and recipeText', () => {
     }
   });
 
+  it('writes counted lines without repeating the noun', () => {
+    const text = recipeText(serveCard(brew(['gin', 60], ['angostura', 1.8], ['orange_slice', 1]), 'Test', 'oz'));
+    expect(text).toMatch(/^2 dashes Angostura bitters$/m);
+    expect(text).toMatch(/^Orange slice$/m);
+    expect(text).not.toMatch(/slice Orange slice/);
+  });
+
   it('handles an empty brew', () => {
     const card = serveCard([], 'Nothing', 'oz');
     expect(card.lines).toEqual([]);

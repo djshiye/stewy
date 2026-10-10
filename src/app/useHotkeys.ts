@@ -50,9 +50,10 @@ export function useHotkeys(handlers: Hotkeys): void {
 
       switch (key) {
         case '/': e.preventDefault(); h.onSearch(); break;
-        case 'g': h.onGrimoire(); break;
-        case 'c': h.onCellar(); break;
-        case 's': h.onServe(); break;
+        // preventDefault keeps the letter out of the field a sheet focuses as it opens
+        case 'g': e.preventDefault(); h.onGrimoire(); break;
+        case 'c': e.preventDefault(); h.onCellar(); break;
+        case 's': e.preventDefault(); h.onServe(); break;
       }
     };
     window.addEventListener('keydown', onKey);

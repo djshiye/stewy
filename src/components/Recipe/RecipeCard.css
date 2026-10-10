@@ -363,7 +363,7 @@
   gap: var(--s2);
   margin-top: var(--s4);
 }
-.rc__actions .ui-btn--primary { flex: 1 1 0; width: auto; min-width: 0; }
+.rc__actions .ui-btn--primary { flex: 1 1 0; width: auto; min-width: 0; padding-inline: 14px; }
 .rc__actions .ui-btn__label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -384,7 +384,7 @@
   .pill { min-width: 80px; padding: 0 var(--s2); }
   .row, .ghost { gap: var(--s2); }
   .ghost { grid-template-columns: 44px minmax(0, 1fr) 80px; }
-  .rc__actions .ui-btn { padding-inline: var(--s3); font-size: 14px; }
+  .rc__actions .ui-btn { padding-inline: 10px; font-size: 14px; }
 }
 
 /* ---------- phones: the card is as tall as its content ---------- */

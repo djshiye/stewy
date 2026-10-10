@@ -33,6 +33,7 @@ type SheetName = 'serve' | 'grimoire' | 'cellar' | null;
 
 let pourSeq = 0;
 const POUR_MS = 1400;
+const SCRUB_MERGE_MS = 700;
 
 const isTouch = () => window.matchMedia('(pointer: coarse)').matches;
 
@@ -137,8 +138,17 @@ export default function App() {
   // ---- brew actions ---------------------------------------------------------
   const setUnit = useCallback((unit: UnitKey) => dispatch({ type: 'setUnit', unit }), [dispatch]);
   const setName = useCallback((name: string) => dispatch({ type: 'setName', name }), [dispatch]);
+  // A scrub fires one setAmount per unit step; steps on the same row within a moment
+  // fold into one undo entry.
+  const lastScrub = useRef<{ id: string; at: number } | null>(null);
   const setAmount = useCallback(
-    (id: string, ml: number) => dispatch({ type: 'setAmount', id, ml }),
+    (id: string, ml: number) => {
+      const now = performance.now();
+      const last = lastScrub.current;
+      const merge = !!last && last.id === id && now - last.at < SCRUB_MERGE_MS;
+      lastScrub.current = { id, at: now };
+      dispatch({ type: 'setAmount', id, ml, merge });
+    },
     [dispatch],
   );
   const clearBrew = useCallback(() => {
@@ -337,7 +347,7 @@ export default function App() {
         onShare={share}
         onCopy={copyRecipe}
       />
-      <Grimoire open={sheet === 'grimoire'} currentId={currentId} onClose={closeSheet} onLoad={loadRecipe} />
+      <Grimoire open={sheet === 'grimoire'} currentId={currentId} unit={model.unit} onClose={closeSheet} onLoad={loadRecipe} />
       <Cellar
         open={sheet === 'cellar'}
         items={cellar.items}

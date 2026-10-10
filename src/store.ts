@@ -23,7 +23,8 @@ export interface BrewState {
 
 export type BrewAction =
   | { type: 'add'; id: string; ml: number }
-  | { type: 'setAmount'; id: string; ml: number }
+  /** `merge` folds the change into the previous undo step (a scrub is one step, not many). */
+  | { type: 'setAmount'; id: string; ml: number; merge?: boolean }
   | { type: 'nudge'; id: string; dir: 1 | -1 }
   | { type: 'remove'; id: string }
   | { type: 'clear' }
@@ -86,9 +87,10 @@ export function reducer(state: BrewState, action: BrewAction): BrewState {
       const ex = state.brew.find((e) => e.id === action.id);
       if (!ex) return state;
       const ml = round1(action.ml);
-      if (!(ml > 0)) return commit(state, state.brew.filter((e) => e.id !== action.id));
       if (ml === ex.ml) return state;
-      return commit(state, state.brew.map((e) => (e.id === action.id ? { ...e, ml } : e)));
+      const brew = ml > 0 ? state.brew.map((e) => (e.id === action.id ? { ...e, ml } : e)) : state.brew.filter((e) => e.id !== action.id);
+      if (action.merge && state.past.length) return { ...state, brew, future: [] };
+      return commit(state, brew);
     }
     case 'nudge': {
       const e = state.brew.find((x) => x.id === action.id);

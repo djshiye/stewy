@@ -207,7 +207,9 @@ export function RecipeCard(props: RecipeCardProps) {
         </div>
         <Title name={model.name} onName={onName} compact={!desktop} />
         <p className="rc__sub">
-          {empty ? 'Drag a bottle up into the pot, or open the Grimoire to start from a classic.' : subLine(model)}
+          {empty
+            ? `${desktop ? 'Drag a bottle up into the pot' : 'Tap a bottle below'}, or open the Grimoire to start from a classic.`
+            : subLine(model)}
         </p>
         {liquids.length > 0 && (
           <div className="rc__strip" role="img" aria-label="Proportions of the liquids">

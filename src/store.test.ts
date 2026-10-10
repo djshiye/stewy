@@ -9,6 +9,14 @@ const add = (id: string, ml: number): BrewAction => ({ type: 'add', id, ml });
 const fake = (data: Record<string, string>) => ({ getItem: (k: string) => data[k] ?? null });
 
 describe('brew actions', () => {
+  it('folds merged setAmount steps (a scrub) into one undo entry', () => {
+    let s = run(initialState(), add('gin', 30), { type: 'setAmount', id: 'gin', ml: 35 });
+    for (const ml of [40, 45, 50]) s = reducer(s, { type: 'setAmount', id: 'gin', ml, merge: true });
+    expect(s.brew).toEqual([{ id: 'gin', ml: 50 }]);
+    expect(s.past).toHaveLength(2);
+    expect(reducer(s, { type: 'undo' }).brew).toEqual([{ id: 'gin', ml: 30 }]);
+  });
+
   it('adds, merges and rounds', () => {
     const s = run(initialState(), add('gin', 45), add('lime_juice', 22.46), add('gin', 15));
     expect(s.brew).toEqual([{ id: 'gin', ml: 60 }, { id: 'lime_juice', ml: 22.5 }]);

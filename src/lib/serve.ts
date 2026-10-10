@@ -182,9 +182,18 @@ export function methodLine(card: Pick<ServeCard, 'method' | 'glass'>): string {
   }
 }
 
+/** One clipboard line: "1.5 oz Gin", "2 dashes Angostura bitters", "Orange slice", "Cherry (2 pieces)". */
+function recipeLine(l: ServeCard['lines'][number]): string {
+  const ing = ING_BY_ID[l.id];
+  if (!ing || !isCounted(ing)) return `${l.amount} ${l.name}`;
+  if (ing.unit === 'dash') return `${l.amount} ${l.name}`;
+  if (l.id === 'salt' || /^1 /.test(l.amount)) return l.name;
+  return `${l.name} (${l.amount})`;
+}
+
 /** Plain-text recipe for the clipboard. */
 export function recipeText(card: ServeCard, url?: string): string {
-  const out = [card.name, '', ...card.lines.map((l) => `${l.amount} ${l.name}`), '', methodLine(card)];
+  const out = [card.name, '', ...card.lines.map(recipeLine), '', methodLine(card)];
   if (card.garnish) out.push(`Garnish: ${card.garnish}`);
   out.push('', `Harmony ${card.score}, ${card.verdict}`);
   if (url) out.push(url);

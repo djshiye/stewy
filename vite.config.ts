@@ -12,7 +12,11 @@ export default defineConfig({
       // keep the hand-written public/site.webmanifest + its <link> in index.html
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Precache the app shell and only the latin font subsets; the other subsets
+        // (latin-ext, cyrillic, vietnamese) are fetched on demand by unicode-range.
+        globPatterns: ['**/*.{js,css,html,svg,png}', '**/*-latin-{wght,opsz}-normal-*.woff2'],
+        // social card and large logo are only fetched by crawlers
+        globIgnores: ['og.png', 'logo.png'],
         navigateFallback: 'index.html',
       },
       // dev server stays untouched (no SW in dev)
