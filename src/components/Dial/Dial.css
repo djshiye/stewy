@@ -263,6 +263,9 @@
 @media (max-width: 459px) {
   .dial__chip-unit { display: none; }
   .dial__chip { padding: 0; }
+  /* Remove, Reset and Update must fit one row; on the narrowest phones Update wraps to its own row */
+  .dial__actions { flex-wrap: wrap; gap: var(--s2) var(--s1); }
+  .dial__actions .ui-btn { padding: 0 var(--s3); }
 }
 
 @media (prefers-reduced-motion: reduce) {
