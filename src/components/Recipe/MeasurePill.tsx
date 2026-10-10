@@ -1,6 +1,8 @@
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { Ingredient } from '../../data/types';
-import { amountInfo, amountLabel, type UnitKey } from '../../lib/units';
+import { amountInfo, amountLabel, trim, type AmountInfo, type UnitKey } from '../../lib/units';
+import { MAX_ML } from '../../store';
+import { VisuallyHidden } from '../ui/VisuallyHidden';
 
 /** Pointer travel before a press becomes a scrub, and px per unit step afterwards. */
 const THRESHOLD = 6;
@@ -9,7 +11,14 @@ const TICKS = 12;
 /** What the tick bar reads as full: 3 oz of liquid, or 6 pieces. */
 const FULL_ML = 90;
 const FULL_PIECES = 6;
-const MAX_ML = 750;
+
+/** The amount as the pill shows it; a sliver too small for the unit's precision reads "<0.1 oz", not "0 oz". */
+function pillLabel(ing: Ingredient, ml: number, unit: UnitKey, info: AmountInfo): string {
+  if (!info.counted && ml > 0 && parseFloat((ml / info.per).toFixed(info.dec)) === 0) {
+    return `<${trim(10 ** -info.dec, info.dec)} ${info.label}`;
+  }
+  return amountLabel({ id: ing.id, ml }, ing, unit);
+}
 
 interface MeasurePillProps {
   ing: Ingredient;
@@ -32,18 +41,20 @@ interface Press {
 /** A tactile measure: the amount above a mini LED scale. Drag sideways or use the arrow keys. */
 export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) {
   const info = amountInfo(ing, unit);
-  const label = amountLabel({ id: ing.id, ml }, ing, unit);
+  const label = pillLabel(ing, ml, unit, info);
   const press = useRef<Press | null>(null);
   const swallow = useRef(false);
   const [scrubbing, setScrubbing] = useState(false);
   const hintId = useId();
+  // set once the arrow keys have been used, so the new amount is spoken (the score line often does not change)
+  const [stepped, setStepped] = useState(false);
 
-  /** The amount `k` unit steps away from `from`, never below one step. */
+  /** The amount `k` unit steps away from `from`: never below one step, and a step never moves the wrong way. */
   const shifted = (from: number, k: number) => {
     const step = info.per * info.step;
     const base = info.counted ? Math.round(from / info.per) * info.per : from;
     const next = base + k * step;
-    return Math.round(Math.min(MAX_ML, Math.max(step, next)) * 100) / 100;
+    return Math.round(Math.min(Math.max(MAX_ML, from), Math.max(Math.min(step, from), next)) * 100) / 100;
   };
 
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
@@ -81,6 +92,7 @@ export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault();
+    setStepped(true);
     onSet(shifted(ml, e.key === 'ArrowRight' ? 1 : -1));
   };
 
@@ -101,6 +113,7 @@ export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) 
         onPointerCancel={endPress}
         onLostPointerCapture={endPress}
         onKeyDown={onKeyDown}
+        onBlur={() => setStepped(false)}
         onClick={(e) => {
           if (swallow.current) {
             e.preventDefault();
@@ -116,9 +129,11 @@ export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) 
           ))}
         </span>
       </button>
-      <span id={hintId} className="ui-vh">
+      {/* aria-describedby still reads it; hidden so browsing the list does not repeat it on every row */}
+      <span id={hintId} className="ui-vh" aria-hidden="true">
         Press Enter to set the amount precisely. Left and right arrow keys change it, or drag sideways.
       </span>
+      <VisuallyHidden role="status">{stepped ? `${ing.name} ${label}` : ''}</VisuallyHidden>
     </>
   );
 }

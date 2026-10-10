@@ -72,10 +72,16 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
     railRef.current?.scrollTo({ left: 0 });
   }, [group, searching]);
 
-  // keep the selected tab in view
+  // Keep the selected tab in view by scrolling the rail itself. scrollIntoView would also move the
+  // browser's sequential-focus start point, so the first Tab after load began in the shelf.
   useEffect(() => {
-    const el = tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
-    el?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    const rail = tabsRef.current;
+    const el = rail?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!rail || !el) return;
+    const r = rail.getBoundingClientRect();
+    const t = el.getBoundingClientRect();
+    const by = t.left < r.left ? t.left - r.left : t.right > r.right ? t.right - r.right : 0;
+    if (by) rail.scrollBy({ left: by, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   }, [group]);
 
   // wheel scrolls the slab sideways (never traps the wheel at an end)
@@ -260,7 +266,7 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
         autoCorrect="off"
         spellCheck={false}
         value={query}
-        placeholder={`Search ${INGREDIENTS.length} ingredients`}
+        placeholder={`Search ${INGREDIENTS.length} ingredients…`}
         aria-label="Search ingredients"
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={onSearchKeyDown}
@@ -292,7 +298,7 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
   const tipEntry = tip ? inPot.get(tip.ing.id) : undefined;
 
   return (
-    <section className={rootCls} aria-label="Ingredients">
+    <aside className={rootCls} aria-label="Ingredients">
       <div className="shelf__bg" aria-hidden="true" />
 
       <header className="shelf__head">
@@ -434,6 +440,6 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
           )}
         </div>
       )}
-    </section>
+    </aside>
   );
 }
