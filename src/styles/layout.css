@@ -49,13 +49,9 @@
   .slot--stage { grid-column: 2; grid-row: 1; }
   .slot--analysis { grid-column: 3; grid-row: 1; }
 
-  .slot--recipe,
-  .slot--analysis {
-    /* cards scroll internally on short viewports; their stat row and Serve button
-       stay pinned at the card bottom (owners handle that inside the card) */
-    overflow: hidden;
-    border-radius: var(--r-md);
-  }
+  /* the cards scroll internally on short viewports (their stat row and Serve button
+     stay pinned at the card bottom; owners handle that inside the card). The slot never
+     clips, so the card's outer tinted shadow shows. */
 
   .slot--stage {
     /* the pot may overflow its column on purpose (handles, halo) */
