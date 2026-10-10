@@ -4,7 +4,7 @@ import type { BrewEntry, GlassKind, Ingredient, Method, Recipe } from '../data/t
 import { ING_BY_ID } from '../data/ingredients';
 import { harmony, resemblance, VERDICT, type Tier } from './harmony';
 import { mixColor } from './color';
-import { amountLabel, type UnitKey } from './units';
+import { amountLabel, isCounted, trim, type UnitKey } from './units';
 
 /** Water added by mixing, as a fraction of the pre-dilution volume. */
 export const DILUTION: Record<Method, number> = { stir: 0.22, shake: 0.28, build: 0.12, blend: 0.35 };
@@ -189,4 +189,192 @@ export function recipeText(card: ServeCard, url?: string): string {
   out.push('', `Harmony ${card.score}, ${card.verdict}`);
   if (url) out.push(url);
   return out.join('\n');
+}
+
+/* ---------- additions for the serve sheet ---------- */
+
+/** First words that stay capitalised inside a sentence. */
+const PROPER_FIRST = new Set(['Campari', 'Aperol', 'Angostura', 'Lillet', 'Grand', 'Bénédictine', 'Irish', "Peychaud's", "Pimm's"]);
+
+/** An ingredient name set inside a sentence ("Sweet vermouth" to "sweet vermouth", "Campari" stays). */
+export function inlineName(name: string): string {
+  const first = name.split(' ')[0];
+  return PROPER_FIRST.has(first) ? name : name.charAt(0).toLowerCase() + name.slice(1);
+}
+
+/** "a, b and c". */
+function joinList(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+const article = (word: string) => (/^[aeiou]/i.test(word) ? 'an' : 'a');
+
+/** Past-tense method word for a pill ("Stirred"). */
+export const METHOD_PAST: Record<Method, string> = {
+  stir: 'Stirred', shake: 'Shaken', build: 'Built over ice', blend: 'Blended',
+};
+
+export const STIR_SECONDS = 30;
+export const SHAKE_SECONDS = 15;
+export const BLEND_SECONDS = 20;
+
+type ServeIce = 'none' | 'large-cube' | 'cubes' | 'crushed';
+
+/** Ice a glass is served over (mirrors the glassware drawing, without importing it). */
+function serveIce(glass: GlassKind, method: Method): ServeIce {
+  switch (glass) {
+    case 'coupe': case 'martini': case 'flute': return 'none';
+    case 'julep': case 'tiki': case 'hurricane': return 'crushed';
+    case 'wine': return method === 'build' ? 'cubes' : 'none';
+    case 'rocks':
+      if (method === 'blend') return 'crushed';
+      return method === 'stir' ? 'large-cube' : 'cubes';
+    case 'highball': case 'copper-mug': return method === 'blend' ? 'crushed' : 'cubes';
+  }
+}
+
+/** The ice a serve is caption-worthy for ("Served over one large cube"). */
+export function serveCaption(card: Pick<ServeCard, 'method' | 'glass'>): string {
+  switch (serveIce(card.glass, card.method)) {
+    case 'large-cube': return 'Served over one large cube';
+    case 'cubes': return 'Served over ice';
+    case 'crushed': return 'Served over crushed ice';
+    default: return 'Served up';
+  }
+}
+
+/** "a lime wheel", "three coffee beans", "grated nutmeg": a garnish fragment with its article. */
+const MASS_GARNISH = new Set(['mint', 'cucumber', 'orange', 'lemon', 'lime', 'grapefruit', 'celery', 'ginger']);
+
+function withArticle(fragment: string): string {
+  const f = fragment.trim().toLowerCase();
+  if (/^(an?|the|one|two|three|four|five|\d|grated|fresh|dried|crushed|candied|some)\b/.test(f)) return f;
+  if (/[^s]s$/.test(f) || MASS_GARNISH.has(f)) return f;
+  return `${article(f)} ${f}`;
+}
+
+/** Garnish text split into its rim and its pieces ("Salt rim, lime wheel"). */
+function garnishParts(garnish: string | null): { rim: string | null; pieces: string[] } {
+  if (!garnish) return { rim: null, pieces: [] };
+  let rim: string | null = null;
+  const pieces: string[] = [];
+  for (const part of garnish.split(/,|\band\b/)) {
+    const p = part.split(/\bor\b/)[0].trim();
+    if (!p) continue;
+    if (/\brim\b/i.test(p)) rim = /sugar/i.test(p) ? 'sugar' : 'salt';
+    else pieces.push(p);
+  }
+  return { rim, pieces };
+}
+
+/** Numbered-list instructions for a serve, e.g. "Add the gin, Campari and sweet vermouth to a mixing glass with ice". */
+export function methodSteps(
+  card: Pick<ServeCard, 'method' | 'glass' | 'garnish' | 'lines'>,
+): string[] {
+  const rows = card.lines
+    .map((l) => ING_BY_ID[l.id])
+    .filter((ing): ing is Ingredient => Boolean(ing))
+    .filter((ing) => ing.group !== 'Garnish');
+  const tops = rows.filter((ing) => isFizz(ing));
+  const mixed = rows.filter((ing) => !isFizz(ing));
+  const topText = joinList(tops.map((i) => inlineName(i.name)));
+  const hasId = (id: string) => rows.some((i) => i.id === id);
+  const glass = GLASS_LABEL[card.glass];
+  const ice = serveIce(card.glass, card.method);
+  const { rim, pieces } = garnishParts(card.garnish);
+  const mint = card.lines.find((l) => l.id === 'mint');
+  const muddled = card.method === 'build' && !!mint && parseInt(mint.amount, 10) >= 4;
+
+  const everything = (list: Ingredient[]) => {
+    if (!list.length) return 'everything';
+    if (tops.length && list.length >= 1 && mixed.length > 3) return `everything except the ${topText}`;
+    if (list.length > 5) return 'everything';
+    return `the ${joinList(list.map((i) => inlineName(i.name)))}`;
+  };
+  const all = tops.length && mixed.length > 3 ? mixed : mixed.length ? mixed : rows;
+
+  const steps: string[] = [];
+  if (rim) steps.push(`Rim ${article(glass)} ${glass} with ${rim}`);
+
+  const strain = (double: boolean) => {
+    const verb = double ? 'Double strain' : 'Strain';
+    switch (ice) {
+      case 'none': return `${verb} into a chilled ${glass}`;
+      case 'large-cube': return `${verb} into a chilled ${glass} over one large cube`;
+      case 'cubes': return `${verb} into ${article(glass)} ${glass} over fresh ice`;
+      case 'crushed': return `${verb} into ${article(glass)} ${glass} over crushed ice`;
+    }
+  };
+
+  switch (card.method) {
+    case 'stir':
+      steps.push(`Add ${everything(all)} to a mixing glass with ice`);
+      steps.push(`Stir for ${STIR_SECONDS} seconds until the glass is frosted`);
+      steps.push(strain(false));
+      if (tops.length) steps.push(`Top with ${topText}`);
+      break;
+    case 'shake':
+      if (hasId('egg_white')) {
+        steps.push(`Add ${everything(all)} to a shaker`);
+        steps.push('Shake without ice for 8 seconds to foam the egg white');
+        steps.push(`Add ice and shake hard for ${SHAKE_SECONDS} seconds`);
+      } else {
+        steps.push(`Add ${everything(all)} to a shaker with ice`);
+        steps.push(hasId('espresso')
+          ? `Shake hard for ${SHAKE_SECONDS} seconds to build a thick crema`
+          : `Shake hard for ${SHAKE_SECONDS} seconds`);
+      }
+      steps.push(strain(hasId('espresso') || hasId('egg_white')));
+      if (tops.length) steps.push(`Top with ${topText}`);
+      break;
+    case 'build':
+      if (muddled) steps.push(`Gently press the mint in ${article(glass)} ${glass} to release its oil`);
+      if (ice === 'none') {
+        steps.push(`Add ${everything(all)} to a chilled ${glass}`);
+      } else {
+        steps.push(`Fill ${article(glass)} ${glass} with ice`);
+        if (mixed.length) steps.push(`Add ${everything(mixed)}`);
+      }
+      if (tops.length) steps.push(`Top with ${topText}`);
+      steps.push('Stir gently to combine');
+      break;
+    case 'blend':
+      steps.push(`Add ${everything(all)} to a blender with a cup of ice`);
+      steps.push(`Blend for ${BLEND_SECONDS} seconds until smooth`);
+      steps.push(`Pour into ${article(glass)} ${glass}`);
+      if (tops.length) steps.push(`Top with ${topText}`);
+      break;
+  }
+
+  const peels = pieces.filter((p) => /\b(peel|twist|zest)\b/i.test(p));
+  const dots = pieces.filter((p) => /\bbitters\b/i.test(p));
+  const rest = pieces.filter((p) => !peels.includes(p) && !dots.includes(p));
+  for (const p of peels) steps.push(`Express ${withArticle(p)} over the drink, then drop it in`);
+  if (dots.length) steps.push('Dot the top with a few drops of bitters');
+  if (rest.length) steps.push(`Garnish with ${joinList(rest.map(withArticle))}`);
+  return steps;
+}
+
+export interface MeasureLine {
+  id: string;
+  name: string;
+  /** Amount in the active unit ("1 oz", "3 dashes"). */
+  primary: string;
+  /** The same volume in a second unit (ml, or oz when ml is active); null for counted items. */
+  secondary: string | null;
+}
+
+/** Menu lines for a brew: the active unit first, a second unit beside it. */
+export function measureLines(brew: BrewEntry[], unit: UnitKey): MeasureLine[] {
+  const out: MeasureLine[] = [];
+  for (const { ing, ml } of resolve(brew)) {
+    const primary = amountLabel({ id: ing.id, ml }, ing, unit);
+    let secondary: string | null = null;
+    if (!isCounted(ing)) {
+      secondary = unit === 'ml' ? amountLabel({ id: ing.id, ml }, ing, 'oz') : `${trim(ml, 1)} ml`;
+    }
+    out.push({ id: ing.id, name: ing.name, primary, secondary });
+  }
+  return out;
 }

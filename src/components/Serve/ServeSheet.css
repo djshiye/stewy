@@ -1,0 +1,290 @@
+/* Serve sheet. Tokens only; the glass stands on a bar top in a pool of its own colour. */
+
+.serve-sheet { overflow: hidden; }
+
+.serve {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- the glass ---------- */
+.serve__stage {
+  --bar-h: 168px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 50% at 50% 46%, rgba(var(--brew-rgb), 0.12), transparent 70%),
+    linear-gradient(180deg, #121722, #0d1118);
+}
+
+.serve__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--bar-h);
+  background: linear-gradient(180deg, #1b212d 0%, #131822 38%, #0d1118 100%);
+  box-shadow: 0 1px 0 rgba(190, 205, 230, 0.16) inset;
+}
+
+/* the pool of light the drink throws on the bar top */
+.serve__pool {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bar-h) - 54px);
+  width: 330px;
+  height: 84px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(closest-side, rgba(var(--brew-rgb), 0.55), rgba(var(--brew-rgb), 0.2) 55%, transparent);
+}
+
+.serve__glass-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: calc(var(--bar-h) - 34px);
+}
+.serve__glass {
+  flex: none;
+  width: 540px;
+  height: auto;
+  max-height: 456px;
+}
+
+.serve__caption {
+  position: absolute;
+  bottom: var(--s5);
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tx-2);
+}
+
+/* ---------- the card ---------- */
+.serve__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.serve__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s8) var(--s8) var(--s4);
+  padding-right: var(--s8);
+}
+
+.serve__title {
+  margin-right: var(--s8); /* the close button sits top right */
+  font-size: 52px;
+  line-height: 54px;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.serve__title[data-size='sm'] { font-size: 42px; line-height: 46px; }
+.serve__title[data-size='xs'] { font-size: 32px; line-height: 36px; letter-spacing: -0.015em; }
+
+.serve__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+.serve__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 var(--s3);
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx-2);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+}
+.serve__pill--score { color: var(--tx-1); padding-left: 10px; }
+.serve__pill--score b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.serve__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tx-3); }
+.serve__dot--good { background: var(--good); }
+.serve__dot--warn { background: var(--warn); }
+.serve__dot--bad { background: var(--bad); }
+
+.serve__note {
+  max-width: 52ch;
+  margin-top: var(--s4);
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--tx-2);
+}
+
+.serve__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s8);
+  margin-top: var(--s6);
+}
+
+.serve__label {
+  margin-bottom: var(--s2);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--tx-3);
+}
+
+/* measures set as menu lines with dotted leaders */
+.serve__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  padding: 7px 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+.serve__name { color: var(--tx-1); font-weight: 500; }
+.serve__leader {
+  flex: 1;
+  min-width: 12px;
+  align-self: flex-end;
+  margin-bottom: 6px;
+  border-bottom: 2px dotted var(--ink-500);
+}
+.serve__amt {
+  min-width: 52px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--tx-1);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.serve__amt2 {
+  min-width: 48px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--tx-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.serve__line--garnish {
+  margin-top: var(--s2);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+.serve__val { text-align: right; color: var(--tx-2); }
+.serve__line--garnish .serve__leader { display: none; }
+.serve__line--garnish .serve__val { flex: 1; }
+
+/* numbered method */
+.serve__steps { display: grid; gap: var(--s3); }
+.serve__steps li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: var(--s3);
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--tx-1);
+}
+.serve__n {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -1px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-2);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- actions and footer ---------- */
+.serve__actions {
+  display: flex;
+  gap: var(--s2);
+  padding: var(--s4) var(--s8) 0;
+  border-top: 1px solid var(--line);
+}
+.serve__save { flex: 1; }
+.serve__actions .ui-btn:not(.serve__save) { flex: 1; }
+
+.serve__foot {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--s3) var(--s8) var(--s5);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--tx-3);
+}
+
+@media (max-height: 760px) {
+  .serve__glass { width: 440px; max-height: 372px; }
+  .serve__stage { --bar-h: 132px; }
+}
+
+/* ---------- phones: a full-height sheet, glass on top ---------- */
+@media (max-width: 999px) {
+  /* the handle and close button stay clear of the scrolling content */
+  .serve-sheet {
+    padding-top: 28px;
+    background: #121722;
+  }
+  .serve-sheet .ui-sheet__close {
+    top: 20px;
+    background: rgba(16, 20, 27, 0.82);
+    border-radius: 50%;
+  }
+  .serve {
+    display: block;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .serve__stage {
+    --bar-h: 80px;
+    height: 316px;
+  }
+  .serve__pool { width: 270px; height: 60px; bottom: calc(var(--bar-h) - 34px); }
+  .serve__glass { width: 360px; max-height: 222px; }
+  .serve__glass-wrap { margin-bottom: calc(var(--bar-h) - 22px); }
+  .serve__caption { bottom: 14px; }
+
+  .serve__body { display: block; min-height: 0; }
+  .serve__scroll { overflow: visible; padding: var(--s5) var(--s4) var(--s4); }
+  .serve__title { font-size: 40px; line-height: 44px; margin-right: 0; }
+  .serve__title[data-size='sm'] { font-size: 34px; line-height: 38px; }
+  .serve__title[data-size='xs'] { font-size: 28px; line-height: 32px; }
+  .serve__cols { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+
+  .serve__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-wrap: wrap;
+    padding: var(--s3) var(--s4) var(--s3);
+    background: #10141b;
+    box-shadow: 0 -16px 24px -8px rgba(16, 20, 27, 0.9);
+  }
+  .serve__save { flex: 1 0 100%; }
+  .serve__actions .ui-btn:not(.serve__save) { height: 40px; font-size: 14px; }
+  .serve__foot { padding: var(--s3) var(--s4) var(--s5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .serve * { transition: none; }
+}

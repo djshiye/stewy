@@ -1,0 +1,272 @@
+/* Pour dial. Tokens only; the accent is used for chrome (LED ring, notch, focus) and never for a score. */
+
+.dial-sheet { overflow-y: auto; }
+
+.dial {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--s6);
+  gap: var(--s4);
+}
+
+/* ---------- header ---------- */
+.dial__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding-right: 56px; /* room for the sheet's close button */
+}
+.dial__tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r-sm);
+  background: var(--ink-800);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+.dial__tile svg { width: 40px; height: 40px; }
+.dial__titles { min-width: 0; }
+.dial__name {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+.dial__kind { font-size: 13px; line-height: 18px; color: var(--tx-2); }
+
+/* ---------- instrument stage ---------- */
+.dial__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4) 0 0;
+  border-top: 1px solid var(--line);
+}
+.dial__units { display: flex; justify-content: center; }
+
+.dial__pad-wrap {
+  position: relative;
+  width: min(330px, 100%, calc((100dvh - 530px) * 1.07));
+  min-width: 220px;
+  padding-bottom: 22px;
+}
+.dial__pad {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 240 / 224;
+  border-radius: var(--r-md);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* the focus ring hugs the plate instead of the square box around it */
+.dial__pad:focus-visible { outline: none; }
+.dial__pad:focus-visible .dial__well-edge { stroke: var(--accent); stroke-width: 2.4; }
+.dial__pad:active { cursor: grabbing; }
+.dial__svg { width: 100%; height: 100%; overflow: visible; }
+
+/* the plate */
+.dial__well-edge { fill: none; stroke: rgba(190, 205, 230, 0.1); stroke-width: 1; }
+
+/* LEDs: the only glow in the product */
+.dial__led { stroke: rgba(190, 205, 230, 0.15); stroke-width: 3.2; stroke-linecap: butt; }
+.dial__led--on { stroke: var(--accent); opacity: 0; transition: opacity 90ms var(--ease-out); }
+.dial__led--on.is-on { opacity: 1; }
+.dial__halo-wide { stroke: rgba(var(--accent-rgb), 0.07); stroke-width: 22; }
+.dial__halo-near { stroke: rgba(var(--accent-rgb), 0.14); stroke-width: 15; }
+
+/* engraved scale */
+.dial__tick { stroke: rgba(190, 205, 230, 0.26); stroke-width: 1; }
+.dial__tick--major { stroke: rgba(190, 205, 230, 0.6); stroke-width: 1.4; }
+.dial__numerals text {
+  fill: var(--tx-3);
+  font: 500 12px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ghost marker at the committed value */
+.dial__ghost path { fill: var(--tx-1); opacity: 0.92; }
+.dial__ghost line { stroke: var(--tx-1); stroke-width: 1.4; opacity: 0.4; }
+
+/* the knob */
+.dial__knurl { stroke: rgba(255, 255, 255, 0.05); stroke-width: 1.9; }
+.dial__knurl--odd { stroke: rgba(255, 255, 255, 0.17); }
+.dial__face { stroke: rgba(0, 0, 0, 0.55); stroke-width: 1.5; }
+.dial__groove { fill: none; stroke: rgba(255, 255, 255, 0.09); stroke-width: 0.7; }
+.dial__groove--deep { stroke: rgba(0, 0, 0, 0.4); stroke-width: 0.9; }
+.dial__notch { fill: var(--accent); }
+.dial__notch-halo { fill: rgba(var(--accent-rgb), 0.28); }
+.dial__rim-light { fill: none; stroke-width: 1.3; stroke-linecap: round; opacity: 0.8; }
+.dial__face-light { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; stroke-linecap: round; }
+.dial__recess { stroke: rgba(0, 0, 0, 0.75); stroke-width: 1.2; }
+.dial__recess-lip { fill: none; stroke: rgba(0, 0, 0, 0.5); stroke-width: 1; }
+.dial__recess-light { fill: none; stroke: rgba(255, 255, 255, 0.16); stroke-width: 1; stroke-linecap: round; }
+
+/* readout sits in the recess */
+.dial__readout {
+  position: absolute;
+  left: 50%;
+  top: calc(100% * 130 / 224);
+  width: 34%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  text-align: center;
+}
+.dial__value {
+  font-size: 40px;
+  line-height: 40px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  color: var(--tx-1);
+  font-variant-numeric: tabular-nums;
+}
+.dial__value[data-long] { font-size: 30px; line-height: 34px; }
+.dial__unit { margin-top: 2px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--tx-2); }
+.dial__conv { margin-top: 2px; font-size: 11px; line-height: 14px; font-weight: 500; color: var(--tx-2); white-space: nowrap; }
+
+/* minus and plus sit in the open gap at the bottom of the scale */
+.dial__step {
+  position: absolute;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--tx-1);
+  background: var(--ink-700);
+  box-shadow: var(--sh-1), 0 0 0 1px var(--line-2) inset;
+  transition:
+    background-color var(--t-hover) var(--ease-out),
+    transform var(--t-settle) var(--ease-spring);
+}
+.dial__step--minus { left: calc(50% - 56px); }
+.dial__step--plus { left: calc(50% + 12px); }
+.dial__step:hover:not(:disabled) { background: var(--ink-600); }
+.dial__step:active:not(:disabled) { transform: scale(0.92); }
+.dial__step:disabled { opacity: 0.35; }
+
+/* quick measures */
+.dial__chips {
+  display: grid;
+  grid-template-columns: repeat(var(--chips, 6), 1fr);
+  gap: var(--s2);
+  width: 100%;
+}
+.dial__chip {
+  height: 34px;
+  min-width: 0;
+  padding: 0 var(--s2);
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--tx-2);
+  background: var(--ink-700);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  transition:
+    background-color var(--t-hover) var(--ease-out),
+    color var(--t-hover) var(--ease-out),
+    box-shadow var(--t-hover) var(--ease-out);
+}
+.dial__chip:hover { color: var(--tx-1); background: var(--ink-600); }
+.dial__chip[aria-checked='true'] {
+  color: var(--tx-1);
+  background: var(--ink-600);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.7) inset;
+}
+
+@media (max-height: 880px) { .dial__hint { display: none; } }
+.dial__hint { font-size: 12px; line-height: 16px; color: var(--tx-3); text-align: center; }
+.dial__hint--touch { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .dial__hint--fine { display: none; }
+  .dial__hint--touch { display: inline; }
+}
+
+/* ---------- preview ---------- */
+.dial__preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  background: rgba(7, 9, 13, 0.5);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+.dial__scores {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s3);
+}
+.dial__score { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dial__score--after { align-items: flex-end; }
+.dial__label { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.01em; color: var(--tx-3); }
+.dial__num {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--tx-1);
+  font-variant-numeric: tabular-nums;
+}
+.dial__num--before { color: var(--tx-2); }
+.dial__num--word { font-size: 18px; line-height: 32px; font-weight: 500; letter-spacing: 0; color: var(--tx-3); }
+.dial__arrow { color: var(--tx-3); }
+.dial__after-row { display: flex; align-items: center; gap: var(--s2); }
+.dial__delta {
+  height: 22px;
+  padding: 0 var(--s2);
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dial__delta--good { color: var(--good); background: rgba(91, 215, 154, 0.14); }
+.dial__delta--bad { color: var(--bad); background: rgba(242, 106, 91, 0.14); }
+.dial__delta--flat { color: var(--tx-2); background: var(--ink-700); font-weight: 500; }
+.dial__why {
+  min-height: 40px; /* two lines, so the sheet does not jump while the reason changes */
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--tx-2);
+}
+
+/* ---------- actions ---------- */
+.dial__actions { display: flex; align-items: center; gap: var(--s2); }
+.dial__go { flex: 1; }
+
+@media (max-width: 999px) {
+  .dial {
+    padding: var(--s6) var(--s4) var(--s4);
+    gap: var(--s3);
+  }
+  .dial__head { padding-top: var(--s2); }
+  .dial__pad-wrap { width: min(300px, 100%, calc((100dvh - 560px) * 1.07)); min-width: 240px; }
+}
+
+/* narrow phones: the unit is already in the readout, so chips show numbers only */
+@media (max-width: 459px) {
+  .dial__chip-unit { display: none; }
+  .dial__chip { padding: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dial__led--on,
+  .dial__step,
+  .dial__chip { transition: none; }
+}
