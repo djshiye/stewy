@@ -154,6 +154,15 @@
   padding-inline: var(--s5);
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* useRowFit cuts this scroller to whole rows; scrolling lands on whole rows too */
+  scroll-snap-type: y mandatory;
+}
+.row { scroll-snap-align: start; }
+/* the "N more" strip is the cue, so no fade lies over a row */
+.rc .rc__rows[data-more-above],
+.rc .rc__rows[data-more-below] {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 .rc__list { position: relative; }
 
@@ -192,7 +201,7 @@
   gap: 6px;
   align-self: center;
   height: 28px;
-  margin-top: var(--s1);
+  margin-top: 2px;
   padding: 0 var(--s3) 0 10px;
   border-radius: var(--r-pill);
   background: var(--ink-700);
@@ -268,7 +277,7 @@
   position: absolute;
   inset: -12px;
 }
-.row__remove:hover { background: var(--ink-600); color: var(--tx-1); }
+.row__remove:hover { background: var(--ink-500); color: var(--tx-1); }
 .row:hover .row__remove,
 .row:focus-within .row__remove,
 .row__remove:focus-visible {
@@ -459,11 +468,17 @@
   .row__remove::after { inset: -14px; }
 }
 
-/* short desktop viewports: a tighter header leaves the rows more room (they scroll) */
+/* short desktop viewports: a tighter header leaves the rows more room. The line under the name
+   goes (the Method stat says the same) so the whole drink fits; an empty card keeps its hint. */
 @media (min-width: 1000px) and (max-height: 819px) {
-  .rc { padding-top: var(--s4); }
+  .rc { padding-top: var(--s4); padding-bottom: var(--s4); }
+  .rc__foot { padding-top: var(--s1); }
   .rc__heading[data-size='lg'] .rc__title,
   .rc__title--input[data-size='lg'] { font-size: 34px; line-height: 38px; }
   .rc__heading { margin-top: 4px; }
   .rc__strip { margin-top: var(--s3); }
+  .rc__meta { min-height: 20px; }
+  .rc:not([data-empty]) .rc__sub { display: none; }
+  .stat { padding-top: var(--s2); padding-bottom: var(--s2); }
+  .rc__actions { margin-top: var(--s3); }
 }
