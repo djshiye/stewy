@@ -48,6 +48,9 @@ function parseColor(css: string): { rgb: RGB; a: number } {
 
 const GLASS_EDGE = 'rgba(224,238,255,';
 
+/** Garnish size relative to the glass kind (stemware has a small bowl). */
+const GARNISH_SCALE: Partial<Record<GlassKind, number>> = { coupe: 0.86, martini: 0.84, wine: 0.86, flute: 0.74, hurricane: 0.9 };
+
 /** Spiral-free helper: a closed strip following the cavity wall (for highlights). */
 function wallStrip(g: Geo, y0: number, y1: number, inset0: number, inset1: number, side: 1 | -1): string {
   const pts: [number, number][] = [];
@@ -90,7 +93,8 @@ function GlassImpl({ kind, color, fill, ice = 'none', garnish = [], foam = null,
   const kinds = Array.from(new Set(garnish));
   const ctxBase = { uid, g, yFill: foam ? yFill : yFill, ice };
   const sides: (1 | -1)[] = [1, -1];
-  const k = Math.min(1.12, Math.max(0.86, g.rimOut / 30));
+  // garnishes scale with the glass: small bowls and narrow flutes get smaller pieces
+  const k = Math.min(1.12, Math.max(0.86, g.rimOut / 30)) * (GARNISH_SCALE[kind] ?? 1);
   const layers: Layers[] = kinds.map((kd, i) => {
     const c: GarnishCtx = { ...ctxBase, side: sides[i % 2], k };
     return drawGarnish(kd, c);

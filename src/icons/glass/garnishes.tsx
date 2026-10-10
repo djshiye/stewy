@@ -152,14 +152,32 @@ function ribbon(centre: (t: number) => Pt, half: (t: number) => number, face: (t
   return runs;
 }
 
-function ribbonNode(runs: Run[], c: { rind: string; edge: string; pith: string }, w: number, key: string): ReactNode {
+/** Zest on the outside, pith on the inside; the pale edge shows where the knife went. */
+interface PeelPalette { zest: string; zestEdge: string; pith: string; pithEdge: string; shade: string }
+
+const ORANGE_PEEL: PeelPalette = { zest: '#f48a17', zestEdge: '#fde7b4', pith: '#fbf0cf', pithEdge: '#e4c585', shade: 'rgba(86,34,0,.38)' };
+const LEMON_PEEL: PeelPalette = { zest: '#f4d422', zestEdge: '#fff6c4', pith: '#fbf3c3', pithEdge: '#d9c35a', shade: 'rgba(92,70,0,.36)' };
+
+const CUCUMBER_PEEL: PeelPalette = { zest: '#4f9a43', zestEdge: '#c4e6a2', pith: '#e8f3c8', pithEdge: '#a9c97b', shade: 'rgba(16,56,18,.3)' };
+
+/** A peel strip: a soft shadow, back faces first, then front faces with a pale edge and a fine highlight. */
+function peelNode(runs: Run[], pal: PeelPalette, w: number, key: string): ReactNode {
+  const back = runs.filter((r) => r.face < 0), front = runs.filter((r) => r.face > 0);
+  const line = (r: Run, dx: number, dy: number, a: number, b: number) => {
+    const pts = r.mid.slice(Math.floor(r.mid.length * a), Math.max(2, Math.ceil(r.mid.length * b)));
+    return `M${pts.map((p) => `${f(p[0] + dx)} ${f(p[1] + dy)}`).join('L')}`;
+  };
   return (
-    <g key={key} strokeLinejoin="round">
-      {runs.map((r, i) => (
-        <g key={i}>
-          <path d={r.d} fill={r.face > 0 ? c.rind : c.pith} stroke={r.face > 0 ? c.edge : '#d9c79a'} strokeWidth={w} />
-          {r.face > 0 && r.mid.length > 3 && (
-            <path d={`M${r.mid.map((p) => `${f(p[0])} ${f(p[1])}`).join('L')}`} fill="none" stroke="rgba(255,255,255,.28)" strokeWidth={w * 1.1} strokeLinecap="round" />
+    <g key={key} strokeLinejoin="round" strokeLinecap="round">
+      <g transform={`translate(${f(w * 0.9)} ${f(w * 1.4)})`} fill={pal.shade}>
+        {runs.map((r, i) => <path key={i} d={r.d} />)}
+      </g>
+      {back.map((r, i) => <path key={`b${i}`} d={r.d} fill={pal.pith} stroke={pal.pithEdge} strokeWidth={w} />)}
+      {front.map((r, i) => (
+        <g key={`f${i}`}>
+          <path d={r.d} fill={pal.zest} stroke={pal.zestEdge} strokeWidth={w} />
+          {r.mid.length > 3 && (
+            <path d={line(r, -0.35, -0.45, 0.1, 0.9)} stroke="rgba(255,255,255,.8)" strokeWidth={w * 0.55} fill="none" />
           )}
         </g>
       ))}
@@ -258,7 +276,7 @@ function cherryNode(c: GarnishCtx, x: number, y: number, r: number, stemTo: Pt, 
   return (
     <g key={key}>
       <path d={`M${f(sx)} ${f(y - r * 0.7)}C${f(sx + (stemTo[0] - x) * 0.1)} ${f(y - r * 2)} ${f(stemTo[0] - (stemTo[0] - x) * 0.3)} ${f(stemTo[1] + 6)} ${f(stemTo[0])} ${f(stemTo[1])}`}
-        fill="none" stroke="#5a3a22" strokeWidth="1" strokeLinecap="round" />
+        fill="none" stroke="#7a4e2c" strokeWidth="1.25" strokeLinecap="round" />
       <circle cx={f(x)} cy={f(y)} r={f(r)} fill={id(c, 'cherry')} />
       <path d={`M${f(x - r * 0.15)} ${f(y - r * 0.85)}Q${f(x + r * 0.1)} ${f(y - r * 0.55)} ${f(x + r * 0.05)} ${f(y - r * 0.3)}`} fill="none" stroke="rgba(60,0,10,.5)" strokeWidth=".8" strokeLinecap="round" />
       <ellipse cx={f(x - r * 0.38)} cy={f(y - r * 0.38)} rx={f(r * 0.3)} ry={f(r * 0.2)} transform={`rotate(-35 ${f(x - r * 0.38)} ${f(y - r * 0.38)})`} fill="rgba(255,255,255,.65)" />
@@ -293,54 +311,48 @@ export function drawGarnish(kind: GarnishKind, c: GarnishCtx): Layers {
       const r = Math.min(14.5 * k, rx * 0.74);
       return { mid: wedge(c, cit, CX + side * rx * 0.48, rim + 3 * k, r, side * 16, key) };
     }
-    case 'orange-peel':
-    case 'lemon-twist': {
-      const orange = kind === 'orange-peel';
-      const sx = (n: number) => L + side * n;
-      const inward = -side * Math.min(rx * 0.55, 20);
-      const centre = orange
-        ? bez([L + inward, rim + 9], [L + inward * 0.4, rim - 8 * k], [sx(4.5), rim - 9 * k], [sx(6.5), rim + 16 * k])
-        : bez([L + inward * 1.1, rim + 11], [L + inward * 0.2, rim - 15 * k], [sx(9), rim - 6 * k], [sx(3), rim + 20 * k]);
-      const wob = orange ? 1.3 : 2.4;
+    case 'orange-peel': {
+      // A thin expressed strip: in over the drink, an arch across the rim, a half twist at the tail.
+      const inward = -side * Math.min(rx * 0.5, 17);
+      const centre = bez(
+        [L + inward, rim + 4.5], [L + inward * 0.45, rim - 9 * k], [L + side * 3 * k, rim - 9.5 * k], [L + side * 7 * k, rim + 9 * k],
+      );
       const cen = (t: number): Pt => {
         const p = centre(t);
-        const w = orange ? Math.sin(t * Math.PI * 2) : Math.sin(t * Math.PI * 3.2);
-        return [p[0] + w * wob * side, p[1] + (orange ? 0 : Math.cos(t * Math.PI * 3.2) * wob * 0.6)];
+        return [p[0] + Math.sin(t * Math.PI * 2.1) * 0.9 * side, p[1]];
       };
-      const width = orange ? 4.3 * k : 1.9 * k;
-      const taper = (t: number) => Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * t)), 0.55);
-      const runs = ribbon(
-        cen,
-        (t) => orange ? width * taper(t) : width * (0.3 + 0.7 * Math.abs(Math.cos(Math.PI * 1.5 * (1 - t)))),
-        (t) => orange ? 1 : Math.cos(Math.PI * 1.5 * (1 - t)),
-        36,
+      const half = 2.3 * k;
+      const taper = (t: number) => Math.pow(Math.sin(Math.PI * (0.02 + 0.96 * t)), 0.45);
+      const face = (t: number) => Math.cos(((Math.PI * 0.5) * t) / 0.8);
+      const runs = ribbon(cen, (t) => half * taper(t) * (0.3 + 0.7 * Math.abs(face(t))), face, 40);
+      const oil: ReactNode[] = [[3, -12, 0.7], [-1.5, -14.5, 0.5], [6, -14.5, 0.45]].map(([dx, dy, r], i) => (
+        <circle key={i} cx={f(L + side * dx * k)} cy={f(rim + dy * k)} r={r} fill="#ffb347" opacity={0.42 - i * 0.07} />
+      ));
+      return { over: <g key={key}>{peelNode(runs, ORANGE_PEEL, 0.6, 'p')}{oil}</g> };
+    }
+    case 'lemon-twist': {
+      // A hook over the rim, then a real spiral coil that hangs down the outside wall.
+      const rc = 3.2 * k, turns = 3, tH = 0.2, y0 = rim + 2, len = 25 * k;
+      const axisX = (y: number) => CX + side * (g.hwOut(Math.min(g.floor, Math.max(rim, y))) + rc * 0.4);
+      const hook = bez(
+        [L - side * 8 * k, rim + 4], [L - side * 3 * k, rim - 8 * k], [axisX(y0) - side * 1, rim - 6 * k], [axisX(y0), y0],
       );
-      const colors = orange
-        ? { rind: '#f0901d', edge: '#fbe0a6', pith: '#fbebc8' }
-        : { rind: '#f1d01f', edge: '#a98c05', pith: '#f4e27a' };
-      const under = orange ? { rind: '#a8500a', edge: '#a8500a', pith: '#a8500a' } : null;
-      const spray: ReactNode[] = [];
-      if (orange) {
-        for (let i = 0; i < 9; i++) {
-          const a = rnd(i * 3 + 1), b = rnd(i * 3 + 2);
-          spray.push(
-            <circle key={i} cx={f(L + inward * (0.15 + a * 1.05))} cy={f(rim - 3 - b * 12 * k)} r={f(0.4 + rnd(i + 8) * 0.55)} fill="#ff9a1f" opacity={0.35 + rnd(i + 4) * 0.45} />,
-          );
-        }
-      }
-      return {
-        over: (
-          <g key={key}>
-            {under && <g transform="translate(.7 1.1)">{ribbonNode(runs, under, 0.3, 'u')}</g>}
-            {ribbonNode(runs, colors, orange ? 0.7 : 0.55, 'r')}
-            {spray}
-          </g>
-        ),
+      const cen = (t: number): Pt => {
+        if (t < tH) return hook(t / tH);
+        const u = (t - tH) / (1 - tH);
+        const y = y0 + len * u;
+        const ph = Math.PI * 2 * turns * u;
+        const env = Math.min(1, u * 5);
+        return [axisX(y) + Math.sin(ph) * rc * env, y + Math.cos(ph) * rc * 0.6 * env];
       };
+      const face = (t: number) => (t < tH ? 1 : Math.cos(Math.PI * 2 * turns * ((t - tH) / (1 - tH))));
+      const taper = (t: number) => Math.pow(Math.sin(Math.PI * (0.02 + 0.96 * t)), 0.4);
+      const runs = ribbon(cen, (t) => 1.45 * k * taper(t) * (t < tH ? 1 : 0.55 + 0.45 * Math.abs(face(t))), face, 100);
+      return { over: <g key={key}>{peelNode(runs, LEMON_PEEL, 0.5, 'p')}</g> };
     }
     case 'mint-sprig': {
       const by = rim + 8;
-      const sc = Math.min(1, (by - 2) / 48);
+      const sc = Math.min(1, (by - 2) / 48) * k * 0.82;
       const drop = Math.max(0, c.yFill + 5 - by) / sc;
       const leaves: [number, number, number, number, number][] = [
         // x, y, length, width, rotation
@@ -530,8 +542,9 @@ export function drawGarnish(kind: GarnishKind, c: GarnishCtx): Layers {
         const w = g.hwIn(Math.min(Math.max(y, rim), g.floor));
         return [CX + side * w * (0.55 + 0.22 * Math.sin(Math.PI * 2 * 1.25 * t)), y];
       };
-      const runs = ribbon(cen, (t) => 4 * k * (0.4 + 0.6 * Math.abs(Math.cos(Math.PI * 2.2 * t))), (t) => Math.cos(Math.PI * 2.2 * t), 40);
-      return { sub: ribbonNode(runs, { rind: '#4a8a3c', edge: '#2b5f25', pith: '#dcecb2' }, 0.5, key) };
+      const taper = (t: number) => Math.pow(Math.sin(Math.PI * (0.03 + 0.94 * t)), 0.5);
+      const runs = ribbon(cen, (t) => 3.4 * k * taper(t) * (0.4 + 0.6 * Math.abs(Math.cos(Math.PI * 2.2 * t))), (t) => Math.cos(Math.PI * 2.2 * t), 56);
+      return { sub: peelNode(runs, CUCUMBER_PEEL, 0.45, key) };
     }
     case 'raspberry':
     case 'blackberry': {
