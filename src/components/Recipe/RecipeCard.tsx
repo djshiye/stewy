@@ -44,7 +44,9 @@ const ARCHETYPE_LINE = {
 
 /** The one line under the title. */
 function subLine(model: AppModel): string {
-  const { match, h, method, brew } = model;
+  const { h, method, brew } = model;
+  // a brew that clashes or scores poorly is not "close to" anything, whatever its quantities say
+  const match = h && h.parts.clash > -20 && h.score >= 40 ? model.match : null;
   if (match && match.sim >= 0.98) {
     const same = match.recipe.name.toLowerCase() === model.name.trim().toLowerCase();
     return `Recognised classic${same ? '' : `: ${match.recipe.name}`}. ${METHOD_SENTENCE[method]}`;

@@ -302,7 +302,9 @@ export function drawGarnish(kind: GarnishKind, c: GarnishCtx): Layers {
     case 'lime-wheel':
     case 'lemon-wheel': {
       const cit = CITRUS_KIND[kind]!;
-      const r = Math.min(11.5 * k, rx * 0.62);
+      // tumblers read oversized with a full wheel (about 37% of the width), so they get a smaller one
+      const tumbler = g.kind === 'rocks' || g.kind === 'highball';
+      const r = Math.min(11.5 * k, rx * (tumbler ? 0.28 : 0.62));
       return { mid: wheel(c, cit, CX + side * rx * 0.5, rim - 2.5 * k, r, side * 14, key) };
     }
     case 'lime-wedge':
@@ -325,10 +327,7 @@ export function drawGarnish(kind: GarnishKind, c: GarnishCtx): Layers {
       const taper = (t: number) => Math.pow(Math.sin(Math.PI * (0.02 + 0.96 * t)), 0.45);
       const face = (t: number) => Math.cos(((Math.PI * 0.5) * t) / 0.8);
       const runs = ribbon(cen, (t) => half * taper(t) * (0.3 + 0.7 * Math.abs(face(t))), face, 40);
-      const oil: ReactNode[] = [[3, -12, 0.7], [-1.5, -14.5, 0.5], [6, -14.5, 0.45]].map(([dx, dy, r], i) => (
-        <circle key={i} cx={f(L + side * dx * k)} cy={f(rim + dy * k)} r={r} fill="#ffb347" opacity={0.42 - i * 0.07} />
-      ));
-      return { over: <g key={key}>{peelNode(runs, ORANGE_PEEL, 0.6, 'p')}{oil}</g> };
+      return { over: <g key={key}>{peelNode(runs, ORANGE_PEEL, 0.6, 'p')}</g> };
     }
     case 'lemon-twist': {
       // A hook over the rim, then a real spiral coil that hangs down the outside wall.

@@ -4,7 +4,7 @@ import type { BrewEntry, GlassKind, Ingredient, Method, Recipe } from '../data/t
 import { ING_BY_ID } from '../data/ingredients';
 import { harmony, resemblance, VERDICT, type Tier } from './harmony';
 import { mixColor } from './color';
-import { amountLabel, isCounted, perPiece, trim, type UnitKey } from './units';
+import { amountLabel, isCounted, nounOf, perPiece, plural, trim, type UnitKey } from './units';
 
 /** Water added by mixing, as a fraction of the pre-dilution volume. */
 export const DILUTION: Record<Method, number> = { stir: 0.22, shake: 0.28, build: 0.12, blend: 0.35 };
@@ -138,7 +138,11 @@ const GARNISH_PLURAL: Record<string, string> = {
 function garnishPhrase(g: BrewGarnish): string {
   if (g.count > 1 && GARNISH_PLURAL[g.id]) return `${g.count} ${GARNISH_PLURAL[g.id]}`;
   if (g.id === 'cucumber') return 'Cucumber slice';
-  return ING_BY_ID[g.id]?.name ?? g.id;
+  const ing = ING_BY_ID[g.id];
+  if (!ing) return g.id;
+  // mint has no plural name, so the count follows it ("Fresh mint, 8 leaves")
+  if (g.count > 1 && g.id === 'mint') return `${ing.name}, ${g.count} ${plural(nounOf(ing), g.count)}`;
+  return ing.name;
 }
 
 /** Garnish row text for items in the brew: "Orange slice", "Maraschino cherry and fresh mint". */

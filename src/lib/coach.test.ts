@@ -74,6 +74,28 @@ describe('topSuggestions', () => {
     expect(more.some((s) => !s.inBrew)).toBe(true);
   });
 
+  it('keeps a strong brew in its shape instead of turning it into something else', () => {
+    const espresso = brew(['vodka', 50], ['coffee_liqueur', 20], ['espresso', 30]);
+    const negroni = brew(['gin', 30], ['campari', 30], ['sweet_vermouth', 30]);
+    for (const b of [espresso, negroni]) {
+      const base = harmony(b);
+      expect(base?.score).toBeGreaterThanOrEqual(80);
+      expect(base?.archetype).not.toBeNull();
+      const top = topSuggestions(b, 200);
+      expect(top.length).toBeGreaterThan(0);
+      for (const s of top) {
+        expect(harmony(withAdded(b, s.ing.id, s.ml))?.archetype, s.ing.id).toBe(base?.archetype);
+      }
+    }
+    expect(topSuggestions(espresso, 200).some((s) => s.ing.id === 'tonic_water')).toBe(false);
+  });
+
+  it('still suggests for brews that have no shape', () => {
+    const shapeless = brew(['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]);
+    expect(harmony(shapeless)?.archetype).toBeNull();
+    expect(topSuggestions(shapeless).length).toBeGreaterThan(0);
+  });
+
   it('defaults to three and skips garnish while other options exist', () => {
     const top = topSuggestions(SOUR);
     expect(top.length).toBeLessThanOrEqual(3);

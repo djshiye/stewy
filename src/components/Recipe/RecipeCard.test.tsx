@@ -48,6 +48,18 @@ describe('RecipeCard', () => {
     expect(screen.getByText('4 items')).toBeTruthy();
   });
 
+  it('does not call a clashing, low scoring brew close to a classic', () => {
+    const sludge = [
+      { id: 'heavy_cream', ml: 30 }, { id: 'lime_juice', ml: 25 }, { id: 'mezcal', ml: 30 }, { id: 'ginger_beer', ml: 120 },
+    ];
+    const model = modelFor(sludge, 'Cursed Sludge');
+    expect(model.match?.recipe.name).toBe('Moscow Mule');
+    expect(model.h?.score).toBeLessThan(40);
+    setup(model);
+    expect(screen.queryByText(/Close to/)).toBeNull();
+    expect(screen.getByText(/Your own mix\. Built over ice\./)).toBeTruthy();
+  });
+
   it('steps the amount with the arrow keys', async () => {
     const p = setup();
     const pill = screen.getByRole('button', { name: 'Gin, 1 oz' });

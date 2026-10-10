@@ -123,7 +123,8 @@ describe('inferGarnish', () => {
     expect(inferGarnish(NEGRONI, RECIPE_BY_ID.negroni)).toBe('Orange peel');
   });
   it('uses garnish ingredients in the brew', () => {
-    expect(inferGarnish(MOJITO)).toBe('Fresh mint');
+    expect(inferGarnish(MOJITO)).toBe('Fresh mint, 8 leaves');
+    expect(inferGarnish(brew(['gin', 60], ['mint', 1]))).toBe('Fresh mint');
     expect(inferGarnish(brew(['gin', 60], ['olive', 3]))).toBe('Olive');
   });
   it('suggests from the ingredients otherwise', () => {
@@ -207,11 +208,17 @@ describe('garnish in the brew is the garnish', () => {
   });
 
   it('names, counts and joins the pieces', () => {
-    expect(inferGarnish(brew(['gin', 60], ['cherry', 3], ['mint', 6]))).toBe('Maraschino cherry and fresh mint');
+    expect(inferGarnish(brew(['gin', 60], ['cherry', 3], ['mint', 6]))).toBe('Maraschino cherry and fresh mint, 6 leaves');
     expect(inferGarnish(brew(['gin', 60], ['olive', 6]))).toBe('2 olives');
     expect(inferGarnish(brew(['gin', 60], ['olive', 3], ['cherry', 6], ['salt', 1]))).toBe('Olive, 2 maraschino cherries and salt rim');
     expect(inferGarnish(brew(['gin', 60], ['orange_slice', 6]))).toBe('2 orange slices');
     expect(inferGarnish(brew(['gin', 60], ['salt', 1]))).toBe('Salt rim');
+  });
+
+  it('carries the mint count into the card and the clipboard text', () => {
+    const card = serveCard(MOJITO, 'Mojito', 'oz');
+    expect(card.garnish).toBe('Fresh mint, 8 leaves');
+    expect(recipeText(card)).toContain('Garnish: Fresh mint, 8 leaves');
   });
 
   it('drops garnish items from the measures and the recipe lines', () => {

@@ -70,15 +70,22 @@ export function scoreDeltas(brew: BrewEntry[]): Map<string, Delta> | null {
   return out;
 }
 
+/** From this score up, a suggestion may not change the brew's archetype. */
+const KEEP_SHAPE_SCORE = 80;
+
 /** The best few additions, strongest first. Garnish only shows up when nothing else helps. */
 export function topSuggestions(brew: BrewEntry[], n = 3): CoachSuggestion[] {
   const deltas = scoreDeltas(brew);
   const base = harmony(brew);
   if (!deltas || !base) return [];
+  // A strong brew with a clear shape keeps it: no telling a 90-point Espresso Martini to become a highball.
+  const keepShape = base.score >= KEEP_SHAPE_SCORE && base.archetype !== null;
   const all: CoachSuggestion[] = [];
   for (const ing of INGREDIENTS) {
     const d = deltas.get(ing.id);
-    if (d && d.delta > 0) all.push({
+    if (!d || d.delta <= 0) continue;
+    if (keepShape && harmony(withAdded(brew, ing.id, d.ml))?.archetype !== base.archetype) continue;
+    all.push({
       ing, ml: d.ml, delta: d.delta, score: base.score + d.delta,
       inBrew: brew.some((e) => e.id === ing.id),
     });
