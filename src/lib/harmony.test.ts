@@ -204,4 +204,9 @@ describe('copy', () => {
     }
     expect(suggestions(null, []).length).toBe(1);
   });
+
+  it('still warns about curdling when the cream is topped up with a long mixer', () => {
+    const b = toBrew([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]]);
+    expect(suggestions(harmony(b), b).map((s) => s.text)).toContain('Cream and citrus can curdle. Pick one or the other.');
+  });
 });

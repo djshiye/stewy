@@ -3,7 +3,7 @@ import type { BrewEntry } from '../data/types';
 import { INGREDIENTS } from '../data/ingredients';
 import { RECIPES } from '../data/recipes';
 import { harmony } from './harmony';
-import { scoreDeltas } from './coach';
+import { scoreDeltas, topSuggestions } from './coach';
 
 const toBrew = (b: [string, number][]): BrewEntry[] => b.map(([id, ml]) => ({ id, ml }));
 const score = (b: [string, number][]) => harmony(toBrew(b))?.score ?? 0;
@@ -24,6 +24,10 @@ const CLASH_SUITE: Record<string, [string, number][]> = {
   cream_grapefruit_soda: [['heavy_cream', 40], ['grapefruit_soda', 90]],
   mezcal_cream_lime: [['mezcal', 40], ['heavy_cream', 30], ['lime_juice', 20]],
   coffee_lime_tonic: [['espresso', 30], ['lime_juice', 20], ['tonic_water', 90]],
+  curdled_ginger_beer: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]],
+  curdled_cola: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['cola', 120]],
+  curdled_soda: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['soda_water', 120]],
+  curdled_tonic: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['tonic_water', 120]],
   sweet_tower: [['simple_syrup', 40], ['grenadine', 20], ['vodka', 10]],
   sour_tower: [['lemon_juice', 60], ['lime_juice', 30], ['gin', 10]],
   bitter_tower: [['campari', 60], ['angostura', 4], ['espresso', 30]],
@@ -61,6 +65,26 @@ describe('calibration', () => {
   it('keeps the clash suite at 55 or less', () => {
     const high = Object.entries(CLASH_SUITE).filter(([, b]) => score(b) > 55).map(([k, b]) => `${k} ${score(b)}`);
     expect(high).toEqual([]);
+  });
+
+  it('keeps dairy plus acid penalised however far the brew is topped up', () => {
+    const base: [string, number][] = [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30]];
+    const clashOf = (mixer: number) => harmony(toBrew([...base, ['soda_water', mixer]]))?.parts.clash ?? 0;
+    for (const ml of [0, 30, 60, 120, 240]) expect(clashOf(ml), `${ml} ml soda`).toBeLessThan(-30);
+    // a smooth ramp, not a cliff: nearby amounts of cream move the clash by a few points at most
+    let prev = harmony(toBrew([['mezcal', 45], ['lime_juice', 25], ['heavy_cream', 0.5]]))?.parts.clash ?? 0;
+    for (let ml = 1; ml <= 30; ml += 0.5) {
+      const c = harmony(toBrew([['mezcal', 45], ['lime_juice', 25], ['heavy_cream', ml]]))?.parts.clash ?? 0;
+      expect(Math.abs(c - prev), `${ml} ml cream`).toBeLessThan(12);
+      prev = c;
+    }
+    // egg white and coconut cream are creamy but do not curdle
+    expect(harmony(toBrew([['bourbon', 45], ['lemon_juice', 25], ['simple_syrup', 15], ['egg_white', 20], ['soda_water', 120]]))?.parts.clash).toBeCloseTo(0);
+  });
+
+  it('never suggests a fix for a curdled brew that is really a bigger mixer', () => {
+    const tops = topSuggestions(toBrew([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30]]));
+    expect(tops.filter((t) => t.delta > 20).map((t) => `${t.ing.id} +${t.delta}`)).toEqual([]);
   });
 
   it('keeps a lone spirit at 62 or less, a lone syrup or juice at 50 or less', () => {

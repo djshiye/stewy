@@ -106,3 +106,30 @@ describe('fitFromDelta', () => {
     }
   });
 });
+
+describe('Delta.clash', () => {
+  const MAI_TAI = brew(['white_rum', 40], ['dark_rum', 20], ['triple_sec', 15], ['orgeat', 15], ['lime_juice', 20]);
+  const ESPRESSO_MARTINI = brew(['vodka', 50], ['coffee_liqueur', 20], ['espresso', 30]);
+
+  it('stays off for mere imbalance', () => {
+    const d = scoreDeltas(MAI_TAI);
+    expect(d?.get('vodka')?.clash).toBeFalsy();
+    expect(d?.get('bourbon')?.clash).toBeFalsy();
+  });
+
+  it('flags cream joining a Mai Tai and lemon joining an Espresso Martini', () => {
+    expect(scoreDeltas(MAI_TAI)?.get('heavy_cream')?.clash).toBe(true);
+    expect(scoreDeltas(ESPRESSO_MARTINI)?.get('lemon_juice')?.clash).toBe(true);
+  });
+
+  it('is only true where the clash term got worse', () => {
+    const base = harmony(MAI_TAI);
+    const d = scoreDeltas(MAI_TAI);
+    for (const ing of INGREDIENTS) {
+      const e = d?.get(ing.id);
+      const after = harmony(withAdded(MAI_TAI, ing.id, e?.ml ?? 0));
+      const worse = (after?.parts.clash ?? 0) - (base?.parts.clash ?? 0) <= -5;
+      expect(Boolean(e?.clash), ing.id).toBe(worse);
+    }
+  });
+});

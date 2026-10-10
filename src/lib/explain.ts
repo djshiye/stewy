@@ -14,6 +14,12 @@ const ARCHETYPE_NAME: Record<Archetype, string> = {
   dessert: 'dessert drink',
 };
 
+/** Which way an explanation leans: it must agree with the sign of the score change. */
+export type Tone = 'positive' | 'neutral' | 'negative';
+
+/** A change this small (in whole points) is not a verdict: only mild wording is allowed. */
+const DEAD_BAND = 1;
+
 /** Points below this are noise, not a reason. */
 const MIN_SHIFT = 1.2;
 /** How far the sweet to bitter lean has to move before the balance is worth a mention. */
@@ -44,10 +50,20 @@ function firstPour(after: Harmony, name: string): string {
   return `${name} sets the base. The next ingredient decides the balance.`;
 }
 
+interface Reason {
+  weight: number;
+  text: string;
+  /** Which sign of score change this reason can honestly explain. `any` is a plain description. */
+  fits: 'up' | 'down' | 'any';
+  /** Strong language ("clashes", "fights"): only for a clearly negative change. */
+  harsh?: boolean;
+}
+
 /**
  * One plain sentence on why the score moved, from `before` to `after` (either can be
  * null for an empty pot). `kind` says how the ingredient changed so the sentence reads
- * "More Campari" or "Adding Campari".
+ * "More Campari" or "Adding Campari". The wording always agrees with the sign and size of
+ * the score change: a change that rounds to zero gets a neutral line.
  */
 export function explainChange(
   before: Harmony | null,
@@ -55,11 +71,27 @@ export function explainChange(
   ingName: string,
   kind: ChangeKind = 'more',
 ): string {
-  if (kind === 'same') return 'This is the amount already in the pot.';
-  if (!after) return 'The pot would be empty.';
-  if (!before) return firstPour(after, ingName);
+  return explainChangeWithTone(before, after, ingName, kind).text;
+}
+
+/** Like `explainChange`, and also says which way the sentence leans. */
+export function explainChangeWithTone(
+  before: Harmony | null,
+  after: Harmony | null,
+  ingName: string,
+  kind: ChangeKind = 'more',
+): { text: string; tone: Tone } {
+  const neutral = (text: string) => ({ text, tone: 'neutral' as Tone });
+  if (kind === 'same') return neutral('This is the amount already in the pot.');
+  if (!after) return neutral('The pot would be empty.');
+  if (!before) return neutral(firstPour(after, ingName));
 
   const S = lead(kind, ingName);
+  const delta = after.score - before.score;
+  if (delta === 0) return neutral(`${S} would not move the score at this measure.`);
+  const up = delta > 0;
+  const clear = Math.abs(delta) > DEAD_BAND;
+
   const dPair = after.parts.pairing - before.parts.pairing;
   const dBal = after.parts.balance - before.parts.balance;
   const dStruct = after.parts.structure - before.parts.structure;
@@ -70,26 +102,28 @@ export function explainChange(
   const lean = after.balance !== null && before.balance !== null ? after.balance - before.balance : 0;
 
   // the clearest reasons first: a clash, a lost or gained shape, a lopsided pour
-  const candidates: { weight: number; text: string }[] = [];
-  const push = (weight: number, text: string) => candidates.push({ weight: Math.abs(weight), text });
+  const candidates: Reason[] = [];
+  const push = (weight: number, text: string, fits: Reason['fits'], harsh = false) =>
+    candidates.push({ weight: Math.abs(weight), text, fits, harsh });
 
-  if (dClash <= -MIN_SHIFT) push(dClash * 1.4, `${S} clashes with something already in the pot.`);
-  if (dClash >= MIN_SHIFT) push(dClash * 1.4, `${S} clears a clash between flavours.`);
+  if (dClash <= -MIN_SHIFT) push(dClash * 1.4, `${S} clashes with something already in the pot.`, 'down', true);
+  if (dClash >= MIN_SHIFT) push(dClash * 1.4, `${S} clears a clash between flavours.`, 'up');
 
   const leaning = Math.abs(lean) >= MIN_LEAN && (Math.abs(dBal) >= 0.4 || Math.abs(lean) >= 0.12);
   const balanceClause = lean < 0 ? `tips the balance toward ${sharpSide(after)}` : 'pushes the balance toward sweet';
 
   if (dStruct >= MIN_SHIFT || dStruct <= -MIN_SHIFT) {
     if (after.archetype && after.archetype !== before.archetype) {
-      push(dStruct * 1.2, `${S} gives the drink the shape of a proper ${ARCHETYPE_NAME[after.archetype]}.`);
+      push(dStruct * 1.2, `${S} gives the drink the shape of a proper ${ARCHETYPE_NAME[after.archetype]}.`,
+        'up');
     } else if (before.archetype && !after.archetype) {
       push(dStruct * 1.2, leaning
         ? `${S} ${balanceClause}, so the drink loses the shape of a ${ARCHETYPE_NAME[before.archetype]}.`
-        : `${S} loses the shape of a ${ARCHETYPE_NAME[before.archetype]}.`);
+        : `${S} loses the shape of a ${ARCHETYPE_NAME[before.archetype]}.`, 'down');
     } else if (dStruct > 0) {
-      push(dStruct, `${S} firms up the structure of the drink.`);
+      push(dStruct, `${S} firms up the structure of the drink.`, 'up');
     } else {
-      push(dStruct, `${S} blurs the shape of the drink.`);
+      push(dStruct, `${S} blurs the shape of the drink.`, 'down');
     }
   }
 
@@ -97,44 +131,52 @@ export function explainChange(
     const sweetSide = (after.p.sweet ?? 0) >= (after.p.sour ?? 0) + (after.p.bitter ?? 0);
     push(dSweetSour, sweetSide
       ? `${S} makes it too sweet without a sharp side to hold it.`
-      : `${S} makes it too sour without any sweetness to soften it.`);
+      : `${S} makes it too sour without any sweetness to soften it.`, 'down');
   } else if (dSweetSour >= MIN_SHIFT) {
-    push(dSweetSour, `${S} evens out a lopsided sweet and sour.`);
+    push(dSweetSour, `${S} evens out a lopsided sweet and sour.`, 'up');
   }
 
-  if (dOneNote <= -MIN_SHIFT) push(dOneNote, `${S} piles onto one flavour and makes the drink one-note.`);
-  if (dOneNote >= MIN_SHIFT) push(dOneNote, `${S} adds variety, so the drink reads less one-note.`);
+  if (dOneNote <= -MIN_SHIFT) push(dOneNote, `${S} piles onto one flavour and makes the drink one-note.`, 'down');
+  if (dOneNote >= MIN_SHIFT) push(dOneNote, `${S} adds variety, so the drink reads less one-note.`, 'up');
 
   const fewer = kind === 'remove' || kind === 'less';
   if (dCrowd <= -MIN_SHIFT) {
     push(dCrowd, fewer
       ? `${S} leaves a lone ingredient, which is a pour, not a drink.`
-      : `${S} crowds the pot. Fewer ingredients read cleaner.`);
+      : `${S} crowds the pot. Fewer ingredients read cleaner.`, 'down');
   }
   if (dCrowd >= MIN_SHIFT) {
     push(dCrowd, fewer
       ? `${S} clears the crowd, so the flavours read cleaner.`
-      : `${S} gives the lone ingredient company, which makes it a drink.`);
+      : `${S} gives the lone ingredient company, which makes it a drink.`, 'up');
   }
 
   // balance: the term itself, or a clear swing in the sweet to sharp lean
   if (leaning) {
-    push(Math.max(Math.abs(dBal), Math.abs(lean) * 12), `${S} ${balanceClause}.`);
+    push(Math.max(Math.abs(dBal), Math.abs(lean) * 12), `${S} ${balanceClause}.`, 'any');
   } else if (dBal >= MIN_SHIFT) {
-    push(dBal, `${S} brings the sweet and sharp sides closer to even.`);
+    push(dBal, `${S} brings the sweet and sharp sides closer to even.`, 'up');
   } else if (dBal <= -MIN_SHIFT) {
-    push(dBal, `${S} pulls the sweet and sharp sides further apart.`);
+    push(dBal, `${S} pulls the sweet and sharp sides further apart.`, 'down');
   }
 
-  if (dPair >= MIN_SHIFT) push(dPair, `${S} pairs well with what is already in the pot.`);
-  if (dPair <= -MIN_SHIFT) push(dPair, `${S} fights with the flavours already in the pot.`);
+  if (dPair >= MIN_SHIFT) push(dPair, `${S} pairs well with what is already in the pot.`, 'up');
+  if (dPair <= -MIN_SHIFT) push(dPair, `${S} fights with the flavours already in the pot.`, 'down', true);
 
-  if (candidates.length) {
-    candidates.sort((a, b) => b.weight - a.weight);
-    return candidates[0].text;
+  // only reasons that can explain this sign of change; harsh wording needs a clear drop
+  const tone: Tone = up ? 'positive' : 'negative';
+  const usable = candidates
+    .filter((c) => c.fits === 'any' || c.fits === (up ? 'up' : 'down'))
+    .filter((c) => !c.harsh || clear);
+  if (usable.length) {
+    usable.sort((a, b) => b.weight - a.weight);
+    return { text: usable[0].text, tone };
   }
-  if (after.score === before.score) return `${S} barely changes the balance, so the score holds.`;
-  return after.score > before.score
-    ? `${S} gives the score a small lift.`
-    : `${S} costs a few points without changing the character of the drink.`;
+  if (up) return { text: `${S} gives the score a small lift.`, tone };
+  return {
+    text: clear
+      ? `${S} costs a few points without changing the character of the drink.`
+      : `${S} costs a point without changing the character of the drink.`,
+    tone,
+  };
 }

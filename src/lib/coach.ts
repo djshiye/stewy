@@ -39,6 +39,9 @@ export function withAdded(brew: BrewEntry[], id: string, ml: number): BrewEntry[
     : [...brew, { id, ml }];
 }
 
+/** Points the clash term must worsen by before an addition is flagged as clashing. */
+const CLASH_FLAG = 5;
+
 const cache = new WeakMap<BrewEntry[], Map<string, Delta> | null>();
 
 /** Best achievable score change from adding each ingredient. Null for an empty brew. */
@@ -54,7 +57,11 @@ export function scoreDeltas(brew: BrewEntry[]): Map<string, Delta> | null {
         const h = harmony(withAdded(brew, ing.id, ml));
         if (!h) continue;
         const delta = h.score - base.score;
-        if (!best || delta > best.delta) best = { delta, ml };
+        if (!best || delta > best.delta) {
+          best = { delta, ml };
+          // a real clash worsens by a few points; mere imbalance never moves this term
+          if (h.parts.clash - base.parts.clash <= -CLASH_FLAG) best.clash = true;
+        }
       }
       if (best) out.set(ing.id, best);
     }

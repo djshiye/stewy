@@ -136,6 +136,8 @@ interface Shape {
   /** Juice that brings acidity. */
   acid: number;
   cream: number;
+  /** Curdling dairy (cream, milk, Irish cream). Egg white and coconut cream do not curdle. */
+  dairy: number;
   hasLiqueur: boolean;
   /** A non-spirit ingredient that brings real sweetness (2 or more). */
   sweetSrc: boolean;
@@ -149,7 +151,7 @@ interface Shape {
 
 function shapeOf(brew: BrewEntry[]): Shape {
   const s: Shape = {
-    liquid: 0, booze: 0, strong: 0, spirits: 0, spirit: 0, long: 0, sparkling: 0, fizz: 0, acid: 0, cream: 0,
+    liquid: 0, booze: 0, strong: 0, spirits: 0, spirit: 0, long: 0, sparkling: 0, fizz: 0, acid: 0, cream: 0, dairy: 0,
     hasLiqueur: false, sweetSrc: false, sweetMod: false, dryMod: false, tagged: 0,
   };
   const seen = new Set<string>();
@@ -182,14 +184,24 @@ function addVolume(s: Shape, ing: Ingredient, ml: number) {
   if (ing.carbonated && ing.abv > 0) s.sparkling += ml;
   if ((ing.group === 'Juices' && ((t.sour ?? 0) >= 1 || (t.citrus ?? 0) >= 1)) || (t.sour ?? 0) >= 2) s.acid += ml;
   if ((t.creamy ?? 0) >= 2) s.cream += ml;
+  if (DAIRY.has(ing.id)) s.dairy += ml;
 }
 
+/** Dairy that splits in acid. Egg white and coconut cream are creamy but stay out of this. */
+const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
 const CURDLE = 0.2;
+/** Clash a real pour of dairy with real acid always carries, however long the drink is topped. */
+const CURDLE_FLOOR = 0.45;
 const SHAPELESS = 16;
 const TAPER_START = 78;
 const TAPER_END = 90;
 const LONE_SPIRIT_CAP = 58;
 const LONE_CAP = 44;
+
+/** 0 at or below `lo`, 1 at or above `hi`, linear between. */
+function ramp(x: number, lo: number, hi: number): number {
+  return clamp((x - lo) / (hi - lo), 0, 1);
+}
 
 /** Signed sweet versus sour+bitter lean of a raw profile. */
 function lean(F: Profile): number | null {
@@ -254,18 +266,28 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   if (sumsq > 0.55) { score -= (sumsq - 0.55) * 34; parts.oneNote = -(sumsq - 0.55) * 34; }
 
   // structural clashes (curdling / muddy pairings) beyond pairwise affinity.
-  // Gated on meaningful cream (p>0.10) so egg-white sours & coconut pass.
+  // The flavour-share checks below are gated on meaningful cream (p>0.10) so egg-white sours and
+  // coconut pass. They fade as a drink is topped up, so dairy is also judged by volume: a real
+  // pour of cream or milk curdles with acid no matter how much mixer sits on top of it.
   const pc = (F.creamy ?? 0) / tot;
   const pacid = ((F.sour ?? 0) + (F.citrus ?? 0)) / tot;
   const psmk = (F.smoky ?? 0) / tot;
   const pcof = (F.coffee ?? 0) / tot;
   let clash = 0;
+  let creamClash = 0;
   if (pc > 0.10) {
-    clash += Math.min(pc, pacid);        // cream + acid: curdle
-    clash += Math.min(pc, psmk) * 0.7;   // cream + smoke: muddy
-    if (pacid > 0.05) clash += CURDLE;   // any real acid curdles cream, however little
-    if (share(shape.fizz) >= 0.4) clash += CURDLE; // cream in a big fizzy pour splits and foams
+    creamClash += Math.min(pc, pacid);        // cream + acid: curdle
+    creamClash += Math.min(pc, psmk) * 0.7;   // cream + smoke: muddy
+    if (pacid > 0.05) creamClash += CURDLE;   // any real acid curdles cream, however little
+    if (share(shape.fizz) >= 0.4) creamClash += CURDLE; // cream in a big fizzy pour splits and foams
   }
+  const dairyW = ramp(share(shape.dairy), 0.02, 0.08);
+  if (dairyW > 0) {
+    const acidW = ramp(share(shape.acid), 0.02, 0.08);
+    const fizzW = ramp(share(shape.fizz), 0.3, 0.5);
+    creamClash = Math.max(creamClash, dairyW * (acidW * CURDLE_FLOOR + fizzW * CURDLE));
+  }
+  clash += creamClash;
   clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
   if (pcof > 0.1 && pacid > 0.05) clash += CURDLE * 0.8;
   score -= clash * 95;
@@ -359,7 +381,9 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
     out.push({ text: 'Very sharp. A little syrup would soften it.', kind: 'warn' });
   if (p('bitter') > 0.4 && p('sweet') < 0.08)
     out.push({ text: 'Quite bitter. A touch of sweetness would round it out.', kind: 'warn' });
-  if (has('creamy') && (has('citrus') || has('sour')) && (F.creamy ?? 0) > tot * 0.12)
+  const shape = shapeOf(brew);
+  const curdles = shape.liquid > 0 && shape.dairy / shape.liquid >= 0.05 && shape.acid > 0;
+  if (has('creamy') && (has('citrus') || has('sour')) && ((F.creamy ?? 0) > tot * 0.12 || curdles))
     out.push({ text: 'Cream and citrus can curdle. Pick one or the other.', kind: 'bad' });
   if (n === 1)
     out.push({ text: 'Add a modifier like citrus, something sweet or bitters to make it a cocktail.', kind: '' });

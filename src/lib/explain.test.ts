@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
-import { explainChange } from './explain';
+import { INGREDIENTS } from '../data/ingredients';
+import { RECIPES } from '../data/recipes';
+import { explainChange, explainChangeWithTone, type Tone } from './explain';
+import { withAdded } from './coach';
 import { harmony } from './harmony';
 
 const brew = (...xs: [string, number][]): BrewEntry[] => xs.map(([id, ml]) => ({ id, ml }));
@@ -45,7 +48,7 @@ describe('explainChange', () => {
   it('says so when nothing changes', () => {
     expect(explainChange(harmony(NEGRONI), harmony(NEGRONI), 'Gin', 'same')).toBe('This is the amount already in the pot.');
     const text = explain(NEGRONI, brew(['gin', 45], ['campari', 30], ['sweet_vermouth', 30]), 'Gin');
-    expect(text).toBe('More gin barely changes the balance, so the score holds.');
+    expect(text).toBe('More gin would not move the score at this measure.');
   });
 
   it('describes a lone ingredient after a removal, not a crowd', () => {
@@ -69,5 +72,64 @@ describe('explainChange', () => {
       expect(text).not.toMatch(/[‒-―]/);
       expect(text).toMatch(/\.$/);
     }
+  });
+
+  it('stays neutral when the score does not move, even if flavours shift', () => {
+    const before = harmony(NEGRONI);
+    const after = harmony(withAdded(NEGRONI, 'vodka', 30));
+    expect(after?.score).toBe(before?.score);
+    const text = explainChange(before, after, 'Vodka', 'add');
+    expect(text).toBe('Adding vodka would not move the score at this measure.');
+    expect(text).not.toMatch(/fights|clashes/);
+  });
+
+  it('keeps harsh wording for a clearly negative change', () => {
+    const base = brew(['gin', 30], ['campari', 30], ['sweet_vermouth', 30]);
+    for (const ing of INGREDIENTS) {
+      const a = harmony(base);
+      const b = harmony(withAdded(base, ing.id, ing.amt));
+      const d = (b?.score ?? 0) - (a?.score ?? 0);
+      if (d > -2) expect(explainChange(a, b, ing.name, 'add'), ing.id).not.toMatch(/fights|clashes with/);
+    }
+  });
+});
+
+/** Words that read as bad news, and words that read as good news. */
+const NEGATIVE = /clashes with|fights with|costs a|blurs|loses the shape|too sweet|too sour|one-note|crowds|further apart|is a pour, not a drink/;
+const POSITIVE = /pairs well|firms up|small lift|evens out|closer to even|adds variety|clears a|gives the drink the shape|makes it a drink|read cleaner|clears the crowd/;
+
+describe('explanation tone agrees with the score change', () => {
+  const SAMPLE: BrewEntry[][] = [
+    ...['negroni', 'daiquiri', 'old_fashioned', 'margarita', 'white_russian', 'mojito', 'espresso_martini'].map(
+      (id) => RECIPES.find((r) => r.id === id)?.build.map(([i, ml]) => ({ id: i, ml })) ?? [],
+    ),
+    brew(['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30]),
+    brew(['gin', 45]),
+    brew(['simple_syrup', 40], ['grenadine', 20], ['vodka', 10]),
+    brew(['campari', 60], ['espresso', 30], ['cola', 30]),
+  ];
+
+  it('has a usable sample', () => {
+    expect(SAMPLE.filter((b) => b.length > 0).length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('matches the sign of the delta with a one point dead band', () => {
+    const bad: string[] = [];
+    for (const b of SAMPLE.filter((x) => x.length > 0)) {
+      const before = harmony(b);
+      for (const ing of INGREDIENTS) {
+        const after = harmony(withAdded(b, ing.id, ing.amt));
+        const d = (after?.score ?? 0) - (before?.score ?? 0);
+        const { text, tone } = explainChangeWithTone(before, after, ing.name, b.some((e) => e.id === ing.id) ? 'more' : 'add');
+        const want: Tone = d >= 2 ? 'positive' : d <= -2 ? 'negative' : 'neutral';
+        const okTone = want === 'neutral'
+          ? d === 0 ? tone === 'neutral' : d > 0 ? tone !== 'negative' : tone !== 'positive'
+          : tone === want;
+        const okWords = d >= 0 ? !NEGATIVE.test(text) : !POSITIVE.test(text);
+        const okHarsh = d <= -2 || !/clashes with|fights with/.test(text);
+        if (!okTone || !okWords || !okHarsh) bad.push(`${b.map((e) => e.id).join('+')} + ${ing.id} (${d}): ${text}`);
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });
