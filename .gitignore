@@ -11,7 +11,7 @@ desktop.ini
 # node / build output
 node_modules/
 dist/
-dist-e2e/
+dist-e2e*/
 
 # playwright output
 test-results/

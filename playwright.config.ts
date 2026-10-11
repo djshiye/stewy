@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4317;
+// E2E_PORT and E2E_OUTDIR let several runs (or worktrees) build and serve side by side.
+const PORT = Number(process.env.E2E_PORT ?? 4317);
+const OUT_DIR = process.env.E2E_OUTDIR ?? 'dist-e2e';
 const BASE_URL = `http://localhost:${PORT}`;
 
 /**
@@ -31,7 +33,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npx vite build --outDir dist-e2e --emptyOutDir && npx vite preview --outDir dist-e2e --host localhost --port ${PORT} --strictPort`,
+    command: `npx vite build --outDir ${OUT_DIR} --emptyOutDir && npx vite preview --outDir ${OUT_DIR} --host localhost --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

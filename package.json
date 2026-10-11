@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test --project=chromium",
-    "test:e2e:webkit": "podman run --rm --network host --ipc=host --security-opt label=disable -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.64.0-noble npx playwright test --project=webkit --workers=2",
+    "test:e2e:webkit": "podman run --rm --network host --ipc=host --security-opt label=disable -e E2E_PORT -e E2E_OUTDIR -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.64.0-noble npx playwright test --project=webkit --workers=2",
     "test:e2e:all": "npm run test:e2e && npm run test:e2e:webkit"
   },
   "dependencies": {
