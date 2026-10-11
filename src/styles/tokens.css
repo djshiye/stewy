@@ -114,6 +114,9 @@
   --dock-h: 196px;
   --gutter: 24px;
   --ui-zoom: 1;
+  /* container query units (cqw, cqh) come out times the zoom in engines that apply it twice (WebKit); the
+     divisor is the zoom there, 1 elsewhere. See lib/cqUnits.ts. */
+  --cq-k: 1;
   --col-l: 336px;
   --col-r: 380px;
   --col-gap: 24px;
@@ -192,4 +195,8 @@
   :root {
     --ui-zoom: 2;
   }
+}
+
+html[data-cq-zoom] {
+  --cq-k: var(--ui-zoom);
 }

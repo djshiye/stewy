@@ -83,7 +83,7 @@
   border-radius: 50%;
   background: var(--tone);
   box-shadow: 0 0 0 3px var(--ink-850), 0 3px 6px rgba(3, 5, 9, 0.6);
-  transform: translateX(calc(var(--p) * (100cqw - 12px)));
+  transform: translateX(calc(var(--p) * (100cqw / var(--cq-k) - 12px)));
   transition: transform var(--t-scene) var(--ease-out);
 }
 .tier-track__mark[data-tone='good'] { --tone: var(--good); }
@@ -347,7 +347,7 @@
   border-radius: 50%;
   background: var(--tx-1);
   box-shadow: 0 0 0 3px var(--ink-850), 0 0 0 4px rgba(190, 205, 230, 0.32), 0 4px 8px rgba(3, 5, 9, 0.6);
-  transform: translateX(calc(var(--p) * (100cqw - 14px)));
+  transform: translateX(calc(var(--p) * (100cqw / var(--cq-k) - 14px)));
   transition: transform var(--t-scene) var(--ease-out);
 }
 .meter__lane--zones {

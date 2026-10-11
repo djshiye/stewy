@@ -26,14 +26,14 @@
   --stage-hint-h: 46px;
   position: relative;
   flex: none;
-  width: min(100cqw, 1120px);
+  width: min(calc(100cqw / var(--cq-k)), 1120px);
   aspect-ratio: 720 / 600;
   container-type: inline-size;
 }
 
 @media (min-width: 1000px) {
   .stg-pot {
-    width: min(100cqw, calc((100cqh - var(--stage-hint-h)) * 1.2), 1000px);
+    width: min(calc(100cqw / var(--cq-k)), calc((100cqh / var(--cq-k) - var(--stage-hint-h)) * 1.2), 1000px);
   }
 }
 
@@ -41,7 +41,7 @@
    and handles sit behind the side cards) so it stays the largest thing on screen */
 @media (min-width: 1000px) and (max-width: 1099px) {
   .stg-pot {
-    width: min(calc(100cqw + 56px), calc((100cqh - var(--stage-hint-h)) * 1.2));
+    width: min(calc(100cqw / var(--cq-k) + 56px), calc((100cqh / var(--cq-k) - var(--stage-hint-h)) * 1.2));
   }
 }
 
@@ -74,7 +74,7 @@
 }
 
 .stg-pot > * {
-  --u: calc(100cqw / 720);
+  --u: calc(100cqw / var(--cq-k) / 720);
 }
 
 .stg-hit {

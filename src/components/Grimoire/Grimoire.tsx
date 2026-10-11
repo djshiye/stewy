@@ -385,10 +385,18 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       scroller.scrollTop = snapToRow(rowTops, el.offsetTop - origin, el.offsetHeight, scroller.clientHeight, scroller.scrollHeight - scroller.clientHeight);
     };
     aim();
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(aim);
+    // re-aim on the next frame, not inside the observer callback: a scroll that moves cells in or out of
+    // content-visibility there makes WebKit report "ResizeObserver loop completed with undelivered notifications"
+    let frame = 0;
+    const reaim = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(aim);
+    };
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reaim);
     ro?.observe(list);
     const stop = () => {
       ro?.disconnect();
+      cancelAnimationFrame(frame);
       clearTimeout(timer);
     };
     const timer = setTimeout(stop, 1200);
