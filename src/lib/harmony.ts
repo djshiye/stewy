@@ -217,11 +217,14 @@ const CURDLE = 0.2;
 /** Clash a real pour of dairy with real acid always carries, however long the drink is topped. */
 const CURDLE_FLOOR = 0.45;
 /** Egg white per ml of dairy: nothing below the low end, the full rescue at the high end (a Ramos runs
-    from two to three parts of egg white to three of cream, so the top sits just under two thirds). */
-const EMULSION_EGG_LO = 0.4;
+    from two to three parts of egg white to three of cream, so the top sits just under two thirds). The
+    low end sits well under the useful amount so the rescue, and the shape it brings back, fades in gently. */
+const EMULSION_EGG_LO = 0.2;
 const EMULSION_EGG_HI = 0.66;
-/** Clash (as a fraction, 95 points per unit) at which a brew loses its classic shape altogether. */
-const SHAPE_CLASH = 0.2;
+/** Clash (as a fraction, 95 points per unit) at which a brew loses its classic shape altogether. Clash
+    costs its own points and the shape as well, so this sits wide enough that the two together never
+    take more than a few points per 0.5 ml. */
+const SHAPE_CLASH = 0.3;
 const SHAPELESS = 16;
 const TAPER_START = 78;
 const TAPER_END = 90;
@@ -233,6 +236,74 @@ function ramp(x: number, lo: number, hi: number): number {
   return clamp((x - lo) / (hi - lo), 0, 1);
 }
 
+type Band = readonly [lo: number, hi: number];
+
+/** Where each gate on an amount fades in: 0 at or below the low end, 1 at or above the high end.
+    Each band sits on the line the gate used to be a hard step at, narrow enough that brews well
+    inside or outside it score as before and wide enough that 0.5 ml never jumps the score. A few
+    end exactly where a classic sits, so the classic keeps its full shape; those say which. Shares
+    are of the liquid volume, flavour weights are of the whole profile. */
+const BAND = {
+  /** Alcohol share that makes a base, as 40% spirit (was a step at 0.2; full by 0.205 for a Pimm's Cup at 0.208). */
+  base: [0.16, 0.205],
+  /** Sparkling wine share that makes a base, or a sparkling drink (was 0.4). */
+  sparkling: [0.35, 0.45],
+  /** Long mixer share that makes a long drink (was 0.5; full at 0.5 for an Americano and a Mimosa). */
+  long: [0.43, 0.5],
+  /** Sweet weight that is far too sweet (was 0.45), unless the sour and bitter weight passes 0.1. */
+  verySweet: [0.42, 0.48],
+  verySweetSharp: [0.08, 0.12],
+  /** Sweet weight that leans too sweet (was 0.32; starts just above a Grasshopper at 0.316), unless
+      the sour and bitter weight passes 0.08. */
+  sweet: [0.317, 0.35],
+  sweetSharp: [0.06, 0.1],
+  /** Sour weight that is too sour (was 0.5), unless the sweet or the bitter weight passes 0.1. */
+  sour: [0.47, 0.53],
+  sourSweet: [0.08, 0.12],
+  sourBitter: [0.08, 0.12],
+  /** Creamy weight that counts as real cream (was 0.10). */
+  creamy: [0.04, 0.16],
+  /** Sour and citrus weight that curdles cream or turns coffee (was 0.05). */
+  curdleAcid: [0, 0.1],
+  /** Dairy and acid juice shares that always curdle, however long the drink (were ramps from 0.02 to 0.08). */
+  dairyPour: [0, 0.08],
+  acidPour: [0, 0.1],
+  /** Fizz share that splits cream (was 0.4). */
+  fizz: [0.35, 0.45],
+  /** Coffee weight that acid turns harsh (was 0.1). */
+  coffee: [0.04, 0.16],
+  /** A dessert drink: creamy weight (was 0.15; full by 0.155 for a Grasshopper at 0.158) and no more
+      than a trace of sharpness (was 0.04). */
+  dessertCream: [0.12, 0.155],
+  dessertSharp: [0, 0.08],
+  /** A highball: alcohol share (was 0.15; a Mimosa sits right on it and is still more highball than
+      not), and long mixer as a share of mixer plus alcohol (was at least 1.2 ml per ml of alcohol, 0.545). */
+  highballBooze: [0.12, 0.17],
+  highballLong: [0.524, 0.565],
+  /** A spirit-forward drink: alcohol share (was 0.5; full by 0.52 for an Espresso Martini at 0.526),
+      base spirit share (was 0.3; full by 0.333 for a Negroni at 0.333) and sharpness (was 0.1). */
+  stirredBooze: [0.45, 0.52],
+  stirredSpirit: [0.245, 0.333],
+  stirredSharp: [0.08, 0.12],
+  /** A sour: acid juice share, at least (was 0.08) and at most (was 0.6). */
+  sourAcid: [0.06, 0.1],
+  sourAcidMax: [0.575, 0.625],
+} satisfies Record<string, Band>;
+
+/** A share is only as fine as the pot is big: in a 30 ml pot 0.5 ml moves it by nearly 2%. Every band
+    is at least as wide as the share this much liquid makes, so small pots fade as gently as full ones. */
+const BLUR_ML = 1.5;
+/** Below this the pot is treated as this big, so a few ml mixed in the right proportions still score
+    as the drink they make. */
+const MIN_POT = 20;
+
+/** How far `x` is into a band, 0..1, the band widened about its middle to at least `blur` each side. */
+function fadeIn(x: number, [lo, hi]: Band, blur: number): number {
+  const mid = (lo + hi) / 2, half = Math.max((hi - lo) / 2, blur);
+  // never below zero, so a gate that starts at none of something stays shut with none of it
+  return ramp(x, Math.max(mid - half, Math.min(lo, 0)), mid + half);
+}
+
 /** How far a Ramos-style emulsion holds the cream against the acid, 0..1. It is a Ramos, not a
     universal rescue: gin topped with plain soda, a real pour of cream or milk (not Irish cream)
     with egg white in proportion (about two parts to three), a real syrup and a modest dairy share.
@@ -240,10 +311,10 @@ function ramp(x: number, lo: number, hi: number): number {
 function emulsion(shape: Shape): number {
   if (shape.dairy <= 0 || shape.liquid <= 0) return 0;
   const egg = ramp(shape.eggWhite / shape.dairy, EMULSION_EGG_LO, EMULSION_EGG_HI);
-  const sugar = ramp(shape.syrup / shape.liquid, 0.02, 0.06);
+  const sugar = ramp(shape.syrup / shape.liquid, 0.01, 0.06);
   const modest = 1 - ramp(shape.dairy / shape.liquid, 0.2, 0.28);
   const pure = ramp(shape.richDairy / shape.dairy, 0.85, 1);
-  const pour = ramp(shape.dairy, 8, 16);
+  const pour = ramp(shape.dairy, 4, 16);
   const base = ramp(shape.gin / Math.max(shape.spirit, 1e-9), 0.85, 1);
   const top = ramp(shape.soda / shape.liquid, 0.04, 0.1) * ramp(shape.soda / Math.max(shape.fizz, 1e-9), 0.85, 1);
   return egg * sugar * modest * pure * pour * base * top;
@@ -289,22 +360,28 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
 
   const shape = shapeOf(brew);
   const share = (ml: number) => (shape.liquid > 0 ? ml / shape.liquid : 0);
+  const sBooze = share(shape.booze);
+  const blur = BLUR_ML / Math.max(shape.liquid, MIN_POT);
+  const fade = (x: number, band: Band) => fadeIn(x, band, blur);
   // A base is real alcohol (a hard liqueur counts, a splash of vermouth does not) or sparkling wine.
-  const hasBase = share(shape.booze) >= 0.2 || share(shape.sparkling) >= 0.4;
+  // Every gate on an amount fades in across a narrow band (see BAND), so 0.5 ml never jumps the score.
+  const baseW = Math.max(fade(sBooze, BAND.base), fade(share(shape.sparkling), BAND.sparkling));
   const hasBalancer = so > 0 || bi > 0;
-  if (hasBase) { score += 5; parts.structure += 5; }
-  if (hasBase && hasBalancer) { score += 4; parts.structure += 4; }
+  const firm = baseW * (hasBalancer ? 9 : 5);
+  score += firm; parts.structure += firm;
 
   // A long drink dilutes its sweetness, so a long mixer is not "too sweet" the way a syrup is.
-  const longDrink = shape.booze > 0 && share(shape.long) >= 0.5;
+  const longW = shape.booze > 0 ? fade(share(shape.long), BAND.long) : 0;
 
-  // too sweet / too sour without a counterweight
+  // too sweet / too sour without a counterweight, each in proportion to how far past its line it is
   const psw = sw / tot, pso = so / tot, pbi = bi / tot;
-  if (!longDrink) {
-    if (psw > 0.45 && pso + pbi < 0.1) { score -= 14; parts.sweetSour -= 14; }
-    else if (psw > 0.32 && pso + pbi < 0.08) { score -= 8; parts.sweetSour -= 8; }
-  }
-  if (pso > 0.5 && psw < 0.1 && pbi < 0.1) { score -= 12; parts.sweetSour -= 12; }
+  const verySweet = fade(psw, BAND.verySweet) * (1 - fade(pso + pbi, BAND.verySweetSharp));
+  const sweet = fade(psw, BAND.sweet) * (1 - fade(pso + pbi, BAND.sweetSharp));
+  const tart = fade(pso, BAND.sour) * (1 - fade(psw, BAND.sourSweet)) * (1 - fade(pbi, BAND.sourBitter));
+  const lopsided = (1 - longW) * Math.max(14 * verySweet, 8 * sweet) + 12 * tart;
+  score -= lopsided; parts.sweetSour = -lopsided;
+  /** 1 for a brew with no sweet or sour fault, 0 for a full one. */
+  const even = 1 - Math.max((1 - longW) * Math.max(verySweet, sweet), tart);
 
   // one-note (dominated by a single dimension)
   let sumsq = 0;
@@ -312,7 +389,7 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   if (sumsq > 0.55) { score -= (sumsq - 0.55) * 34; parts.oneNote = -(sumsq - 0.55) * 34; }
 
   // structural clashes (curdling / muddy pairings) beyond pairwise affinity.
-  // The flavour-share checks below are gated on meaningful cream (p>0.10) so egg-white sours and
+  // The flavour-share checks below fade in with meaningful cream (about p 0.10) so egg-white sours and
   // coconut pass. They fade as a drink is topped up, so dairy is also judged by volume: a real
   // pour of cream or milk curdles with acid no matter how much mixer sits on top of it.
   const pc = (F.creamy ?? 0) / tot;
@@ -323,61 +400,69 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   let clash = 0;
   // 0 when egg white, sugar and a long hard shake keep the cream whole (a Ramos), 1 otherwise
   const held = 1 - emulsion(shape);
-  let creamClash = 0;
-  if (pc > 0.10) creamClash += Math.min(pc, psmk) * 0.7; // cream + smoke: muddy
+  let creamClash = fade(pc, BAND.creamy) * Math.min(pc, psmk) * 0.7; // cream + smoke: muddy
   // coconut cream holds up against a mild fruit sour (a Piña Colada) and only sours with sharp acid
   const pcc = shape.coconutCreamy / tot;
   const psharp = Math.max(0, (F.sour ?? 0) + (F.citrus ?? 0) - shape.mildAcid) / tot;
-  if (pcc > 0.10) creamClash += Math.min(pcc, psharp) + (psharp > 0.05 ? CURDLE : 0);
-  if (pcd > 0.10) {
-    let curdle = Math.min(pcd, pacid);        // dairy + acid: curdle
-    if (pacid > 0.05) curdle += CURDLE;       // any real acid curdles cream, however little
-    creamClash += curdle * held;
-    if (share(shape.fizz) >= 0.4) creamClash += CURDLE * held; // cream in a big fizzy pour splits and foams
+  creamClash += fade(pcc, BAND.creamy) * (Math.min(pcc, psharp) + fade(psharp, BAND.curdleAcid) * CURDLE);
+  const dairyFlavour = fade(pcd, BAND.creamy);
+  if (dairyFlavour > 0) {
+    // dairy + acid curdles (any real acid, however little), and cream in a big fizzy pour splits and foams
+    const curdle = Math.min(pcd, pacid) + fade(pacid, BAND.curdleAcid) * CURDLE + fade(share(shape.fizz), BAND.fizz) * CURDLE;
+    creamClash += dairyFlavour * curdle * held;
   }
-  const dairyW = ramp(share(shape.dairy), 0.02, 0.08);
+  const dairyW = fade(share(shape.dairy), BAND.dairyPour);
   if (dairyW > 0) {
-    const acidW = ramp(share(shape.acid), 0.02, 0.08);
+    const acidW = fade(share(shape.acid), BAND.acidPour);
     const fizzW = ramp(share(shape.fizz), 0.3, 0.5);
     creamClash = Math.max(creamClash, dairyW * (acidW * CURDLE_FLOOR + fizzW * CURDLE) * held);
   }
   clash += creamClash;
   clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
-  if (pcof > 0.1 && pacid > 0.05) clash += CURDLE * 0.8;
+  clash += fade(pcof, BAND.coffee) * fade(pacid, BAND.curdleAcid) * CURDLE * 0.8;
   score -= clash * 95;
   parts.clash = -clash * 95;
 
   // Classic shapes. Each needs a clean brew (no clash, nothing too sweet or sour) and at most
   // three strong ingredients. Bonuses go in `structure`; a brew with no shape at all loses points there.
+  // Each shape is a membership, the product of its fades; the best one sets how shaped the brew is.
   let archetype: Archetype | null = null;
   // A whisper of clash only dims the shape, so the score has no step where a clash ramps to nothing.
   const shapeW = 1 - ramp(clash, 0, SHAPE_CLASH);
-  const clean = shapeW > 0 && parts.sweetSour === 0 && shape.strong <= 3 && shape.spirits <= 2;
+  const clean = shapeW * even * (shape.strong <= 3 && shape.spirits <= 2 ? 1 : 0);
   let shaped = 0;
-  if (clean && shape.liquid > 0 && n > 1) {
+  if (clean > 0 && shape.liquid > 0 && n > 1) {
     const sharpAll = pso + (F.citrus ?? 0) / tot;
-    const cands: [Archetype, number][] = [];
-    if (share(shape.booze) >= 0.15 && longDrink && shape.long >= 1.2 * shape.booze) cands.push(['highball', 5]);
-    if (share(shape.booze) >= 0.2 && shape.sweetSrc && share(shape.acid) >= 0.08 && share(shape.acid) <= 0.6)
-      cands.push(['sour', 0]);
-    if (share(shape.sparkling) >= 0.4 && shape.tagged > 1) cands.push(['sparkling', 0]);
-    if (shape.hasLiqueur && shape.cream > 0 && pc >= 0.15 && sharpAll < 0.04) cands.push(['dessert', 8]);
-    if (share(shape.booze) >= 0.5 && share(shape.spirit) >= 0.3 && sharpAll < 0.1 && shape.tagged > 1 && shape.dryMod)
-      cands.push(['spirit-forward', 5 + (shape.sweetMod ? 2 : 0)]);
+    const sAcid = share(shape.acid);
+    const cands: [Archetype, number, number][] = [
+      ['highball', 5, longW * fade(sBooze, BAND.highballBooze) * fade(shape.long / Math.max(shape.long + shape.booze, 1e-9), BAND.highballLong)],
+      ['sour', 0, shape.sweetSrc ? fade(sBooze, BAND.base) * fade(sAcid, BAND.sourAcid) * (1 - fade(sAcid, BAND.sourAcidMax)) : 0],
+      ['sparkling', 0, shape.tagged > 1 ? fade(share(shape.sparkling), BAND.sparkling) : 0],
+      ['dessert', 8, shape.hasLiqueur && shape.cream > 0 ? fade(pc, BAND.dessertCream) * (1 - fade(sharpAll, BAND.dessertSharp)) : 0],
+      ['spirit-forward', 5 + (shape.sweetMod ? 2 : 0), shape.tagged > 1 && shape.dryMod
+        ? fade(sBooze, BAND.stirredBooze) * fade(share(shape.spirit), BAND.stirredSpirit) * (1 - fade(sharpAll, BAND.stirredSharp)) : 0],
+    ];
+    // highest bonus first; on a tie the earlier shape wins, as the label always has
     cands.sort((x, y) => y[1] - x[1]);
-    if (cands.length) {
-      archetype = shapeW >= 0.5 ? cands[0][0] : null;
-      shaped = shapeW;
-      // The bonus covers what the pairwise terms miss, so it tapers off as they already credit the brew.
-      const bonus = shapeW * cands[0][1] * clamp((TAPER_END - score) / (TAPER_END - TAPER_START), 0, 1);
-      score += bonus;
-      parts.structure += bonus;
-      if (archetype === 'spirit-forward') {
-        const relief = -parts.oneNote * 0.6 * shapeW;
+    let best = 0, bonusW = 0, ahead = 1;
+    // The bonus covers what the pairwise terms miss, so it tapers off as they already credit the brew.
+    const taper = clamp((TAPER_END - score) / (TAPER_END - TAPER_START), 0, 1);
+    for (const [type, bonus, m] of cands) {
+      best = Math.max(best, m);
+      bonusW = Math.max(bonusW, m * bonus);
+      if (!archetype && m * clean >= 0.5) archetype = type;
+      // spirit-forward relief counts only as far as no higher-bonus shape claims the brew
+      if (type === 'spirit-forward' && m > 0) {
+        const relief = -parts.oneNote * 0.6 * clean * m * ahead;
         score += relief;
         parts.oneNote += relief;
       }
+      ahead *= 1 - m;
     }
+    shaped = clean * best;
+    const lift = clean * bonusW * taper;
+    score += lift;
+    parts.structure += lift;
   }
   if (n > 1 && shaped < 1) {
     // no recognisable shape; the more things thrown in, the muddier it gets
@@ -389,7 +474,9 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   if (n > 6) { score -= (n - 6) * 4; parts.crowd -= (n - 6) * 4; }
   if (n === 1) {
     // one ingredient is a pour, not a cocktail: neat spirits stay presentable, the rest do not
-    const cap = shape.booze > 0 && share(shape.booze) >= 0.4 ? LONE_SPIRIT_CAP : LONE_CAP;
+    // a lone pour's alcohol share is its strength over 40%, the same at any amount (the tolerance keeps
+    // a 16% liqueur, exactly on the line, from flickering with the rounding of its share)
+    const cap = shape.booze > 0 && sBooze >= 0.4 - 1e-9 ? LONE_SPIRIT_CAP : LONE_CAP;
     const pen = Math.max(6, score - cap);
     score -= pen; parts.crowd -= pen;
   }

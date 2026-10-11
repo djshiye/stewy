@@ -71,6 +71,15 @@ describe('tastingNote for a brew that goes wrong', () => {
     expect(noteFor(brew(['lemon_juice', 60], ['lime_juice', 40]))).toBe('It is far too sharp, with nothing sweet to soften it.');
   });
 
+  it('says a brew only leans sweet when the sweet penalty has only partly set in', () => {
+    // the tonic's bitterness sits near the line that lets it balance the syrup, so the penalty is partial
+    const b = brew(['simple_syrup', 30], ['tonic_water', 15]);
+    const h = harmony(b)!;
+    expect(h.parts.sweetSour).toBeLessThan(-1);
+    expect(h.parts.sweetSour).toBeGreaterThan(-4);
+    expect(noteFor(b)).toBe('It leans too sweet, with too little sharpness to cut through it.');
+  });
+
   it('is always one plain sentence, even without the brew to name things', () => {
     expect(tastingNote(harmony(sludge))).toMatch(/^[A-Z][^.]+\.$/);
     expect(tastingNote(harmony(sludge))).not.toMatch(PRAISE);

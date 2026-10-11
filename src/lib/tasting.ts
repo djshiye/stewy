@@ -80,6 +80,11 @@ function biggest(xs: Poured[], test: (ing: Ingredient) => boolean): Ingredient |
 /** An ingredient set inside a sentence; cream reads "cream", not "heavy cream". */
 const said = (ing: Ingredient) => (ing.id === 'heavy_cream' ? 'cream' : inlineName(ing.name));
 
+/** Points the sweet or sour penalty must take before a fault calls the brew "far too" sweet or sharp
+    (half the smallest full penalty), and before it mentions the lean at all. */
+const FAR_TOO = -4;
+const LEANS_TOO = -1;
+
 /** One plain sentence naming what is wrong with a brew, from the same signals the score uses. */
 function fault(h: Harmony, brew: BrewEntry[]): string {
   const xs: Poured[] = [];
@@ -106,10 +111,16 @@ function fault(h: Harmony, brew: BrewEntry[]): string {
   if (dairy && smoke) return `The ${said(dairy)} smothers the ${said(smoke)}, so it drinks heavy and muddy.`;
   if (coffee && acid) return `The ${said(acid)} turns the ${said(coffee)} sour and harsh.`;
   if (brew.length === 1) return 'A single ingredient on its own is a pour, not a drink.';
-  if (h.parts.sweetSour < 0) {
+  // the sweet and sour penalties grow in, so only a real share of one says "far too"
+  if (h.parts.sweetSour <= FAR_TOO) {
     return (h.p.sweet ?? 0) >= (h.p.sour ?? 0)
       ? 'It is far too sweet, with nothing sharp to cut through it.'
       : 'It is far too sharp, with nothing sweet to soften it.';
+  }
+  if (h.parts.sweetSour <= LEANS_TOO) {
+    return (h.p.sweet ?? 0) >= (h.p.sour ?? 0)
+      ? 'It leans too sweet, with too little sharpness to cut through it.'
+      : 'It leans too sharp, with too little sweetness to soften it.';
   }
   if ((h.p.boozy ?? 0) >= 0.45) return 'It is almost all spirit, with nothing to balance the burn.';
   if (fizzy && fizzMl / liquidMl >= 0.6) return 'It is mostly mixer, so it drinks long and thin.';

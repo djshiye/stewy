@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
-import { INGREDIENTS } from '../data/ingredients';
+import { INGREDIENTS, ING_BY_ID } from '../data/ingredients';
 import { RECIPES } from '../data/recipes';
 import { harmony, suggestions } from './harmony';
 import { scoreDeltas, topSuggestions } from './coach';
@@ -56,6 +56,11 @@ const without = (b: [string, number][], id: string) => b.filter(([x]) => x !== i
 const swap = (b: [string, number][], from: string, to: string): [string, number][] => b.map(([x, ml]) => [x === from ? to : x, ml]);
 const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((s) => /curdle/.test(s.text));
 
+/** Worst score step per 0.5 ml measured over the sweeps below, plus a point of headroom: every classic
+    and every random pot of real size (5 measured), and random pots of any size (8 measured, a 10 ml pot). */
+const CLASSIC_STEP = 6;
+const SMALL_POT_STEP = 9;
+
 /** Small deterministic PRNG (mulberry32). */
 function rng(seed: number) {
   let a = seed;
@@ -65,6 +70,44 @@ function rng(seed: number) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/** The biggest score change between neighbouring 0.5 ml steps as each liquid amount in each brew is
+    swept from 0.5 ml to 120 ml (or 2.5 times its amount, if more) with the rest held. `minRest` keeps
+    only sweeps whose other liquid adds up to at least that many ml. */
+function worstStep(brews: [string, [string, number][]][], minRest = 0) {
+  let worst = { jump: 0, at: 'none' };
+  for (const [name, base] of brews)
+    base.forEach(([id, amt], i) => {
+      if (ING_BY_ID[id]?.unit) return;
+      const rest = base.reduce((t, [x, ml], j) => t + (j === i || ING_BY_ID[x]?.unit ? 0 : ml), 0);
+      if (rest < minRest) return;
+      const max = Math.max(120, 2.5 * amt);
+      let prev = score(base.map(([x, v], j) => [x, j === i ? 0.5 : v] as [string, number]));
+      for (let ml = 1; ml <= max; ml += 0.5) {
+        const now = score(base.map(([x, v], j) => [x, j === i ? ml : v] as [string, number]));
+        if (Math.abs(now - prev) > worst.jump) worst = { jump: Math.abs(now - prev), at: `${name}: ${id} ${ml - 0.5} to ${ml} ml, ${prev} to ${now}` };
+        prev = now;
+      }
+    });
+  return worst;
+}
+
+/** Seeded random pots of 2 to 5 distinct ingredients at 0.5 to 1.5 times their default pour. */
+function randomPots(seed: number, count: number): [string, [string, number][]][] {
+  const r = rng(seed);
+  const out: [string, [string, number][]][] = [];
+  for (let i = 0; i < count; i++) {
+    const n = 2 + Math.floor(r() * 4);
+    const b: [string, number][] = [];
+    for (let k = 0; k < n; k++) {
+      const ing = INGREDIENTS[Math.floor(r() * INGREDIENTS.length)];
+      if (b.some(([x]) => x === ing.id)) continue;
+      b.push([ing.id, Math.round(ing.amt * (0.5 + r()) * 2) / 2]);
+    }
+    out.push([b.map(([x, ml]) => `${x} ${ml}`).join(', '), b]);
+  }
+  return out;
 }
 
 describe('calibration', () => {
@@ -220,7 +263,7 @@ describe('calibration', () => {
     expect(scoreDeltas(toBrew(without(RAMOS, 'egg_white')))?.get('egg_white')?.delta).toBeGreaterThan(20);
   });
 
-  it('moves the score smoothly as a Ramos comes together, with no step of more than 12 points per 0.5 ml', () => {
+  it('moves the score smoothly as a Ramos comes together, with no step of more than 6 points per 0.5 ml', () => {
     const bases: [string, number][][] = [
       RAMOS,
       [['gin', 50], ['lemon_juice', 25], ['simple_syrup', 15], ['heavy_cream', 15], ['egg_white', 15], ['soda_water', 45]],
@@ -231,10 +274,27 @@ describe('calibration', () => {
         let prev = score(base.map(([x, v]) => [x, x === id ? 0.5 : v] as [string, number]));
         for (let ml = 1; ml <= 45; ml += 0.5) {
           const now = score(base.map(([x, v]) => [x, x === id ? ml : v] as [string, number]));
-          expect(Math.abs(now - prev), `${id} ${ml} ml`).toBeLessThanOrEqual(12);
+          expect(Math.abs(now - prev), `${id} ${ml} ml`).toBeLessThanOrEqual(CLASSIC_STEP);
           prev = now;
         }
       }
+  });
+
+  it('moves the score smoothly: no 0.5 ml step in any amount of any classic jumps it', () => {
+    const worst = worstStep(RECIPES.map((r) => [r.id, r.build]));
+    if (process.env.CALIB_LOG) console.log('classics', worst);
+    expect(worst.jump, worst.at).toBeLessThanOrEqual(CLASSIC_STEP);
+  });
+
+  it('moves the score smoothly for random pots too', () => {
+    const pots = randomPots(4242, 200);
+    // a pot of real size (30 ml or more besides the amount being swept)
+    const real = worstStep(pots, 30);
+    // and any pot at all: in a 10 ml pot 0.5 ml is a twentieth of the drink, so the steps are coarser
+    const any = worstStep(pots);
+    if (process.env.CALIB_LOG) console.log('random', real, any);
+    expect(real.jump, real.at).toBeLessThanOrEqual(CLASSIC_STEP);
+    expect(any.jump, any.at).toBeLessThanOrEqual(SMALL_POT_STEP);
   });
 
   it('lets a small clash dim a classic shape instead of dropping it', () => {
