@@ -478,7 +478,7 @@
 /* short desktop viewports: a tighter header leaves the rows more room. The line under the name
    goes (the Method stat says the same) so the whole drink fits; an empty card keeps its hint.
    Tall desktops (layout.css) get the same: their cards are about 540px tall under the pot. */
-@media (min-width: 1000px) and (max-height: 819px), (min-width: 1000px) and (max-aspect-ratio: 4/5) {
+@media (min-width: 1000px) and (max-height: 819px), (min-width: 1000px) and (max-aspect-ratio: 5/6) {
   .rc { padding-top: var(--s4); padding-bottom: var(--s4); }
   .rc__foot { padding-top: var(--s1); }
   .rc__heading[data-size='lg'] .rc__title,

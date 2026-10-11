@@ -91,19 +91,21 @@
   }
 }
 
-/* ---------- tall desktops (1000 and up, taller than 5 : 4) ----------
-   iPad Pro 12.9 and Air 13 in portrait (1024 x 1366), portrait monitors (1080 x 1920, 1440 x 2560).
+/* ---------- tall desktops (1000 and up, taller than 6 : 5) ----------
+   iPad Pro 12.9 and Air 13 in portrait (1024 x 1366, and about 1024 x 1266 in Safari once the tab and
+   address bars are gone), iPad Pro 13 (1032 x 1280 to 1300), portrait monitors (1080 x 1920, 1440 x 2560).
    Three columns would squeeze the pot into a 330px middle column, so the stage spans the width
    and the recipe and analysis cards sit side by side below it, each about half. An aspect-ratio
-   query, not orientation: a square counts as portrait there. 4 / 5 keeps 1000 x 1000, 1100 x 1100
-   and 1280 x 1024 on three columns; at 1000 wide stacking starts at 1250 tall, where the pot is level
-   with the three-column pot (413px against 396px) and grows with every pixel of height. The shell
-   stays 100dvh; the cards scroll inside as on short desktops. The cards row is a share of the
-   shell (40%, at least 540px, at most 700px) so the pot gets the rest. */
-@media (min-width: 1000px) and (max-aspect-ratio: 4/5) {
+   query, not orientation: a square counts as portrait there. 5 / 6 (0.833) is the loosest ratio that
+   still keeps 1000 x 1000, 1100 x 1100 and 1280 x 1024 on three columns with room to spare, and it
+   catches every Safari iPad viewport (0.79 to 0.81). From 1024 wide the stacked pot is never smaller
+   than the 420px three-column pot; at 1000 x 1200 it is 377px against 396px, the price of the radar
+   and cards without dead space. The shell stays 100dvh; the cards scroll inside as on short desktops.
+   The cards row is a share of the shell (40%, at least 520px, at most 700px) so the pot gets the rest. */
+@media (min-width: 1000px) and (max-aspect-ratio: 5/6) {
   .counter {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr) minmax(0, clamp(540px, 40%, 700px));
+    grid-template-rows: minmax(0, 1fr) minmax(0, clamp(520px, 40%, 700px));
   }
 
   .slot--stage { grid-column: 1 / -1; grid-row: 1; }

@@ -47,7 +47,7 @@
 
 /* tall desktops (see layout.css): the stage spans the width above the two cards, so the pot is
    limited by the stage height first and may grow past the 1000px cap on a portrait monitor */
-@media (min-width: 1000px) and (max-aspect-ratio: 4/5) {
+@media (min-width: 1000px) and (max-aspect-ratio: 5/6) {
   .stg-pot {
     width: min(calc(100cqw / var(--cq-k)), calc((100cqh / var(--cq-k) - var(--stage-hint-h)) * 1.2), 1280px);
   }

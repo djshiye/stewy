@@ -236,7 +236,7 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
   start and, where the units are wrong, sets `data-cq-zoom` on the root; `--cq-k` in tokens.css then
   becomes the zoom and every `cq` length is divided by it.
 
-### Tall desktops and portrait large tablets (1000 wide and up, taller than 5 : 4)
+### Tall desktops and portrait large tablets (1000 wide and up, taller than 6 : 5)
 ```
     +--------------------------------------------------------------------------+
     |                       the pot, full width of the stage                    |
@@ -245,20 +245,33 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
     +-------------------------------------+------------------------------------+
     |  back bar (unchanged)                                                    |
 ```
-iPad Pro 12.9 and Air 13 in portrait (1024 x 1366) and portrait monitors (1080 x 1920, 1440 x 2560).
-Three columns would squeeze the pot into a 330px middle column and starve both cards, so the stage
-spans the width and the recipe and analysis cards sit side by side below it, each about half. The
-trigger is `(min-width: 1000px) and (max-aspect-ratio: 4/5)`, an aspect-ratio query rather than
-`orientation: portrait`, because orientation counts a square as portrait. 4 / 5 keeps 1000 x 1000,
-1100 x 1100 and 1280 x 1024 on three columns. At 1000 wide stacking starts at 1250 tall, where the
-stacked pot (413px) is level with the three-column pot (396px) and grows with every pixel of height;
-a looser 5 / 6 would make the pot smaller than today between 1200 and 1250 tall (329px against 396px).
-The shell stays `100dvh` with no page scroll. The cards row is 40% of the shell, at least 540px and
-at most 700px, so the pot takes the rest (552px wide at 1024 x 1366, about 1000px at 1080 x 1920,
-capped at 1280px). The cards scroll inside as on short desktops. The recipe card uses the
-tight short-desktop header, so six rows fit at 1024 x 1366. At 488px a card is wide enough for the
-radar beside the meters, so the 1000 to 1279 tweaks (no radar, 2 x 2 breakdown) are undone here.
-The pour dial is a viewport modal, so it is unaffected.
+iPad Pro 12.9 and Air 13 in portrait (1024 x 1366 fullscreen, about 1024 x 1266 in Safari), iPad Pro 13
+(1032 x 1280 to 1300) and portrait monitors (1080 x 1920, 1440 x 2560). Three columns would squeeze the
+pot into a 330px middle column and starve both cards, so the stage spans the width and the recipe and
+analysis cards sit side by side below it, each about half. The trigger is
+`(min-width: 1000px) and (max-aspect-ratio: 5/6)`, an aspect-ratio query rather than
+`orientation: portrait`, because orientation counts a square as portrait. 5 / 6 (0.833) is the loosest
+ratio that keeps 1000 x 1000, 1100 x 1100, 1280 x 1024 and 1366 x 1024 on three columns, and it catches
+every Safari iPad viewport (ratios 0.79 to 0.81, which 4 / 5 missed). The shell stays `100dvh` with no
+page scroll and the back bar is unchanged. The cards row is 40% of the shell, at least 520px and at most
+700px, so the pot takes the rest. The cards scroll inside as on short desktops.
+
+| Viewport | Pot (was) | Cards |
+| --- | --- | --- |
+| 1024 x 1266 | 456px (420px) | 488 x 520 |
+| 1032 x 1300 | 497px (428px) | 492 x 520 |
+| 1024 x 1366 | 576px (420px) | 488 x 520 |
+| 1000 x 1200 | 377px (396px) | 476 x 520 |
+| 1080 x 1920 | 1048px | 516 x 646 |
+| 1440 x 2560 | 1280px (cap) | 684 x 700 |
+
+The recipe card uses the tight short-desktop header and the analysis card drops its padding and gaps
+and shows the radar at 88% width, so a six ingredient brew lists every row and the analysis ends with
+the first "Try adding" suggestion at 1024 x 1266. At 488px a card is wide enough for the radar beside
+the meters, so the 1000 to 1279 tweaks (no radar, 2 x 2 breakdown) are undone here. The 1000 wide band
+from 1200 to 1250 tall gives a slightly smaller pot than three columns would (377px to 437px against
+396px) in exchange for the radar and cards without dead space. The pour dial is a viewport modal, so it
+is unaffected.
 
 ### Tablet (700 to 999 wide)
 In portrait the pot is capped at 520px and shrinks (floor 320px) on shorter tablets so the summary row
