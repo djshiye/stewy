@@ -31,13 +31,13 @@ light the room, and see exactly how the score is built.
   have a bar, an eight-axis flavour radar shows the shape of the drink, and
   meters place it between sweet and sour, light and strong. "Try adding" only
   appears when something helps by 3 points or more.
-- **It knows the classics.** 55 classics, each scoring 82 to 92. The engine
+- **It knows the classics.** 56 classics, each scoring 82 to 92. The engine
   recognises them in your pot and understands drink shapes (spirit-forward,
   sour, highball, dessert), so a Negroni and a Mojito are judged on their own terms.
 - **The serve card.** Glassware, ice and garnish are inferred from what you
   brewed. You get the measures, numbered method steps, a tasting note and the
   strength after dilution, then save it to the Cellar, share a link or copy the recipe.
-- **The Grimoire.** All 55 classics as an illustrated index, filterable by
+- **The Grimoire.** All 56 classics as an illustrated index, filterable by
   method and style, ready to load into the pot.
 - **The Cellar.** Your saved brews, on this device only.
 - **Share links.** A brew is encoded in the link itself. No accounts, no server.
@@ -84,7 +84,7 @@ volume-weighted profile of the whole drink and starts from a base of 55. Then:
   a sour, a highball, a dessert drink. A brew with no shape loses points here.
 - **Penalties** cover the things no bartender would pour: too sweet or too sour
   with no counterweight, one-note drinks, pots crowded past six ingredients, and real
-  clashes such as dairy with citrus, which curdles at any dilution.
+  clashes such as dairy with citrus, which curdles at any dilution (the one exception is a Ramos Gin Fizz, where egg white, syrup and soda carry the cream).
 
 The calibration is pinned by tests in [`calibration.test.ts`](src/lib/calibration.test.ts):
 every classic scores 80 or more, a suite of known clashes stays at 55 or less,
@@ -100,7 +100,7 @@ and random brews have a median below 70, so a high score means something.
   glassware, garnishes and the cauldron are hand-built parametric SVG.
 - **Geist** for the interface and **Newsreader** for names, self-hosted through
   Fontsource, so the app makes no third-party requests.
-- **Vitest** (node and jsdom projects) and **ESLint 9**.
+- **Vitest** (node and jsdom projects), **Playwright Test** for the browser suite, and **ESLint 9**.
 - **vite-plugin-pwa** for the service worker.
 
 The design system (colour, type, spacing, motion, every component) is
@@ -111,9 +111,24 @@ documented in [DESIGN.md](DESIGN.md), including the architecture map.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit and component tests
+npm test           # unit and component tests (Vitest)
 npm run lint
 ```
+
+### End-to-end tests
+
+The browser suite uses Playwright Test and lives in `e2e/`. It builds the production bundle into `dist-e2e` and serves it on port 4317, then drives the real app: shelf and pour, the dial, the recipe card, analysis, Serve, the Grimoire, the Cellar, share links, undo, the phone layout, reduced motion, big-screen zoom, and a check that the console stays silent.
+
+```bash
+npm run test:e2e                                          # Chromium on this machine
+npm run test:e2e:webkit                                   # WebKit in the official Playwright container
+npm run test:e2e:all                                      # both, one after the other
+npx playwright test --project=chromium e2e/zoom.spec.ts   # one spec
+```
+
+The app is tested in Chromium and WebKit. The WebKit run is Playwright's Linux WebKit build, which is close to Safari but is not macOS Safari or iOS Safari, so a real-device check is still worth doing before a release.
+
+WebKit does not run on every Linux host, so `test:e2e:webkit` starts the official image `mcr.microsoft.com/playwright:v1.64.0-noble` with podman (swap in docker if you prefer; the flags are the same) and mounts the repo into it. Pull the image once with `podman pull mcr.microsoft.com/playwright:v1.64.0-noble`. Chromium needs the matching browser from `npx playwright install chromium`. Reports and traces land in `test-results/` and `playwright-report/`, which git ignores.
 
 Production build (type-checks first, outputs `dist/`):
 

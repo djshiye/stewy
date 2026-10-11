@@ -228,8 +228,20 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
   scales its child only (the ghost icon is 56px at factor 1), and the shelf tooltip stands
   outside the zoom because it positions itself in viewport pixels.
 
+  Pointer coordinates stay in viewport pixels under zoom, so the measure pill scrub reads the zoom
+  from a 100px probe and divides the drag by it (a step is 14 CSS pixels at every zoom), and the
+  shelf tooltip clamps to its own measured half width plus 8px instead of a fixed 140px. WebKit
+  also reports container query units (`cqw`, `cqh`) in viewport pixels inside a zoomed element, so
+  the pot and the meter knobs would come out too large. `lib/cqUnits.ts` probes the engine once at
+  start and, where the units are wrong, sets `data-cq-zoom` on the root; `--cq-k` in tokens.css then
+  becomes the zoom and every `cq` length is divided by it.
+
 ### Tablet (700 to 999 wide)
-The pot is capped at 520px wide, so the cards stay near the first screen. The stage and the
+In portrait the pot is capped at 520px and shrinks (floor 320px) on shorter tablets so the summary row
+and about three recipe rows clear the dock on the first screen: width = max(320px, (100svh - top bar -
+dock - safe area - 470px) x 1.2), at most 520px. 768 x 1024 gives a 362px pot with the summary row and
+three Negroni rows above the dock; 820 x 1180, 834 x 1194 and 800 x 1280 keep the 520px pot. Landscape
+tablets keep the 520px cap. The stage and the
 summary row span the width; the recipe card and the analysis card sit side by side below them.
 Units live in the recipe card, the dock is fixed as on phones. The gauge numerals around the
 pot are hidden below 1000px (they would clip).
@@ -363,6 +375,20 @@ the Serve button.
   points or more, each with its art, name, amount, a `+n` delta and an add button. One name
   everywhere: "Try adding". When nothing helps by that much the card says so instead.
 - **Tips.** The engine's plain-language suggestions as a short list.
+- **Clash gate for the classic match.** A brew is only called "Close to" a classic, and only takes
+  that classic's glass and method, when it is not a clash: `resemblance()` returns nothing when the
+  clash term is -20 or worse or the score is under 40. The serve card, the recipe card line and the
+  coach all read that one function, so a cream, lime and mezcal pot topped with ginger beer is a
+  highball with a lime wheel, not a copper mug.
+- **The egg white exception (Ramos Gin Fizz).** Cream and acid normally curdle. The one exception
+  is a Ramos shape: gin as nearly all of the spirit, plain soda water as the fizz, cream or milk
+  (not Irish cream) of at least 8 to 16 ml and under about a fifth of the liquid, egg white at 0.4
+  to 0.66 of the dairy, and a spoon of syrup (2 to 6 percent of the liquid). Each condition fades
+  in on its own ramp, so the score moves smoothly (no step larger than about 11 points per 0.5 ml
+  on the three Ramos sweeps). Any other spirit, mixer or missing piece still curdles, so egg white
+  is never offered as a fix for a sweetened curdled pot. The classic archetype bonus also fades
+  over a clash of 0 to 19 points instead of switching off at exactly 0. Coconut cream does not
+  curdle against mild fruit juice (pineapple, orange, tomato), so a Piña Colada keeps its match.
 - **Radar emphasis.** Only the two strongest axes (value of at least 0.12) are set bold in
   `--tx-1`; the rest stay quiet.
 - **Empty.** Ring as an empty track with a dash, "Waiting for ingredients", the radar axes only,
@@ -427,7 +453,13 @@ side pane; phone: a sticky bottom bar) with the full build and an explicit "Load
 pot" button. Loading shows an undo toast ("Loaded Negroni", or "Negroni is already in the pot"
 with no Undo when nothing changes). The classic currently in the pot is marked "In the pot",
 and the index opens scrolled to it, landing on a whole row (never a cut fragment under the
-header); nothing is preselected, so the desktop pane starts on "Pick a classic". Cells use `content-visibility: auto` so 55 glasses do not all paint at once. On phones the
+header); nothing is preselected, so the desktop pane starts on "Pick a classic". Cells use `content-visibility: auto` so 56 glasses do not all paint at once. Each cell's glass is
+also drawn only when its cell comes within a screen of the index (one shared IntersectionObserver); a
+placeholder of identical size holds the place, the cells in view at open are drawn before the first
+paint, and later ones fade in (opacity only). A glass, once drawn, stays drawn, and the cell in the pot
+always has its glass. Without IntersectionObserver every glass is drawn at once. This cuts the
+document by about 60 percent at open and the click-to-painted time at 4x CPU throttle by about 30
+percent (172 to 113 ms with an empty pot, 231 to 165 ms with a Negroni in it). On phones the
 detail opens as an overlay over the index: Tab cycles Back, Load and Close, and Escape steps
 back to the index before it closes the sheet.
 
@@ -478,6 +510,8 @@ src/
   lib/                    pure engine (harmony, coach, serve, share, color, units)
   data/                   ingredients, recipes, types
   store.ts, cellar.ts     state, history, persistence
+e2e/                      Playwright Test specs and fixtures (see README, "End-to-end tests")
+playwright.config.ts      Chromium and WebKit projects, production bundle on port 4317
 ```
 
 Each component folder owns its `.css` file; tokens are the only shared CSS. Components get
