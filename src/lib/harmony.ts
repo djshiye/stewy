@@ -596,13 +596,12 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
       kind: 'bad',
     });
   }
-  // coffee turned harsh by acid, named like the tasting note names it; a brew that still scores well keeps
-  // its praise next to a plain warning, since the clash is a few points of an otherwise good brew
+  // coffee turned harsh by acid, named like the tasting note names it
   const roast = coffeeAcidClashes(h) ? coffeeAcidSides(brew, h) : null;
   if (roast)
     out.push({
       text: `The ${said(roast.acid)} turns the ${said(roast.coffee)} sour and harsh. Pick one or the other.`,
-      kind: h.score >= 56 ? 'warn' : 'bad',
+      kind: 'bad',
     });
   if (n === 1)
     out.push({ text: 'Add a modifier like citrus, something sweet or bitters to make it a cocktail.', kind: '' });

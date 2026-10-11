@@ -286,12 +286,12 @@ describe('copy', () => {
       expect(tips[0].kind).toBe('bad');
       expect(tips.some((s) => s.kind === 'good')).toBe(false);
     }
-    // a mild coffee clash on a brew that still scores 80 is a plain warning, so the praise stays
+    // the same goes for coffee turned harsh by acid on a brew that still scores 80
     const mild = toBrew([['tequila', 42], ['espresso', 16.5], ['pineapple_juice', 64.5]]);
     const hm = harmony(mild)!;
     expect(hm.score).toBeGreaterThanOrEqual(80);
     expect(coffeeAcidClashes(hm)).toBe(true);
-    expect(suggestions(hm, mild).map((s) => s.kind)).toEqual(['good', 'warn']);
+    expect(suggestions(hm, mild).map((s) => s.kind)).toEqual(['bad']);
   });
 
   it('never praises next to a bad tip, across every brew in the suite', () => {
