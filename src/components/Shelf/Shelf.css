@@ -182,6 +182,9 @@
 /* iOS zooms the page when a field under 16px takes focus (iPads use this field too, at 13px) */
 @media (pointer: coarse) {
   .shelf__search input { font-size: 16px; }
+  /* the bigger text needs the room: no / hint (there is no keyboard to press it on) and a wider back bar field */
+  .shelf__search kbd { display: none; }
+  .shelf--backbar .shelf__search { width: 244px; }
 }
 .shelf__search kbd { flex: none; margin-right: 2px; }
 
