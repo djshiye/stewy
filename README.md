@@ -47,7 +47,7 @@ light the room, and see exactly how the score is built.
   dashes and garnishes in pieces. Measures can be scrubbed directly on the recipe card.
 - **Undo everything.** Full undo and redo history, plus undo on every removal toast.
 - **Any screen.** A three-column desktop, a stacked layout for tall tablets and
-  portrait monitors (taller than 5:6), a tablet layout, a phone layout with a
+  portrait monitors (5:6 and taller), a tablet layout, a phone layout with a
   fixed dock for the shelf, a phone-landscape layout, and a scaled-up interface
   on big screens, with its own zoom ladder for portrait monitors. Touch targets
   are at least 44px on touch devices.
@@ -91,12 +91,12 @@ volume-weighted profile of the whole drink and starts from a base of 55. Then:
   clashes such as dairy with citrus, which curdles at any dilution (the one exception is a Ramos Gin Fizz, where egg white, syrup and soda carry the cream).
 
 Nothing in the score is a cliff on an amount. Every amount gate (how much of the
-pot is spirit, mixer, acid, cream and so on) fades in over a band, so a
-half millilitre does not make the score jump. On the pinned sweeps the worst step per 0.5 ml
-is 6 points for the classics, 7 for real-size random pots (30 ml or more of other
-flavoured liquid) and 13 for small ones (10 to 30 ml), and 9, 13, 16 and 19 for cream or milk
+pot is spirit, mixer, acid, cream and so on) fades in over a band, so the hard
+steps are gone, but a half millilitre can still move a small pot a long way. The pinned sweeps
+cap the step per 0.5 ml at 6 points for the classics, 7 for real-size random pots (30 ml or more of other
+flavoured liquid) and 13 for small ones (10 to 30 ml), and at 9, 13, 16 and 19 for cream, milk or Irish cream
 meeting acid, by how much other liquid carries flavour (90, 60, 30 or 10 ml or
-more). The steepest steps left are the first millilitre of acid into a small
+more). Each cap is the worst step measured plus a point, and under 10 ml of other liquid nothing is bounded. The steepest steps left are the first millilitre of acid into a small
 creamy or coffee drink, where half a millilitre is a real share of the drink.
 Count gates (how many ingredients, strong ones or base spirits) stay hard steps by design.
 
@@ -154,7 +154,7 @@ npx playwright test --project=chromium e2e/zoom.spec.ts   # one spec
 E2E_PORT=4400 E2E_OUTDIR=dist-e2e-b npm run test:e2e      # a second run beside the first
 ```
 
-`test:e2e:mobile` runs five projects: iPhone 15, iPhone SE, iPhone 15 landscape, iPad Pro 11 and iPad Pro 11 landscape. They run only the specs that have a touch version, with taps in place of clicks and hotkeys. Tags sort the rest: `@desktop` is a desktop size sweep or mouse and hover geometry, `@emulated` is a phone or desktop size that a desktop project fakes with `test.use`, and `@device` is the real-device twin of a pair (and all of `touch.spec.ts`). The mobile projects skip the first two, the desktop projects skip the third.
+`test:e2e:mobile` runs five projects: iPhone 15, iPhone SE (3rd gen), iPhone 15 landscape, iPad Pro 11 and iPad Pro 11 landscape. They run only the specs that have a touch version, with taps in place of clicks and hotkeys. Tags sort the rest: `@desktop` is a desktop size sweep or mouse and hover geometry, `@emulated` is a phone or desktop size that a desktop project fakes with `test.use`, and `@device` is the real-device twin of a pair (and all of `touch.spec.ts`). The mobile projects skip the first two, the desktop projects skip the third.
 
 The app is tested in Chromium and WebKit. The WebKit runs use Playwright's Linux WebKit build, which is close to Safari but is not macOS Safari or iOS Safari. It has no real safe-area insets, no collapsing toolbar and no on-screen keyboard (the keyboard lift is tested against a stand-in visual viewport), so a real-device check is still worth doing before a release. Mobile WebKit has no mouse wheel and Playwright cannot swipe, so the scroll lock on touch is checked as the lock state plus `scrollY`, not as a drag.
 

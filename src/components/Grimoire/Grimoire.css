@@ -797,7 +797,7 @@
 }
 
 /* every desktop height: the modal is 760px at most, so the header folds into one line (title, the count
-   beside it, a compact search) with the chips right below. That leaves the index 630px in a 760px modal,
+   beside it, a compact search) with the chips right below. That leaves the index 640px in a 760px modal,
    two whole rows of 315px, where the stacked header left 586 (and about 1.86 rows at 1080 tall and up). */
 @media (min-width: 1000px) {
   .grim__head {

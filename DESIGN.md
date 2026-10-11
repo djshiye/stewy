@@ -181,7 +181,8 @@ the fixed dock (`scroll-padding-bottom`). The first Tab stop is a "Skip to main 
 (hidden until focused, it slides in on transform); the shelf is a labelled `<aside>`
 (complementary) and the recipe, pot and analysis live in `<main id="main">`. Sheets trap focus,
 skip parked radios and inert regions, and return focus to the control that opened them. Hover looks sit
-only inside `@media (hover: hover)`, and touch gets the same look from `:active`.
+only inside `@media (hover: hover)`, and touch gets a look from `:active` (the shelf bottle presses down, a Grimoire
+cell tints; the Cellar rows and the measure pills have none).
 
 ## 5. Layout
 
@@ -242,7 +243,7 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
   Safari before 26.4 (and any engine without `zoom`) implements the property the old way, so the
   scale is switched off there; see "Safari and iOS" (section 7).
 
-### Tall desktops and portrait large tablets (1000 wide and up, taller than 5 : 6)
+### Tall desktops and portrait large tablets (1000 wide and up, 5 : 6 and taller)
 ```
     +--------------------------------------------------------------------------+
     |                       the pot, full width of the stage                    |
@@ -261,7 +262,7 @@ ratio that keeps 1000 x 1000, 1100 x 1100, 1280 x 1024 and 1366 x 1024 on three 
 every Safari iPad viewport (ratios 0.79 to 0.81, which 4 / 5 missed). The shell stays `100dvh` with no
 page scroll and the back bar is unchanged. The cards row is 40% of the shell, at least 520px and at most
 700px, so the pot takes the rest. Its columns are `4fr / 7fr`, not half and half: the recipe card is
-about 346px wide at 1000 wide and still lists six rows, the analysis card about 570 to 620px. The
+about 346px wide at 1000 wide and still lists six rows, the analysis card about 606 to 626px at the iPad sizes (wider on monitors). The
 cards scroll inside as on short desktops.
 
 | Viewport | Pot (was) |
@@ -287,7 +288,7 @@ viewport modal, so it is unaffected.
 
 **Portrait zoom ladder.** The landscape ladder needs 1800 x 1000, so portrait monitors have their own,
 keyed on the width because the stack is as wide as the screen and the pot, the cards and the text all
-read from it. Every step's lower bound lands on a layout 1070 to 1110 CSS px wide (the 1.1 step on
+read from it. Every step's lower bound lands on a layout 1070 to 1111 CSS px wide (the 1.1 step on
 1091); the step below ends at 1150 to 1250 for the first five steps and up to 1300 to 1440 for the last
 ones (the pot tops out at about the stage width, so a wider layout only adds dead stage). The height
 minimum is built in: 5 : 6 and taller means at least 1.2 x the width.
@@ -310,10 +311,10 @@ minimum is built in: 5 : 6 and taller means at least 1.2 x the width.
 The 1.1 step stops at 1279 so that the 1000 to 1279 shelf and Grimoire rules, which see the physical
 width, still match the narrower layout it makes; 1280 to 1299 stays at 1. The trade-off: 1080 x 1920 stays
 at 1 (below about 1.08 the layout would drop under 1000 CSS px), so a 1080p
-monitor turned on its side reads smaller than in landscape. Sheets, the toaster, the shelf tooltip, the
-drag ghost and the cq correction follow the zoom the same way, through one comma-separated media list in
-`layout.css`. Because media queries see the physical width, from 1300 wide in portrait the shelf gets
-the narrow-desktop treatment (legend hidden, 92px bottles, 208px search) and the Grimoire its narrow
+monitor turned on its side reads smaller than in landscape. Sheets, the toaster, the shell, the shelf tooltip and the
+drag ghost follow the zoom the same way, through one comma-separated media list in
+`layout.css`; the cq correction follows `--ui-zoom` by itself (`html[data-cq-zoom]` in `tokens.css`). Because media queries see the physical width, from 1300 wide in portrait the shelf gets
+the narrow-desktop treatment (legend hidden, 92px bottles, 220px search) and the Grimoire its narrow
 rules (300px pane, 12px chip padding). The shelf tooltip's box (max-width 260, padding 10 / 12, lift) is
 multiplied by the zoom, and the stacked `.app` clips overflow-x so the stage glow cannot scroll the page
 sideways.
@@ -424,7 +425,7 @@ the Serve button.
 - **Row.** 44px tile with the real ingredient art and a colour dot, name, descriptor
   ("Spirit, 42% ABV"), and a **measure pill**: a tactile control showing the amount in the
   active unit above a mini LED tick bar. Drag the pill horizontally (or use arrow keys) to
-  scrub in unit steps; click or Enter opens the Pour dial in edit mode anchored to the row.
+  scrub in unit steps (one drag is one undo entry however long it takes; arrow-key steps within 700 ms on one row fold together); click or Enter opens the Pour dial in edit mode anchored to the row.
   A remove button is visible on hover and focus on desktop and always on touch. All
   undoable. Rows enter and leave with layout animation. A sliver below the unit's precision
   reads "<0.01 oz", "<0.1 parts" or "<1 ml", never "0 oz". Arrow keys announce the new amount
@@ -458,11 +459,11 @@ the Serve button.
   points or more, each with its art, name, amount, a `+n` delta and an add button. One name
   everywhere: "Try adding". When nothing helps by that much the card says so instead.
 - **Tips.** The engine's plain-language suggestions as a short list (at most three). The first is the
-  line under the verdict; on phones the verdict header is hidden and the rest list under "Why it
-  scores". The text rules are under "Score engine" below.
+  line under the verdict; on phones the verdict header is hidden, so that first tip shows under the "Why it
+  scores" heading, and the rest keep their own "Tips" list. The text rules are under "Score engine" below.
 - **Clash gate for the classic match.** A brew is only called "Close to" a classic, and only takes
   that classic's glass and method, when it is not a clash: `resemblance()` returns nothing for a poor brew
-  (`isPoorBrew`: the clash term is -19 or worse, one full curdle, or the score is under 40). The serve card, the recipe card line and the
+  (`isPoorBrew`: the clash term is -19 or worse, which is one full curdle, or the score is under 40). The serve card, the recipe card line and the
   coach all read that one function, so a cream, lime and mezcal pot topped with ginger beer is a
   highball with a lime wheel, not a copper mug.
 - **The egg white exception (Ramos Gin Fizz).** Cream and acid normally curdle. The one exception
@@ -495,17 +496,18 @@ the Serve button.
   long mixer, highball, stirred, the sour's acid range, acid, dairy, fizz) widens in a small pot from its
   free end only, the end the classics are not on, and never below zero. It spans at least 3 ml of
   liquid, 4 ml for the alcohol shares (so a 68 percent absinthe fades in gently) and 6 ml for the
-  curdle bands (acid share and liquid tang, both 0.01 to 0.11). Bands on a flavour weight never widen,
+  curdle bands (acid share and dairy share, and the liquid tang, a flavour weight that widens for the curdle
+  only). Every other band on a flavour weight never widens,
   so a recipe halved scores as the whole one: every classic at 0.5x and 0.67x keeps its label and its
   score within a point (the Ramos at 0.5x excepted, because its cream pour is judged in absolute ml).
 - **Count gates stay hard steps, by design.** More than three strong ingredients, more than two base
   spirits, more than six ingredients and a lone ingredient are discrete. None depends on an amount, so
   they are reached only by adding an ingredient.
-- **Shapes and the label.** An archetype is a membership, the product of its fades. The best one sets
-  how shaped the brew is and the bonus. The label names the shape that pays the bonus when the brew is at
+- **Shapes and the label.** An archetype is a membership, the product of its fades. The highest membership sets
+  how shaped the brew is; the bonus comes from the shape with the largest membership times bonus. The label names the shape that pays the bonus when the brew is at
   least half that shape (membership 0.5); otherwise it is the first shape, in bonus order, that the brew is at
   least half of. A full sour with a third of a spirit-forward drink reads as a sour while the
-  spirit-forward part pays about 3 points. A full curdle or cream split in fizz (19 points of clash)
+  spirit-forward part pays about 3 points before the 78 to 90 taper (a point or less at a score near 88). A full curdle or cream split in fizz (19 points of clash)
   always counts as a poor brew: it matches no classic and its tasting note names the fault.
 - **Curdling.** Dairy curdles with sour or citrus from the liquid only (the tang), so a garnish slice or
   a dash of bitters does not; citrus-flavoured liqueurs (Campari, Lillet, Pimm's, triple sec) still do.
@@ -526,15 +528,21 @@ the Serve button.
 - **Text rules.** Praise ("A masterpiece. Pour it and take a bow." from 90, "Beautifully balanced and
   ready to pour." from 80) needs a score of 80 or more and no bad tip. The curdle tip ("The cream splits
   against the lemon juice. Pick one or the other.") and the coffee tip ("The pineapple juice turns the
-  espresso sour and harsh. Pick one or the other.") are both bad tips, so they lead and the praise goes.
+  espresso sour and harsh. Pick one or the other.") are both bad tips, so the praise goes. They lead unless a warning tip applies ("No base spirit yet", "Leans
+  sweet", "Very sharp", "Quite bitter"): those are listed first, so milk with lemon juice and no spirit
+  heads with "No base spirit yet" and the curdle tip is second.
   Both tips switch on at 5 points; so do the tasting note's curdle fault and the coach's no-dairy rule. With nothing to
   warn about, a weaker brew gets a plain line for its tier: 70 to 79 "A good brew with room to grow.",
   56 to 69 "Drinkable, but it does not quite come together yet.", under 56 "The flavours fight each
   other, so nothing here comes together." A poor brew's fault says "far too sweet" or "far too sharp"
   once the sweet and sour penalty reaches 4 points, and "leans too sweet" or "leans too sharp" from 1.
 - **Coach and shelf.** `scoreDeltas` owns the curdled-dairy rule: on a curdled brew, dairy is held at
-  zero or below (`Delta.curdles`), so the shelf shows no `+N` and its tooltip reads "Splits against the
-  acid already in the pot", and the coach never offers more dairy. The coach skips an addition worth
+  zero or below (`Delta.curdles`), so the shelf shows no `+N` and the coach never offers more dairy. The
+  tooltip reads "Splits against the acid already in the pot", unless adding the dairy also worsens the clash
+  by 5 points or more: then the bottle gets the red clash dot and the tooltip "Clashes with the brew (curdles
+  or muddies it)". Any other addition that leaves the brew curdled is held the same way (it would only
+  water the acid down while the headline still says to pick one or the other), so a curdled pot has no `+N`
+  and no "Try adding" until an addition ends the curdle. The coach skips an addition worth
   under 2 points when the structure part supplies half or more of that gain; small gains from flavour
   pairing still show. In explanations, "gives the drink the shape of a proper X" appears only when the
   structure part went up; a label change with falling structure reads "blurs the shape of the drink".
@@ -594,10 +602,10 @@ seconds stores one item. Footer: "Brewed in Stewy" and the date.
 ### Grimoire (modal 1180 x 760 on desktop; 820 wide card on tablets; full-height sheet on phones)
 A recipe book, not a card grid: Newsreader heading, search ("Try gin or negroni…", name or ingredient), filter chips
 (All, Stirred, Shaken, Built, Sours, Long drinks, Tiki, After dinner). A hairline-ruled
-index grid (4 columns desktop, 3 tablet, 2 phone) with no card chrome: each classic drawn large in its
+index grid (4 columns desktop, 3 tablet and phone landscape, 2 phone in portrait) with no card chrome: each classic drawn large in its
 own glass with its garnish and real blended colour, the Newsreader name, three key ingredients,
 the method, and a tier-coloured score dot. Selecting an entry opens its detail (desktop: a
-side pane; phone: a sticky bottom bar) with the full build and an explicit "Load into the
+side pane; phone: a sticky bottom bar, or a column beside the index in landscape) with the full build and an explicit "Load into the
 pot" button. Loading shows an undo toast ("Loaded Negroni", or "Negroni is already in the pot"
 with no Undo when nothing changes). The classic currently in the pot is marked "In the pot",
 and the index opens scrolled to it, landing on a whole row (never a cut fragment under the
@@ -607,7 +615,7 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   them, the chips. The count reserves the width of its widest text (8em, tabular figures), so the search
   keeps one box per window size (about 267px at 1000 wide, 291px at 1024, 320px from about 1050) while you
   type or pick a chip. The modal is 760px tall from 824px of window height up (656px at 720 tall), which
-  leaves the index 630px at 900 tall: two whole rows of 315px.
+  leaves the index 640px at 900 tall: two whole rows of 315px.
 - **The short-window breakpoint is `max-height: 823px`.** There the cell is 267px with a 128px glass
   (265px and 132px at 1000 to 1279 wide) and the type and pane tighten, so two whole rows still show from
   1000 x 720 up, including every zoom-ladder and portrait size. 823 and not 820 keeps 821 to 823 tall windows on
@@ -615,8 +623,13 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
 - **Narrow desktops.** 1000 to 1279 wide, and portrait monitors from 1300 wide (the same query as the shelf),
   get a 300px detail pane, 265px cells with a 132px glass and 12px chip padding, so the chips stay on one
   line down to 1000 wide.
-- **Opening on a classic.** On a last-row classic the index gets a little room below the last row
-  (`tailPadding`) so that row lands whole at the top of the view. A filter or search clears the room.
+- **Opening on a classic.** When no reachable row can show the classic's cell whole, the index gets room below
+  the last row (`tailPadding`). In a view a little over two rows tall that lets the row above the last one reach the
+  top, with the last row whole below it. In a view under two rows tall (a phone) it lets the cell's own row reach the
+  top, so a last-row classic opens whole (or with its top showing, if the view is shorter than the cell). A filter
+  or search clears the room. The index re-aims on every frame for the first 1.2 seconds (until the user touches
+  it): cells near the view swap their estimated height for their real one, which moves the rows without
+  changing the grid's height, so a resize observer would miss it and leave a fragment of a row under the header.
 - **Autofocus follows the pointer.** Opening the sheet focuses the search only on desktop with
   `(hover: hover) and (pointer: fine)`. Otherwise (a phone, or an iPad in the desktop layout) the title takes
   focus, so the keyboard stays down.
@@ -624,13 +637,15 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   and the close button have 44px hit areas (an invisible `::before` on the chips and clear button, so
   their look is untouched), and cells carry `touch-action: manipulation`. `:hover` looks sit in
   `@media (hover: hover)` with `:active` feedback.
-- **The close X** is centred on the title row on every layout (`--grim-mid`).
+- **The close X** is centred on the title row on desktop (1000 wide and up, `--grim-mid`) and in phone landscape.
+  On phones in portrait and on tablets it keeps the sheet's default spot, 16px from the top.
 - **The detail pane** fades the edge that has more past it when a long build scrolls (`useScrollFade`).
 - **The in-pot glass.** The glass of the cell marked "In the pot" gives up the height it needs to stay 3px
   clear of the label, so the pineapple on a Piña Colada never touches it.
 - **Cost of 56 glasses.** Cells use `content-visibility: auto`, and `contain-intrinsic-block-size` is the
   cell height less its padding and bottom rule, which matches the usual one-line-name row (a two-line name
-  or a three-line key draws taller, so the estimate is close, not exact). Each cell's glass is also drawn only
+  or a three-line key draws taller, so the estimate is close, not exact, and the opening scroll re-aims as the
+  real heights arrive). Each cell's glass is also drawn only
   when its cell comes within a screen of the index (one shared IntersectionObserver); an empty placeholder
   holds the place, so the cell is the same size with or without the glass, the cells in view at open are
   drawn before the first paint, and later ones fade in (opacity only). A glass, once drawn, stays drawn, and
@@ -639,7 +654,8 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   percent (172 to 113 ms with an empty pot, 231 to 165 ms with a Negroni in it).
 - **On phones** the detail opens as an overlay over the index: Tab cycles Back, Load and Close, and Escape steps
   back to the index before it closes the sheet. A pick shows the selection bar, which takes room from the
-  index, so on every phone the selected cell is scrolled whole into the index (the index keeps 16px of
+  index, so on every phone the selected cell is scrolled whole into the index, landing on a row top so no
+  sliver of the row above stays under the header (the index keeps 16px of
   scroll padding below, 8px in landscape; a cell taller than the room keeps its top). A second tap on the
   selected cell opens the details.
 - **Phone landscape** (`max-width: 999px`, landscape, `max-height: 500px`; the sheet is 322 to 404px tall). The
@@ -648,9 +664,10 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   Load under it, a left border, sliding in from the side. The index is still 3 columns, so the first pick
   narrows it by 188px and the cells reflow once. Cells are shorter (a stage of `clamp(72px, 94dvh - 252px,
   120px)`, an 18px name, tighter padding) so a whole cell fits the index at every landscape height from 343px up.
-  `touch.spec.ts` pins it on the five mobile projects: after the first tap, in the first row and low in
-  the index, the cell lies inside the index, below the header and clear of the bar, and a second tap
-  reaches it and opens the details.
+  `touch.spec.ts` pins it on four of the five mobile projects (iPhone 15, iPhone SE, iPhone 15 landscape and iPad
+  Pro 11 portrait; iPad landscape uses the desktop pane and skips it, and only iPhone 15 landscape has this
+  layout): after the first tap, in the first row and low in the index, the cell lies inside the index, below the
+  header, clear of the bar and on a row top, and a second tap reaches it and opens the details.
 
 ### Cellar (sheet, list layout; 560 wide)
 Rows: a mini glass in the saved colour, the Newsreader name (rename inline), score dot,
@@ -708,8 +725,10 @@ so Safari and iOS 16.4 is the floor. What WebKit does differently, and what the 
   brew name and the Cellar rename field are larger than that already. `touch.spec.ts` pins all four at 16px
   or more.
 - **Hover only on hovering pointers.** A tap on iOS leaves `:hover` stuck on the control, so every `:hover` rule
-  (UI controls, shelf, recipe, dial, analysis, Cellar, Grimoire) sits inside `@media (hover: hover)` and
-  touch gets the same look from `:active`. Serve has no hover rules.
+  (UI controls, shelf, recipe, dial, analysis, Cellar, Grimoire) sits inside `@media (hover: hover)`, and
+  the UI controls get the same look from `:active`. Elsewhere the touch look differs or is absent: the shelf bottle
+  presses down instead of lifting, a Grimoire cell only tints, and the Cellar rows and measure pills have none.
+  Serve has no hover rules.
 - **`touch-action: manipulation`** on `html`, buttons and the Grimoire cells.
 - **The Cellar's Safari line.** Safari's browser deletes script-writable storage (where the Cellar and the pot
   live) after 7 days of use without a visit. `safariClearsStorage` in `src/cellar.ts` is true for a Macintosh,

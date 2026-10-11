@@ -91,7 +91,7 @@
   }
 }
 
-/* ---------- tall desktops (1000 and up, taller than 6 : 5) ----------
+/* ---------- tall desktops (1000 and up, 5 : 6 and taller) ----------
    iPad Pro 12.9 and Air 13 in portrait (1024 x 1366, and about 1024 x 1266 in Safari once the tab and
    address bars are gone), iPad Pro 13 (1032 x 1280 to 1300), portrait monitors (1080 x 1920, 1440 x 2560).
    Three columns would squeeze the pot into a 330px middle column, so the stage spans the width
@@ -271,8 +271,8 @@
    dvh stays physical, so the shell divides its height by the factor. Sheets and the toaster are
    siblings of .app, so they carry the same zoom (first rule below); the drag ghost scales its child only
    (its position is written in raw viewport pixels). The factor steps live in tokens.css; this
-   block starts at the first step of each ladder: 1800 x 1000 from 5 : 6 up, 1300 wide for portrait
-   monitors (the stacked layout, taller than 5 : 6). */
+   block starts at the first step of each ladder: 1800 x 1000 from 5 : 6 up, 1200 wide for portrait
+   monitors (the stacked layout, 5 : 6 and taller). */
 @media (min-width: 1800px) and (min-height: 1000px) and (min-aspect-ratio: 5/6),
   (min-width: 1200px) and (max-aspect-ratio: 5/6) {
   .ui-sheet-wrap,
