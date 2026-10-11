@@ -65,9 +65,9 @@ describe('RecipeCard', () => {
     const pill = screen.getByRole('button', { name: 'Gin, 1 oz' });
     pill.focus();
     await userEvent.keyboard('{ArrowRight}');
-    expect(p.onSetAmount).toHaveBeenCalledWith('gin', 37.5);
+    expect(p.onSetAmount).toHaveBeenCalledWith('gin', 37.5, undefined);
     await userEvent.keyboard('{ArrowLeft}');
-    expect(p.onSetAmount).toHaveBeenLastCalledWith('gin', 22.5);
+    expect(p.onSetAmount).toHaveBeenLastCalledWith('gin', 22.5, undefined);
   });
 
   it('scrubs past the 6px threshold and does not open the dial', () => {
@@ -79,7 +79,10 @@ describe('RecipeCard', () => {
     fireEvent.pointerMove(pill, { clientX: 104, pointerId: 1 });
     expect(p.onSetAmount).not.toHaveBeenCalled();
     fireEvent.pointerMove(pill, { clientX: 107, pointerId: 1 });
-    expect(p.onSetAmount).toHaveBeenCalledWith('gin', 37.5);
+    // the first step of a drag starts an undo entry, the ones after it continue it
+    expect(p.onSetAmount).toHaveBeenCalledWith('gin', 37.5, false);
+    fireEvent.pointerMove(pill, { clientX: 121, pointerId: 1 });
+    expect(p.onSetAmount).toHaveBeenLastCalledWith('gin', 45, true);
     fireEvent.pointerUp(pill, { pointerId: 1 });
     fireEvent.click(pill);
     expect(p.onEdit).not.toHaveBeenCalled();

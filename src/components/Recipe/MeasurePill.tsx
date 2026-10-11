@@ -16,8 +16,9 @@ interface MeasurePillProps {
   ing: Ingredient;
   ml: number;
   unit: UnitKey;
-  /** Called with each new amount while scrubbing or stepping. */
-  onSet(ml: number): void;
+  /** Called with each new amount while scrubbing or stepping. `merge` is set for the steps of one
+   *  drag (false on its first, true after): a drag is one undo entry however long it takes. */
+  onSet(ml: number, merge?: boolean): void;
   /** Click or Enter: open the dial. Gets the pill so the card can anchor to the row. */
   onOpen(el: HTMLElement): void;
 }
@@ -28,6 +29,8 @@ interface Press {
   zoom: number;
   ml: number;
   steps: number;
+  /** true once the drag has set an amount */
+  sent: boolean;
   active: boolean;
   pointerId: number;
 }
@@ -64,7 +67,7 @@ export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) 
 
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
-    press.current = { x: e.clientX, zoom: zoomAt(e.currentTarget), ml, steps: 0, active: false, pointerId: e.pointerId };
+    press.current = { x: e.clientX, zoom: zoomAt(e.currentTarget), ml, steps: 0, sent: false, active: false, pointerId: e.pointerId };
   };
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
@@ -81,7 +84,8 @@ export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) 
     const steps = Math.sign(dx) * (1 + Math.floor((Math.abs(dx) - THRESHOLD) / STEP_PX));
     if (steps !== p.steps) {
       p.steps = steps;
-      onSet(shifted(p.ml, steps));
+      onSet(shifted(p.ml, steps), p.sent);
+      p.sent = true;
     }
   };
 

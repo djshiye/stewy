@@ -25,7 +25,7 @@ export interface RecipeCardProps {
   onName(name: string): void;
   onUnit(u: UnitKey): void;
   onEdit(ing: Ingredient, anchor: DOMRect | null): void;
-  onSetAmount(id: string, ml: number): void;
+  onSetAmount(id: string, ml: number, merge?: boolean): void;
   onRemove(id: string): void;
   onClear(): void;
   onServe(): void;
@@ -272,7 +272,7 @@ export function RecipeCard(props: RecipeCardProps) {
                     ing={ing}
                     ml={e.ml}
                     unit={unit}
-                    onSet={(ml) => onSetAmount(e.id, ml)}
+                    onSet={(ml, merge) => onSetAmount(e.id, ml, merge)}
                     onOpen={(el) => open(ing, el)}
                   />
                 </motion.li>

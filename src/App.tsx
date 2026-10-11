@@ -195,14 +195,14 @@ export default function App() {
   // ---- brew actions ---------------------------------------------------------
   const setUnit = useCallback((unit: UnitKey) => dispatch({ type: 'setUnit', unit }), [dispatch]);
   const setName = useCallback((name: string) => dispatch({ type: 'setName', name }), [dispatch]);
-  // A scrub fires one setAmount per unit step; steps on the same row within a moment
-  // fold into one undo entry.
+  // A scrub fires one setAmount per unit step. The pill says which steps belong to one drag, so
+  // a slow drag is still one undo entry; arrow-key steps on the same row within a moment fold too.
   const lastScrub = useRef<{ id: string; at: number } | null>(null);
   const setAmount = useCallback(
-    (id: string, ml: number) => {
+    (id: string, ml: number, drag?: boolean) => {
       const now = performance.now();
       const last = lastScrub.current;
-      const merge = !!last && last.id === id && now - last.at < SCRUB_MERGE_MS;
+      const merge = drag ?? (!!last && last.id === id && now - last.at < SCRUB_MERGE_MS);
       lastScrub.current = { id, at: now };
       dispatch({ type: 'setAmount', id, ml, merge });
     },
