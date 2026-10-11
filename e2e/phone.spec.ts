@@ -60,3 +60,19 @@ test('the unit control is reachable by touch', async ({ page, open }) => {
   await page.getByRole('radio', { name: /parts/i }).first().tap();
   await expect(page.getByRole('radio', { name: /parts/i }).first()).toBeChecked();
 });
+
+for (const [name, key] of [['Grimoire', 'g'], ['Cellar', 'c']] as const) {
+  test(`a wheel over the ${name} scrim does not scroll the page behind it, and the position survives closing`, async ({ page, open }) => {
+    await open(NEGRONI);
+    await page.evaluate(() => window.scrollTo(0, 300));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(300);
+    await page.keyboard.press(key);
+    await expect(dialog(page)).toBeVisible();
+    await page.mouse.move(195, 30);
+    await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(250);
+    expect(await page.evaluate(() => window.scrollY), 'the page stays where it was').toBe(300);
+    await closeSheet(page);
+    expect(await page.evaluate(() => window.scrollY), 'and is still there after closing').toBe(300);
+  });
+}

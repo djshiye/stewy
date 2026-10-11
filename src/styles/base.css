@@ -12,6 +12,8 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* no double-tap zoom anywhere (pinch zoom still works) */
+  touch-action: manipulation;
 }
 
 body {
@@ -27,6 +29,12 @@ body {
 }
 
 body.is-locked {
+  overflow: hidden;
+}
+
+/* phones and tablets clip html on x (layout.css), so body's overflow no longer reaches the viewport: lock the
+   root as well or the page scrolls behind an open sheet */
+html:has(body.is-locked) {
   overflow: hidden;
 }
 
