@@ -274,7 +274,7 @@
    block starts at the first step of each ladder: 1800 x 1000 from 5 : 6 up, 1300 wide for portrait
    monitors (the stacked layout, taller than 5 : 6). */
 @media (min-width: 1800px) and (min-height: 1000px) and (min-aspect-ratio: 5/6),
-  (min-width: 1300px) and (max-aspect-ratio: 5/6) {
+  (min-width: 1200px) and (max-aspect-ratio: 5/6) {
   .ui-sheet-wrap,
   .ui-toaster {
     zoom: var(--ui-zoom);
