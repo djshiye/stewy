@@ -116,3 +116,32 @@ describe('Cellar focus after an Undo', () => {
     outside.remove();
   });
 });
+
+describe('Cellar storage note', () => {
+  const SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15';
+  const note = /Safari clears saved brews after 7 days/;
+  const show = () =>
+    render(<Cellar open items={[ALPHA]} onClose={() => {}} onLoad={() => {}} onRename={() => {}} onDelete={() => {}} onOpenGrimoire={() => {}} />);
+
+  it('is not shown outside Safari', () => {
+    show();
+    expect(screen.getByText(/Saved on this device only/)).toBeTruthy();
+    expect(screen.queryByText(note)).toBeNull();
+  });
+
+  it('is shown in the Safari browser', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(SAFARI);
+    show();
+    expect(screen.getByText(note)).toBeTruthy();
+  });
+
+  it('is not shown once installed', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(SAFARI);
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('display-mode: standalone'), media: q, addEventListener() {}, removeEventListener() {},
+      addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    show();
+    expect(screen.queryByText(note)).toBeNull();
+  });
+});

@@ -32,6 +32,18 @@ describe('useCellar', () => {
     expect(result.current.items).toHaveLength(2);
   });
 
+  it('asks the browser to keep storage once, when the first brew is saved', () => {
+    const persist = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('navigator', { ...navigator, storage: { persist } });
+    const { result } = renderHook(() => useCellar());
+    act(() => void result.current.save({ ...input(), brew: [] }));
+    expect(persist).not.toHaveBeenCalled();
+    act(() => void result.current.save(input('One')));
+    act(() => void result.current.save(input('Two')));
+    expect(persist).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
   it('refuses an empty brew', () => {
     const { result } = renderHook(() => useCellar());
     let saved: CellarItem | null = input() as unknown as CellarItem;

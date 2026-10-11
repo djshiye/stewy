@@ -167,7 +167,13 @@
   align-items: center;
   gap: var(--s1);
 }
-.cellar-del:hover {
+@media (hover: hover) {
+  .cellar-del:hover {
+    background: rgba(242, 106, 91, 0.12);
+    color: var(--bad);
+  }
+}
+.cellar-del:active {
   background: rgba(242, 106, 91, 0.12);
   color: var(--bad);
 }
@@ -179,6 +185,10 @@
   font-size: 12px;
   line-height: 16px;
   color: var(--tx-3);
+}
+.cellar__foot-note {
+  display: block;
+  margin-top: var(--s1);
 }
 
 /* ---------- empty: an empty glass shelf ---------- */

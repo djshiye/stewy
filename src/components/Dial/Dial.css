@@ -151,8 +151,10 @@
 }
 .dial__step--minus { left: calc(50% - 56px); }
 .dial__step--plus { left: calc(50% + 12px); }
-.dial__step:hover:not(:disabled) { background: var(--ink-600); }
-.dial__step:active:not(:disabled) { transform: scale(0.92); }
+@media (hover: hover) {
+  .dial__step:hover:not(:disabled) { background: var(--ink-600); }
+}
+.dial__step:active:not(:disabled) { background: var(--ink-600); transform: scale(0.92); }
 .dial__step:disabled { opacity: 0.35; }
 
 /* quick measures */
@@ -178,7 +180,10 @@
     color var(--t-hover) var(--ease-out),
     box-shadow var(--t-hover) var(--ease-out);
 }
-.dial__chip:hover { color: var(--tx-1); background: var(--ink-600); }
+@media (hover: hover) {
+  .dial__chip:hover { color: var(--tx-1); background: var(--ink-600); }
+}
+.dial__chip:active { color: var(--tx-1); background: var(--ink-600); }
 .dial__chip[aria-checked='true'] {
   color: var(--tx-1);
   background: var(--ink-600);

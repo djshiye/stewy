@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PencilSimple, Trash } from '@phosphor-icons/react';
-import type { CellarItem } from '../../cellar';
+import { inSafariBrowser, type CellarItem } from '../../cellar';
 import { Glass } from '../../icons/Glass';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
@@ -250,6 +250,8 @@ function CellarBody({ items, onLoad, onRename, onDelete, onOpenGrimoire }: BodyP
   const endRename = useCallback(() => setEditingId(null), []);
 
   const n = items.length;
+  // WebKit clears a site's storage after 7 days of Safari use without a visit, unless it runs as a Home Screen or Dock app
+  const safari = useMemo(() => inSafariBrowser(), []);
   return (
     <div className="cellar">
       <header className="cellar__head">
@@ -286,7 +288,14 @@ function CellarBody({ items, onLoad, onRename, onDelete, onOpenGrimoire }: BodyP
               </AnimatePresence>
             </ul>
           </div>
-          <p className="cellar__foot">Saved on this device only.</p>
+          <p className="cellar__foot">
+            Saved on this device only.
+            {safari && (
+              <span className="cellar__foot-note">
+                Safari clears saved brews after 7 days without a visit. Add Stewy to your Home Screen or Dock to keep them.
+              </span>
+            )}
+          </p>
         </>
       )}
     </div>

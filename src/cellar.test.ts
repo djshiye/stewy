@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   addItem, CELLAR_LIMIT, DUPLICATE_SAVE_MS, makeItem, parseCellar, recentDuplicate, removeItem, renameItem,
-  restoreItem, type CellarInput, type CellarItem,
+  requestPersistence, restoreItem, safariClearsStorage, type CellarInput, type CellarItem,
 } from './cellar';
 import { DEFAULT_NAME } from './store';
 
@@ -120,5 +120,66 @@ describe('recentDuplicate', () => {
   it('treats a changed name or brew as a new item', () => {
     expect(recentDuplicate([base], later(100, { name: 'Other' }))).toBeNull();
     expect(recentDuplicate([base], later(100, { brew: [{ id: 'gin', ml: 50 }, { id: 'lime_juice', ml: 25 }] }))).toBeNull();
+  });
+});
+
+const UA = {
+  macSafari: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+  iphoneSafari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  ipadSafari: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+  iphoneChrome: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/138.0.7204.119 Mobile/15E148 Safari/604.1',
+  iphoneFirefox: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/140.0 Mobile/15E148 Safari/605.1.15',
+  iphoneEdge: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 EdgiOS/138.0.3351.95 Mobile/15E148 Safari/605.1.15',
+  iphoneWebView: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+  macChrome: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+  macFirefox: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0',
+  androidChrome: 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
+  linuxWebKit: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+};
+
+describe('safariClearsStorage', () => {
+  it('is true in Safari on macOS, iOS and iPadOS', () => {
+    for (const ua of [UA.macSafari, UA.iphoneSafari, UA.ipadSafari]) {
+      expect(safariClearsStorage({ userAgent: ua })).toBe(true);
+    }
+  });
+
+  it('is false in Chrome, Edge and Firefox, wherever they run', () => {
+    for (const ua of [UA.iphoneChrome, UA.iphoneFirefox, UA.iphoneEdge, UA.macChrome, UA.macFirefox, UA.androidChrome]) {
+      expect(safariClearsStorage({ userAgent: ua })).toBe(false);
+    }
+  });
+
+  it('is false in an in-app web view and on other platforms', () => {
+    expect(safariClearsStorage({ userAgent: UA.iphoneWebView })).toBe(false);
+    expect(safariClearsStorage({ userAgent: UA.linuxWebKit })).toBe(false);
+    expect(safariClearsStorage({ userAgent: '' })).toBe(false);
+  });
+
+  it('is false as a Home Screen or Dock app', () => {
+    expect(safariClearsStorage({ userAgent: UA.iphoneSafari, standalone: true })).toBe(false);
+    expect(safariClearsStorage({ userAgent: UA.macSafari, displayStandalone: true })).toBe(false);
+    expect(safariClearsStorage({ userAgent: UA.macSafari, standalone: false, displayStandalone: false })).toBe(true);
+  });
+});
+
+describe('requestPersistence', () => {
+  it('asks the storage manager once per call', () => {
+    const persist = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('navigator', { storage: { persist } });
+    requestPersistence();
+    expect(persist).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it('shrugs off a missing API, a throw and a rejection', async () => {
+    vi.stubGlobal('navigator', {});
+    expect(() => requestPersistence()).not.toThrow();
+    vi.stubGlobal('navigator', { storage: { persist: () => { throw new Error('no'); } } });
+    expect(() => requestPersistence()).not.toThrow();
+    vi.stubGlobal('navigator', { storage: { persist: () => Promise.reject(new Error('no')) } });
+    expect(() => requestPersistence()).not.toThrow();
+    await Promise.resolve();
+    vi.unstubAllGlobals();
   });
 });

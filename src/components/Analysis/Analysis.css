@@ -408,7 +408,10 @@
   text-align: left;
   transition: background-color var(--t-hover) var(--ease-out);
 }
-.try__row:hover { background: var(--hover); }
+@media (hover: hover) {
+  .try__row:hover { background: var(--hover); }
+}
+.try__row:active { background: var(--hover); }
 .try__tile {
   display: grid;
   place-items: center;
@@ -451,7 +454,10 @@
   box-shadow: 0 0 0 1px var(--line-2) inset;
   transition: background-color var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
 }
-.try__row:hover .try__add,
+@media (hover: hover) {
+  .try__row:hover .try__add { background: var(--ink-600); color: var(--tx-1); }
+}
+.try__row:active .try__add,
 .try__row:focus-visible .try__add { background: var(--ink-600); color: var(--tx-1); }
 .ap__none {
   display: flex;
@@ -478,7 +484,9 @@
   text-align: left;
   transition: background-color var(--t-hover) var(--ease-out);
 }
-.start__row:hover { background: var(--hover); }
+@media (hover: hover) {
+  .start__row:hover { background: var(--hover); }
+}
 .start__row:active { background: var(--ink-800); }
 .start__glass {
   display: grid;

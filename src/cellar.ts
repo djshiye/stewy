@@ -121,6 +121,56 @@ export function parseCellar(raw: string | null): CellarItem[] {
   }
 }
 
+/**
+ * Ask the browser to keep this site's storage. Best effort: Safari answers without a prompt, others may
+ * refuse, and a missing or failing API changes nothing.
+ */
+export function requestPersistence(): void {
+  try {
+    void navigator.storage?.persist?.().catch(() => {});
+  } catch {
+    /* no storage manager: nothing to ask */
+  }
+}
+
+interface SafariEnv {
+  userAgent: string;
+  /** navigator.standalone: true in a Home Screen web app on iOS and iPadOS. */
+  standalone?: boolean;
+  /** display-mode: standalone: true in a Home Screen or Dock web app. */
+  displayStandalone?: boolean;
+}
+
+// Browsers that carry Safari's tokens in their UA but are not Safari (Chrome, Edge, Firefox, Opera, Brave-like shells)
+const NOT_SAFARI = /Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\/|EdgA|OPR\/|OPiOS|OPT\/|Firefox|DuckDuckGo|GSA\/|Android/;
+
+/**
+ * True in Safari's own browser on macOS, iOS or iPadOS, not as a Home Screen or Dock app. There WebKit
+ * deletes script-writable storage after 7 days of Safari use without a visit, so saved brews can vanish.
+ */
+export function safariClearsStorage({ userAgent, standalone, displayStandalone }: SafariEnv): boolean {
+  if (standalone || displayStandalone) return false;
+  if (!/Macintosh|iPhone|iPad|iPod/.test(userAgent)) return false;
+  if (!/Version\/[\d.]+/.test(userAgent) || !/Safari\//.test(userAgent)) return false;
+  return !NOT_SAFARI.test(userAgent);
+}
+
+/** safariClearsStorage for the page we are running in. */
+export function inSafariBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  let displayStandalone = false;
+  try {
+    displayStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  } catch {
+    /* no matchMedia */
+  }
+  return safariClearsStorage({
+    userAgent: navigator.userAgent,
+    standalone: (navigator as Navigator & { standalone?: boolean }).standalone === true,
+    displayStandalone,
+  });
+}
+
 const browserStorage = () => (typeof localStorage === 'undefined' ? null : localStorage);
 
 function load(): CellarItem[] {
@@ -135,6 +185,7 @@ export function useCellar() {
   const [items, setItems] = useState<CellarItem[]>(load);
   // the latest list, readable at once from a handler (two clicks can land before React re-renders)
   const latest = useRef(items);
+  const asked = useRef(false);
 
   useEffect(() => {
     try {
@@ -157,6 +208,11 @@ export function useCellar() {
       const repeat = recentDuplicate(latest.current, item);
       if (repeat) return repeat;
       update((prev) => addItem(prev, item));
+      // the first brew kept is the moment the data starts to matter; Safari grants this without a prompt
+      if (!asked.current) {
+        asked.current = true;
+        requestPersistence();
+      }
       return item;
     },
     [update],

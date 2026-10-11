@@ -15,6 +15,7 @@ import { useHotkeys } from './app/useHotkeys';
 import { useIsDesktop } from './app/useMediaQuery';
 import { useToasts, type ToastAction } from './app/useToasts';
 import { copyText } from './app/clipboard';
+import { shareBrew } from './app/shareBrew';
 import { Cellar, Grimoire, PourDial, ServeSheet, SurfaceBoundary, prefetch, prefetchAll, whenIdle, type LazyName } from './app/lazySheets';
 import { SkipLink } from './app/SkipLink';
 import { TopBar } from './components/TopBar/TopBar';
@@ -224,15 +225,7 @@ export default function App() {
       return;
     }
     const url = shareUrl({ brew: model.brew, name: model.name });
-    if (isTouch() && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: `${model.name} on Stewy`, url });
-        return;
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-      }
-    }
-    push((await copyText(url)) ? 'Link copied' : 'Could not copy the link. Allow clipboard access and try again.');
+    await shareBrew(url, `${model.name} on Stewy`, isTouch(), push);
   }, [model.brew, model.name, push]);
 
   const copyRecipe = useCallback(

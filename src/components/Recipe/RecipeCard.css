@@ -78,7 +78,9 @@
   opacity: 0;
   transition: opacity var(--t-hover) var(--ease-out);
 }
-.rc__title:hover .rc__pencil,
+@media (hover: hover) {
+  .rc__title:hover .rc__pencil { opacity: 1; }
+}
 .rc__title:focus-visible .rc__pencil { opacity: 1; }
 @media (hover: none) {
   .rc__pencil { opacity: 0.55; }
@@ -113,7 +115,10 @@
   letter-spacing: 0;
   color: var(--tx-2);
 }
-.rc__heading[data-compact] .rc__title:hover { color: var(--tx-1); }
+@media (hover: hover) {
+  .rc__heading[data-compact] .rc__title:hover { color: var(--tx-1); }
+}
+.rc__heading[data-compact] .rc__title:active { color: var(--tx-1); }
 .rc__title--input[data-compact] {
   font-size: 30px;
   line-height: 34px;
@@ -229,7 +234,10 @@
   transform: none;
   transition-delay: 0s;
 }
-.rc__more:hover { color: var(--tx-1); }
+@media (hover: hover) {
+  .rc__more:hover { color: var(--tx-1); }
+}
+.rc__more:active { color: var(--tx-1); }
 
 .row__tile {
   position: relative;
@@ -277,8 +285,14 @@
   position: absolute;
   inset: -12px;
 }
-.row__remove:hover { background: var(--ink-500); color: var(--tx-1); }
-.row:hover .row__remove,
+@media (hover: hover) {
+  .row__remove:hover { background: var(--ink-500); color: var(--tx-1); }
+  .row:hover .row__remove {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.row__remove:active { background: var(--ink-500); color: var(--tx-1); }
 .row:focus-within .row__remove,
 .row__remove:focus-visible {
   opacity: 1;
@@ -328,8 +342,10 @@
     background-color var(--t-hover) var(--ease-out),
     transform var(--t-settle) var(--ease-spring);
 }
-.pill:hover {
-  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.55) inset;
+@media (hover: hover) {
+  .pill:hover {
+    box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.55) inset;
+  }
 }
 .pill[data-scrubbing] {
   background: rgba(var(--accent-rgb), 0.1);
