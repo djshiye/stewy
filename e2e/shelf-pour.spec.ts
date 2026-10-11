@@ -1,6 +1,4 @@
-import { test, expect, EMPTY, MAI_TAI, bottle, dial, dialog, dragBottle, pourButton, rows, shelfTab, storedPot, toast } from './fixtures';
-
-test.use({ viewport: { width: 1440, height: 900 } });
+import { test, expect, EMPTY, MAI_TAI, noKeyboard, bottle, dial, dialog, dragBottle, pourButton, rows, shelfTab, storedPot, toast } from './fixtures';
 
 test.describe('empty pot', () => {
   test('starts with no rows and says it is waiting', async ({ page, open }) => {
@@ -16,7 +14,8 @@ test.describe('empty pot', () => {
     await expect(serve).toBeDisabled();
   });
 
-  test('S does nothing', async ({ page, open }) => {
+  test('S does nothing', async ({ page, open, hasTouch, viewport }) => {
+    test.skip(noKeyboard({ hasTouch, viewport }), 'S is a hotkey');
     await open(EMPTY);
     await page.keyboard.press('s');
     await expect(dialog(page)).toHaveCount(0);
@@ -24,7 +23,8 @@ test.describe('empty pot', () => {
 });
 
 test.describe('pouring', () => {
-  test('dragging a bottle into the pot opens the dial in add mode', async ({ page, open }) => {
+  test('dragging a bottle into the pot opens the dial in add mode', async ({ page, open, hasTouch }) => {
+    test.skip(hasTouch, 'a mouse drag; touch drag is off by design (it would fight scrolling): on touch a tap opens the dial');
     await open(EMPTY);
     await dragBottle(page, 'gin', 'pot', false);
     await expect(page.locator('body')).toHaveClass(/is-dragging/);
@@ -34,7 +34,8 @@ test.describe('pouring', () => {
     await expect(page.locator('body')).not.toHaveClass(/is-dragging/);
   });
 
-  test('arrow keys change the amount and Pour adds one row', async ({ page, open }) => {
+  test('arrow keys change the amount and Pour adds one row', async ({ page, open, hasTouch, viewport }) => {
+    test.skip(noKeyboard({ hasTouch, viewport }), 'arrow keys need a keyboard');
     await open(EMPTY);
     await bottle(page, 'gin').click();
     const slider = dial(page);
@@ -50,7 +51,8 @@ test.describe('pouring', () => {
     await expect(toast(page)).toHaveCount(0);
   });
 
-  test('Enter on a focused bottle opens the dial and Enter confirms', async ({ page, open }) => {
+  test('Enter on a focused bottle opens the dial and Enter confirms', async ({ page, open, hasTouch, viewport }) => {
+    test.skip(noKeyboard({ hasTouch, viewport }), 'Enter on a focused bottle needs a keyboard');
     await open(EMPTY);
     await shelfTab(page, 'Liqueurs');
     await bottle(page, 'campari').focus();
@@ -60,18 +62,18 @@ test.describe('pouring', () => {
     await expect(rows(page)).toHaveCount(1);
   });
 
-  test('clicking a bottle opens the dial', async ({ page, open }) => {
+  test('tapping or clicking a bottle opens the dial', async ({ page, open, press }) => {
     await open(EMPTY);
     await shelfTab(page, 'Liqueurs');
-    await bottle(page, 'sweet_vermouth').click();
+    await press(bottle(page, 'sweet_vermouth'));
     await expect(dial(page)).toBeVisible();
-    await pourButton(page).click();
+    await press(pourButton(page));
     await expect(rows(page)).toHaveCount(1);
   });
 
-  test('double-clicking Pour adds once, at the default amount', async ({ page, open }) => {
+  test('double-clicking Pour adds once, at the default amount', async ({ page, open, press }) => {
     await open(EMPTY);
-    await bottle(page, 'gin').click();
+    await press(bottle(page, 'gin'));
     await expect(pourButton(page)).toBeVisible();
     await pourButton(page).dblclick();
     await expect(dialog(page)).toHaveCount(0);
@@ -89,7 +91,8 @@ test.describe('shelf', () => {
     await expect(bottle(page, 'mint')).toBeVisible();
   });
 
-  test('"/" searches the shelf', async ({ page, open }) => {
+  test('"/" searches the shelf', async ({ page, open, hasTouch, viewport }) => {
+    test.skip(noKeyboard({ hasTouch, viewport }), '/ is a hotkey; on touch the search button does this (touch.spec)');
     await open(EMPTY);
     await page.keyboard.press('/');
     await page.keyboard.type('rum');

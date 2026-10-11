@@ -1,15 +1,13 @@
-import { test, expect, EMPTY, copied, rows, shelfTab, storedPot, toast, toastAction } from './fixtures';
-
-test.use({ viewport: { width: 1440, height: 900 } });
+import { test, expect, EMPTY, brewNamed, copied, rows, shelfTab, storedPot, stubShare, toast, toastAction } from './fixtures';
 
 const NEGRONI_HASH = '#b=gin:30,campari:30,sweet_vermouth:30&n=Negroni';
 
-test('opening a share link fills the pot, clears the hash and can be undone', async ({ page, open }) => {
+test('opening a share link fills the pot, clears the hash and can be undone', async ({ page, open, press }) => {
   await open(EMPTY, { hash: NEGRONI_HASH });
   await expect(rows(page)).toHaveCount(3);
   await expect(toast(page)).toHaveText(/Opened a shared brew/);
   expect(await page.evaluate(() => location.hash)).toBe('');
-  await toastAction(page).click();
+  await press(toastAction(page));
   await expect(rows(page)).toHaveCount(0);
 });
 
@@ -18,19 +16,20 @@ test('a share link opened in a tab that already has Stewy (hashchange)', async (
   await page.evaluate((h) => { location.hash = h; }, NEGRONI_HASH);
   await expect(rows(page)).toHaveCount(3);
   expect(await page.evaluate(() => location.hash)).toBe('');
-  await expect(page.locator('.rc h2').first()).toContainText('Negroni');
+  await expect(brewNamed(page, 'Negroni')).toBeVisible();
 
   await page.evaluate(() => { location.hash = '#b=nonsense:abc'; });
   await expect(toast(page)).toHaveText(/could not be opened/);
   await expect(rows(page)).toHaveCount(3);
 });
 
-test('a 20-ingredient link round-trips through Share link', async ({ page, open }) => {
+test('a 20-ingredient link round-trips through Share link', async ({ page, open, openServe, press }) => {
+  await stubShare(page, 'absent'); // touch devices share first; with no share sheet the link is copied
   await open(EMPTY);
   // collect real ingredient ids from the shelf tabs
   const ids: string[] = [];
   for (const tab of await page.getByRole('tab').all()) {
-    await tab.click();
+    await press(tab);
     for (const id of await page.locator('[data-bottle]').evaluateAll((els) => els.map((e) => e.getAttribute('data-bottle')!))) {
       if (!ids.includes(id)) ids.push(id);
     }
@@ -45,8 +44,8 @@ test('a 20-ingredient link round-trips through Share link', async ({ page, open 
   expect(first.name).toBe('Big brew');
   await expect(toast(page)).toHaveText(/Opened a shared brew/);
 
-  await page.keyboard.press('s');
-  await page.getByRole('button', { name: 'Share link' }).click();
+  await openServe();
+  await press(page.getByRole('button', { name: 'Share link' }));
   const url = await copied(page);
   expect(url).toMatch(/#b=/);
 

@@ -50,7 +50,8 @@ const boxes = (page: import('@playwright/test').Page) =>
     };
   });
 
-// The Safari iPad viewports (tab and address bars subtracted), the fullscreen iPad and 1000 x 1200.
+// The Safari iPad viewports (tab and address bars subtracted), the fullscreen iPad and 1000 x 1200. The iPad project
+// runs these with its touch context (the sizes override the device's own); the monitor sweeps below are @desktop.
 // The pot is never smaller than the 420px of the three-column layout it replaces (377px at 1000 x 1200).
 for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1032, 1300], [1024, 1366], [1100, 1500], [1200, 1600]]) {
   test.describe(`tall tablet ${w}x${h}`, () => {
@@ -101,7 +102,7 @@ for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1
 // Portrait monitors: the stacked layout is scaled (zoom ladder keyed on the width) so it reads about 1080 to 1250
 // CSS pixels wide, and the pot is limited by its stage rather than by the 1280px cap while the stage has room.
 for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1.1], [1366, 2048, 1.2], [1300, 2311, 1.2], [1440, 2560, 1.2], [1600, 2560, 1.4], [1750, 3111, 1.6], [2160, 3840, 1.8]]) {
-  test.describe(`portrait monitor ${w}x${h}`, () => {
+  test.describe(`portrait monitor ${w}x${h}`, { tag: '@desktop' }, () => {
     test.use({ viewport: { width: w, height: h } });
 
     test('the layout is scaled to a sensible width and the pot fills its stage', async ({ page, open }) => {
@@ -149,7 +150,7 @@ for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1.1], [1366, 2048, 
 
 // The landscape ladder is untouched by the portrait one.
 for (const [w, h, zoom] of [[1920, 1080, 1.2], [2560, 1440, 1.6], [3840, 2160, 2], [1280, 800, 1]]) {
-  test.describe(`landscape ${w}x${h}`, () => {
+  test.describe(`landscape ${w}x${h}`, { tag: '@desktop' }, () => {
     test.use({ viewport: { width: w, height: h } });
 
     test(`zoom stays ${zoom}`, async ({ page, open }) => {
@@ -161,7 +162,7 @@ for (const [w, h, zoom] of [[1920, 1080, 1.2], [2560, 1440, 1.6], [3840, 2160, 2
 }
 
 for (const [w, h] of [[1000, 1000], [1100, 1100], [1280, 1024], [1366, 1024], [1440, 900], [1280, 720], [1180, 820], [1920, 1080]]) {
-  test.describe(`${w}x${h}`, () => {
+  test.describe(`${w}x${h}`, { tag: '@desktop' }, () => {
     test.use({ viewport: { width: w, height: h } });
 
     test('keeps three columns', async ({ page, open }) => {

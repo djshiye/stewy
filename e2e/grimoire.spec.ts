@@ -1,6 +1,7 @@
-import { test, expect, BRAMBLE, GRASSHOPPER, expectGrimoireOnWholeRow, expectGrimoireTwoWholeRows, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
+import { test, expect, BRAMBLE, GRASSHOPPER, brewNamed, noKeyboard, expectGrimoireOnWholeRow, expectGrimoireTwoWholeRows, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
 
-test.use({ viewport: { width: 1440, height: 900 } });
+// Everything below @desktop is a desktop sizing sweep: it sets its own viewport, presses G and checks the desktop
+// geometry. The mobile WebKit projects run the flows that have a touch way (open from the top bar, filter, load).
 
 const options = (page: import('@playwright/test').Page) => page.locator('[role=option]');
 /** The sheet's close button and the title share a centre line. Animations finish first: the sheet scales in from 0.96. */
@@ -18,7 +19,8 @@ async function expectCloseCentred(page: import('@playwright/test').Page) {
 
 const count = (page: import('@playwright/test').Page) => page.locator('.grim__title p, .grim__head p[aria-live]').first();
 
-test('G opens the Grimoire without typing into the search field', async ({ page, open }) => {
+test('G opens the Grimoire without typing into the search field', async ({ page, open, hasTouch, viewport }) => {
+  test.skip(noKeyboard({ hasTouch, viewport }), 'G is a hotkey; the touch way is the top bar button, covered below');
   await open({ unit: 'oz', brew: [{ id: 'gin', ml: 45 }], name: 'Untitled brew' });
   await page.locator('body').click({ position: { x: 700, y: 20 } });
   await page.keyboard.press('g');
@@ -26,50 +28,58 @@ test('G opens the Grimoire without typing into the search field', async ({ page,
   await expect(page.getByRole('textbox', { name: /Search by name/ })).toHaveValue('');
 });
 
-test('the classics count on the header matches the listed classics, and filters narrow it', async ({ page, open }) => {
+test('the classics count on the header matches the listed classics, and filters narrow it', async ({ page, open, openGrimoire, press }) => {
   await open(EMPTY);
-  await page.keyboard.press('g');
+  await openGrimoire();
   await expect(options(page).first()).toBeVisible();
   const total = Number((await count(page).textContent())?.match(/^(\d+) classics/)?.[1]);
   expect(total).toBeGreaterThan(0);
   await expect(options(page)).toHaveCount(total);
 
-  await page.getByRole('button', { name: /^Sours/ }).click();
+  await press(page.getByRole('button', { name: /^Sours/ }));
   await expect(count(page)).toHaveText(new RegExp(`of ${total} classics`));
   const sours = await options(page).count();
   expect(sours).toBeGreaterThan(0);
   expect(sours).toBeLessThan(total);
 
-  await page.getByRole('button', { name: /^All/ }).click();
+  await press(page.getByRole('button', { name: /^All/ }));
   await expect(options(page)).toHaveCount(total);
 });
 
-test('selecting a classic and loading it replaces the pot, and Ctrl+Z restores it', async ({ page, open }) => {
+test('selecting a classic and loading it replaces the pot, and Undo restores it', async ({ page, open, openGrimoire, press, undo, redo, viewport }) => {
   await open({ unit: 'oz', brew: [{ id: 'gin', ml: 45 }, { id: 'campari', ml: 30 }], name: 'Untitled brew' });
-  await page.keyboard.press('g');
-  await options(page).filter({ hasText: 'Negroni' }).first().click();
-  await page.getByRole('button', { name: /into the pot/ }).first().click();
+  await openGrimoire();
+  const negroni = options(page).filter({ hasText: 'Negroni' }).first();
+  await press(negroni);
+  if (viewport && viewport.width < 1000) {
+    // the sheet is one column: the first tap selects, the bar under the index names it, and tapping the bar (the cell
+    // itself can sit under it on a short screen) opens the classic over the index, where Load is
+    await press(page.locator('.grim-bar__info'));
+    await press(page.getByRole('button', { name: 'Load into the pot', exact: true }));
+  } else {
+    await press(page.getByRole('button', { name: /into the pot/ }).first());
+  }
   await expect(dialog(page)).toHaveCount(0);
   await expect(toast(page)).toHaveText(/Loaded Negroni/);
-  await expect(page.locator('.rc h2').first()).toContainText('Negroni');
+  await expect(brewNamed(page, 'Negroni')).toBeVisible();
 
-  await page.keyboard.press('Control+z');
+  await undo();
   await expect(rows(page)).toHaveCount(2);
-  await page.keyboard.press('Control+Shift+z');
-  await expect(page.locator('.rc h2').first()).toContainText('Negroni');
+  await redo();
+  await expect(brewNamed(page, 'Negroni')).toBeVisible();
 });
 
-test('the dial still works after the Grimoire closed', async ({ page, open }) => {
+test('the dial still works after the Grimoire closed', async ({ page, open, openGrimoire, press }) => {
   await open(EMPTY);
-  await page.keyboard.press('g');
+  await openGrimoire();
   await expect(options(page).first()).toBeVisible();
   await closeSheet(page);
-  await bottle(page, 'gin').click();
-  await pourButton(page).click();
+  await press(bottle(page, 'gin'));
+  await press(pourButton(page));
   await expect(rows(page)).toHaveCount(1);
 });
 
-test.describe('opening with a classic in the pot', () => {
+test.describe('opening with a classic in the pot', { tag: '@desktop' }, () => {
   test('a mid-list classic is in view and the first visible row is whole', async ({ page, open }) => {
     await open(BRAMBLE);
     await expectGrimoireOnWholeRow(page, true);
@@ -81,7 +91,7 @@ test.describe('opening with a classic in the pot', () => {
   });
 });
 
-test.describe('two whole rows of classics before any scrolling', () => {
+test.describe('two whole rows of classics before any scrolling', { tag: '@desktop' }, () => {
   // a one-line header (title, count, search) with the chips below, at every desktop size: short windows, the
   // 1080p and 1024-tall windows (the sheet is 760px from 824 tall up, the stacked header left 1.86 rows), the
   // sizes the zoom ladder scales (2560 x 1440 reads 1600 x 900), and the portrait monitors (narrow rules, zoom)
@@ -183,7 +193,7 @@ test.describe('two whole rows of classics before any scrolling', () => {
   }
 });
 
-test.describe('the detail pane on a short desktop', () => {
+test.describe('the detail pane on a short desktop', { tag: '@desktop' }, () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
   test('a usual classic fits without scrolling, and a long build scrolls under a fade', async ({ page, open }) => {
@@ -204,7 +214,7 @@ test.describe('the detail pane on a short desktop', () => {
   });
 });
 
-test.describe('the autofocus target follows the input capability', () => {
+test.describe('the autofocus target follows the input capability', { tag: '@desktop' }, () => {
   test.describe('a mouse', () => {
     test.use({ viewport: { width: 1280, height: 800 } });
     test('focuses the search field', async ({ page, open }) => {

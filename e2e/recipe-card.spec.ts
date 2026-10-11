@@ -1,9 +1,8 @@
-import { test, expect, MAI_TAI, NEGRONI, dial, pill, rows, storedPot } from './fixtures';
+import { test, expect, MAI_TAI, NEGRONI, noKeyboard, dial, pill, rows, storedPot } from './fixtures';
 
 test.describe('measure pills', () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('scrubbing changes the amount without opening the dial, and is one undo step', async ({ page, open }) => {
+  test('scrubbing changes the amount without opening the dial, and is one undo step', async ({ page, open, hasTouch }) => {
+    test.skip(hasTouch, 'scrubbing is a mouse drag; a touch drag scrolls the page, and the touch way is the dial');
     await open(NEGRONI);
     const campari = pill(page, 'Campari');
     const start = await campari.getAttribute('aria-label');
@@ -24,7 +23,8 @@ test.describe('measure pills', () => {
     await expect(campari).toHaveAttribute('aria-label', scrubbed ?? '');
   });
 
-  test('an arrow key on a focused pill steps the amount', async ({ page, open }) => {
+  test('an arrow key on a focused pill steps the amount', async ({ page, open, hasTouch, viewport }) => {
+    test.skip(noKeyboard({ hasTouch, viewport }), 'an arrow key needs a keyboard; an iPad in landscape keeps it');
     await open(NEGRONI);
     const campari = pill(page, 'Campari');
     const start = await campari.getAttribute('aria-label');
@@ -34,7 +34,7 @@ test.describe('measure pills', () => {
   });
 });
 
-test.describe('N more cue', () => {
+test.describe('N more cue', { tag: '@desktop' }, () => {
   for (const [w, h] of [[1280, 720], [1100, 760], [1440, 900], [1024, 768]]) {
     test.describe(`${w}x${h}`, () => {
       test.use({ viewport: { width: w, height: h } });
@@ -57,15 +57,14 @@ test.describe('N more cue', () => {
 });
 
 test.describe('units', () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('the unit switch changes the card, and parts shows parts', async ({ page, open }) => {
+  test('the unit switch changes the card, and parts shows parts', async ({ page, open, press }) => {
     await open(NEGRONI);
-    const unitButton = (u: string) => page.locator('.topbar [role=radio], .topbar button').filter({ hasText: new RegExp(`^${u}$`) }).first();
+    // the unit switch is in the top bar on the desktop layout and on the recipe card on phones
+    const unitButton = (u: string) => page.getByRole('radio', { name: new RegExp(`^${u}$`) }).first();
     const amount = page.locator('.pill__amt').first();
     const seen: Record<string, string> = {};
     for (const u of ['ml', 'cl', 'oz', 'parts']) {
-      await unitButton(u).click();
+      await press(unitButton(u));
       await expect.poll(async () => (await storedPot(page)).unit).toBe(u);
       seen[u] = (await amount.textContent()) ?? '';
     }

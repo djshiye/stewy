@@ -1,23 +1,21 @@
 import { test, expect, CURDLED_TOPPED, EMPTY, NEGRONI, scoreOf, rows, toast, toastAction, storedPot } from './fixtures';
 
-test.use({ viewport: { width: 1440, height: 900 } });
-
 test.describe('start from a classic', () => {
-  test('three quick picks load a classic and are undoable', async ({ page, open }) => {
+  test('three quick picks load a classic and are undoable', async ({ page, open, press, undo }) => {
     await open(EMPTY);
     const picks = page.locator('.ap .start__row');
     await expect(picks).toHaveCount(3);
     await expect(page.locator('.ap .start__name')).toHaveText(['Negroni', 'Daiquiri', 'Old Fashioned']);
     expect(await picks.first().evaluate((el) => el.tagName)).toBe('BUTTON');
 
-    await picks.first().click();
+    await press(picks.first());
     await expect(rows(page)).not.toHaveCount(0);
     expect(await rows(page).count()).toBeGreaterThanOrEqual(3);
     expect(await scoreOf(page.locator('.ap'))).toBeGreaterThanOrEqual(80);
     await expect(page.locator('.ap .start__row')).toHaveCount(0);
     await expect(toast(page)).toHaveText(/Loaded Negroni/);
 
-    await page.keyboard.press('Control+z');
+    await undo();
     await expect(rows(page)).toHaveCount(0);
   });
 });
@@ -38,19 +36,20 @@ test.describe('verdicts', () => {
 });
 
 test.describe('Try adding', () => {
-  test('suggestions are worth 3 or more, and clicking one adds it with a toast', async ({ page, open }) => {
+  test('suggestions are worth 3 or more, and choosing one adds it with a toast', async ({ page, open, press }) => {
     await open({ unit: 'oz', brew: [{ id: 'gin', ml: 45 }], name: 'Untitled brew' });
-    const tryRows = page.locator('.ap .try__row');
+    // "Try adding" is a list in the analysis card on the desktop layout and a strip of chips under the pot on phones
+    const tryRows = page.locator('.ap .try__row:visible, .bs__chips button:visible');
     await expect(tryRows.first()).toBeVisible();
-    const deltas = (await page.locator('.ap .try__delta > [aria-hidden=true]').allTextContents()).map((t) => Number(t.replace('+', '')));
+    const deltas = (await page.locator('.ap .try__delta > [aria-hidden=true]:visible, .bs__chips .chip__delta > [aria-hidden=true]:visible').allTextContents()).map((t) => Number(t.replace('+', '')));
     expect(deltas.length).toBeGreaterThan(0);
     for (const d of deltas) expect(d).toBeGreaterThanOrEqual(3);
 
     const before = (await storedPot(page)).brew.length;
-    await tryRows.first().click();
+    await press(tryRows.first());
     await expect.poll(async () => (await storedPot(page)).brew.length).toBeGreaterThan(before);
     await expect(toast(page)).toHaveText(/Added|Removed/);
-    await toastAction(page).click();
+    await press(toastAction(page));
     await expect.poll(async () => (await storedPot(page)).brew.length).toBe(before);
   });
 });

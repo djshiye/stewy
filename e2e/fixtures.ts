@@ -61,6 +61,17 @@ interface Fixtures {
   consoleGuard: void;
   /** Seeds localStorage once per context and loads the app. */
   open: (state?: PotState | string, options?: OpenOptions) => Promise<void>;
+  /** Taps on a touch context, clicks otherwise. */
+  press: (target: Locator) => Promise<void>;
+  /** Opens the Grimoire: the top bar button on touch, the G key otherwise. Waits for the dialog. */
+  openGrimoire: () => Promise<void>;
+  /** Opens the Cellar: the top bar button on touch, the C key otherwise. Waits for the dialog. */
+  openCellar: () => Promise<void>;
+  /** Opens Serve: the dock or recipe card button on touch, the S key otherwise. Waits for the dialog. */
+  openServe: () => Promise<void>;
+  /** Undo and redo: the top bar buttons on touch, Ctrl+Z and Ctrl+Y otherwise. */
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
 }
 
 declare global {
@@ -68,6 +79,14 @@ declare global {
     __clip?: string;
   }
 }
+
+/**
+ * True where there is no keyboard to speak of: a touch context in the phone or tablet layout (under 1000 wide).
+ * An iPad in landscape has the desktop layout and, in practice, a keyboard case, so hotkeys still apply there.
+ * Use as test.skip(noKeyboard, 'reason').
+ */
+export const noKeyboard = ({ hasTouch, viewport }: { hasTouch: boolean; viewport: { width: number; height: number } | null }) =>
+  hasTouch && (viewport?.width ?? Infinity) < 1000;
 
 export const test = base.extend<Fixtures>({
   ignoreConsole: [[], { option: true }],
@@ -117,6 +136,51 @@ export const test = base.extend<Fixtures>({
       await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => setTimeout(done, 0))));
     });
   },
+
+  press: async ({ hasTouch }, use) => {
+    await use(async (target) => {
+      if (hasTouch) await target.tap();
+      else await target.click();
+    });
+  },
+
+  openGrimoire: async ({ page, hasTouch }, use) => {
+    await use(async () => {
+      if (hasTouch) await page.locator('.topbar').getByRole('button', { name: /^Grimoire/ }).tap();
+      else await page.keyboard.press('g');
+      await expect(page.locator('[role=dialog]')).toHaveCount(1);
+    });
+  },
+
+  openCellar: async ({ page, hasTouch }, use) => {
+    await use(async () => {
+      if (hasTouch) await page.locator('.topbar').getByRole('button', { name: /^Cellar/ }).tap();
+      else await page.keyboard.press('c');
+      await expect(page.locator('[role=dialog]')).toHaveCount(1);
+    });
+  },
+
+  openServe: async ({ page, hasTouch }, use) => {
+    await use(async () => {
+      if (hasTouch) await page.getByRole('button', { name: /^Serve/ }).first().tap();
+      else await page.keyboard.press('s');
+      await expect(page.locator('[role=dialog]')).toHaveCount(1);
+    });
+  },
+
+  undo: async ({ page, hasTouch }, use) => {
+    await use(async () => {
+      if (hasTouch) await page.locator('.topbar').getByRole('button', { name: 'Undo' }).tap();
+      else await page.keyboard.press('Control+z');
+    });
+  },
+
+  redo: async ({ page, hasTouch }, use) => {
+    await use(async () => {
+      if (hasTouch) await page.locator('.topbar').getByRole('button', { name: 'Redo' }).tap();
+      else await page.keyboard.press('Control+y');
+    });
+  },
 });
 
 export { expect };
@@ -125,6 +189,8 @@ export { expect };
 
 /** Ingredient rows on the recipe card. */
 export const rows = (page: Page) => page.locator('.rc__rows .row');
+/** The brew's name as shown: the recipe card heading on desktop, the summary under the pot on phones. */
+export const brewNamed = (page: Page, name: string) => page.locator('.bs__name, .rc h2').filter({ hasText: name }).first();
 export const toast = (page: Page) => page.locator('.ui-toast__msg').first();
 export const bottle = (page: Page, id: string) => page.locator(`[data-bottle="${id}"]`).first();
 export const pill = (page: Page, name: string) => page.locator(`.pill[aria-label^="${name},"]`);
@@ -133,10 +199,27 @@ export const dial = (page: Page) => page.locator('[role=slider]');
 export const pourButton = (page: Page) => page.getByRole('button', { name: 'Pour into the pot' });
 export const toastAction = (page: Page) => page.locator('.ui-toast__action');
 
+/**
+ * Gives the page a navigator.share that rejects with the named error ('NotAllowedError' is what Safari throws
+ * when the call is not inside a tap), or removes it ('absent'), before the app loads. Call before open().
+ */
+export async function stubShare(page: Page, mode: 'absent' | 'NotAllowedError' | 'AbortError'): Promise<void> {
+  await page.addInitScript((m) => {
+    if (m === 'absent') {
+      Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: undefined });
+      return;
+    }
+    Object.defineProperty(navigator, 'share', { configurable: true, value: () => Promise.reject(new DOMException('stubbed', m)) });
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+  }, mode);
+}
+
 /** Opens a shelf tab by its visible name (Spirits, Liqueurs, Extras, Garnish ...). */
 export async function shelfTab(page: Page, name: string): Promise<void> {
   const tab = page.getByRole('tab', { name: new RegExp('^' + name) });
-  await tab.click();
+  if (await page.evaluate(() => matchMedia('(pointer: coarse)').matches)) await tab.tap();
+  else await tab.click();
   await expect(tab).toHaveAttribute('aria-selected', 'true');
 }
 

@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:webkit": "podman run --rm --network host --ipc=host --security-opt label=disable -e E2E_PORT -e E2E_OUTDIR -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.64.0-noble npx playwright test --project=webkit --workers=2",
-    "test:e2e:all": "npm run test:e2e && npm run test:e2e:webkit"
+    "test:e2e:mobile": "podman run --rm --network host --ipc=host --security-opt label=disable -e E2E_PORT -e E2E_OUTDIR -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.64.0-noble npx playwright test --project=webkit-iphone --project=webkit-iphone-se --project=webkit-iphone-landscape --project=webkit-ipad --project=webkit-ipad-landscape --workers=2",
+    "test:e2e:all": "npm run test:e2e && npm run test:e2e:webkit && npm run test:e2e:mobile"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
