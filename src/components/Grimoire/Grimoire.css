@@ -168,7 +168,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--s5) var(--s5) var(--s4);
+  --cell-pt: var(--s5);
+  --cell-pb: var(--s4);
+  padding: var(--cell-pt) var(--s5) var(--cell-pb);
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   cursor: pointer;
@@ -179,9 +181,11 @@
   animation-delay: calc(var(--i) * 24ms);
   transition: background-color var(--t-hover) var(--ease-out);
   /* 56 glasses: only the screenful in view is styled and painted. The size is the cell's real
-     height at each breakpoint (below), so the scroll length and scrollIntoView stay true. */
+     height at each breakpoint (--cell-h, below) less its padding and bottom rule, because the intrinsic
+     size is the content box. So a skipped cell is as tall as a drawn one, and the scroll length and
+     scrollIntoView stay true while the sheet opens. */
   content-visibility: auto;
-  contain-intrinsic-block-size: auto var(--cell-h);
+  contain-intrinsic-block-size: auto calc(var(--cell-h) - var(--cell-pt) - var(--cell-pb) - 1px);
 }
 .grim-cell:nth-child(4n) {
   border-right: 0;
@@ -698,7 +702,9 @@
     line-height: 40px;
   }
   .grim-cell {
-    padding: var(--s4) var(--s4) var(--s3);
+    --cell-pt: var(--s4);
+    --cell-pb: var(--s3);
+    padding: var(--cell-pt) var(--s4) var(--cell-pb);
   }
   .grim__grid {
     --cell-h: 265px;
@@ -724,16 +730,40 @@
   }
 }
 
-/* short desktop windows: a slimmer header gives the index two whole rows, and the build stays
-   above the load button */
-@media (min-width: 1000px) and (max-height: 820px) {
-  .grim__head { padding-top: var(--s5); }
-  .grim__title h2 { font-size: 32px; line-height: 36px; }
-  .grim__title p { display: none; }
+/* desktop windows under 940px tall: the modal is 760px or less, so the header folds into one line
+   (title, the count beside it, a compact search) with the chips right below. That leaves the index
+   630px at 900 tall, two whole rows of 315px, where the stacked header left 586. */
+@media (min-width: 1000px) and (max-height: 939px) {
+  .grim__head {
+    align-items: center;
+    padding-top: var(--s5);
+  }
+  .grim__title {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s3);
+    flex: none; /* the search gives way, not the title */
+    white-space: nowrap;
+  }
+  .grim__title p {
+    margin-top: 0;
+  }
+  .grim__search { height: 36px; }
   .grim__chips { padding-top: var(--s3); }
-  .grim__scroll { margin-top: var(--s4); }
-  .grim__grid { --cell-h: 283px; }
-  .grim-cell__stage { height: 140px; }
+  .grim__scroll { margin-top: var(--s3); }
+}
+@media (min-width: 1000px) and (max-width: 1279px) and (max-height: 939px) {
+  /* the eight chips come to 581px with a tighter pad, so they stay on one line down to 1000 wide (588px free) */
+  .grim-chip { padding: 0 12px; }
+}
+
+/* short desktop windows (a 656px modal at 720 tall): smaller cells give the index two whole rows,
+   and the build stays above the load button */
+@media (min-width: 1000px) and (max-height: 820px) {
+  .grim__title h2 { font-size: 32px; line-height: 36px; }
+  .grim__grid { --cell-h: 267px; }
+  .grim-cell { --cell-pt: var(--s4); }
+  .grim-cell__stage { height: 128px; }
   .grim-detail__scroll {
     padding-top: 52px;
   }
@@ -757,7 +787,8 @@
   }
 }
 @media (min-width: 1000px) and (max-width: 1279px) and (max-height: 820px) {
-  .grim__grid { --cell-h: 273px; }
+  .grim__grid { --cell-h: 265px; }
+  .grim-cell__stage { height: 132px; }
 }
 
 /* ---------- phones and tablets: a bottom sheet, one column of chrome ---------- */
@@ -816,7 +847,9 @@
     border-right: 0;
   }
   .grim-cell {
-    padding: var(--s4) var(--s3) var(--s3);
+    --cell-pt: var(--s4);
+    --cell-pb: var(--s3);
+    padding: var(--cell-pt) var(--s3) var(--cell-pb);
   }
   .grim-cell__stage {
     height: 128px;

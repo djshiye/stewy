@@ -23,7 +23,7 @@ import { Glass } from '../../icons/Glass';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
 import { classicCount, filterClassics, FILTERS, getClassics, METHOD_LABEL, scoreColor, type Classic, type FilterKey } from './classics';
-import { snapToRow } from './snapScroll';
+import { snapToRow, tailPadding } from './snapScroll';
 import './Grimoire.css';
 
 export interface GrimoireProps {
@@ -366,6 +366,11 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
     return () => document.removeEventListener('keydown', onKey, true);
   }, [overlayOpen]);
 
+  // a filter or a search replaces the list: drop the room the opening scroll left below the last row
+  useLayoutEffect(() => {
+    if (listRef.current) listRef.current.style.paddingBottom = '';
+  }, [visible]);
+
   // Opening with a classic in the pot: bring its entry into view (the index stays unselected).
   // A layout effect, so the first painted frame is already scrolled.
   useLayoutEffect(() => {
@@ -381,8 +386,16 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       const items = Array.from(list.children) as HTMLElement[];
       const origin = items[0]?.offsetTop ?? 0;
       const rowTops = [...new Set(items.map((c) => c.offsetTop - origin))].sort((a, b) => a - b);
+      const cellTop = el.offsetTop - origin;
+      // The grid's own height, from offsets: scrollHeight also counts the 8px the cells are still sliding up
+      // by (grim-in), which would put the scroll limit that far out for the first few frames.
+      const last = items[items.length - 1];
+      const content = last.offsetTop + last.offsetHeight - origin;
+      // a viewport just over two rows stops a little short of the last row: give it the room to land on
+      const room = tailPadding(rowTops, cellTop, el.offsetHeight, scroller.clientHeight, content);
+      if (room !== (parseFloat(list.style.paddingBottom) || 0)) list.style.paddingBottom = room ? `${room}px` : '';
       // centre the cell, then land on a row boundary so the first visible row is whole
-      scroller.scrollTop = snapToRow(rowTops, el.offsetTop - origin, el.offsetHeight, scroller.clientHeight, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = snapToRow(rowTops, cellTop, el.offsetHeight, scroller.clientHeight, content + room - scroller.clientHeight);
     };
     aim();
     // re-aim on the next frame, not inside the observer callback: a scroll that moves cells in or out of
@@ -394,6 +407,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
     };
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reaim);
     ro?.observe(list);
+    ro?.observe(scroller); // the header can reflow (fonts arriving) and change the viewport without touching the grid
     const stop = () => {
       ro?.disconnect();
       cancelAnimationFrame(frame);

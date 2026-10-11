@@ -226,3 +226,24 @@ export async function expectGrimoireOnWholeRow(page: Page, wholeCell: boolean): 
     }, wholeCell),
   ).toEqual({ inView: true, cutAtTop: 0 });
 }
+
+/**
+ * The Grimoire, opened on an empty pot, shows its first two rows whole (every cell of both rows lies inside the
+ * scroller) before any scrolling. Animations finish first, as in expectGrimoireOnWholeRow. Tolerance 2 px.
+ */
+export async function expectGrimoireTwoWholeRows(page: Page): Promise<void> {
+  await page.keyboard.press('g');
+  await expect(page.locator('.grim-cell').first()).toBeVisible();
+  await expect.poll(async () =>
+    page.evaluate(() => {
+      for (const a of document.getAnimations()) if (Number.isFinite(a.effect?.getComputedTiming().endTime)) a.finish();
+      const scroller = document.querySelector('.grim__scroll')!.getBoundingClientRect();
+      const cells = [...document.querySelectorAll('.grim-cell')].slice(0, 8).map((c) => c.getBoundingClientRect());
+      const columns = new Set(cells.map((r) => Math.round(r.left))).size;
+      return {
+        columns,
+        whole: cells.map((r) => r.top >= scroller.top - 2 && r.bottom <= scroller.bottom + 2),
+      };
+    }),
+  ).toEqual({ columns: 4, whole: Array(8).fill(true) });
+}

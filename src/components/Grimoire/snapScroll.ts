@@ -22,3 +22,25 @@ export function snapToRow(
   for (const t of pool) if (Math.abs(t - wanted) < Math.abs(best - wanted)) best = t;
   return Math.max(0, best);
 }
+
+/**
+ * Extra room below the index when the scroll limit leaves no row to land on that shows the whole cell. A viewport
+ * a little over two rows (say 2.03) stops 10 px short of the row above the last, so the snap would fall back to
+ * an earlier row and the last row would hardly show. The room lets the nearest row above the cell that shows it
+ * whole reach the top of the view. It is 0 when a reachable row already does, and when only the cell's own row
+ * could (under two rows tall, where the last row shows partly as before).
+ * `contentHeight` is the scroller's scroll height without that room.
+ */
+export function tailPadding(
+  rowTops: readonly number[],
+  cellTop: number,
+  cellHeight: number,
+  viewport: number,
+  contentHeight: number,
+): number {
+  const max = contentHeight - viewport;
+  const whole = (t: number) => t <= cellTop && t + viewport >= cellTop + cellHeight;
+  if (rowTops.some((t) => t <= max && whole(t))) return 0;
+  const row = rowTops.find((t) => t < cellTop && whole(t));
+  return row === undefined ? 0 : Math.max(0, Math.ceil(row - max));
+}

@@ -1,4 +1,4 @@
-import { test, expect, BRAMBLE, GRASSHOPPER, expectGrimoireOnWholeRow, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
+import { test, expect, BRAMBLE, GRASSHOPPER, expectGrimoireOnWholeRow, expectGrimoireTwoWholeRows, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -65,5 +65,50 @@ test.describe('opening with a classic in the pot', () => {
   test('the last classic keeps its badge in view and the first visible row whole', async ({ page, open }) => {
     await open(GRASSHOPPER);
     await expectGrimoireOnWholeRow(page, false);
+  });
+});
+
+test.describe('two whole rows of classics before any scrolling', () => {
+  // the short-desktop sizes the header is folded for: a one-line header (title, count, search) with the chips below
+  for (const [width, height] of [[1280, 720], [1366, 768], [1280, 800], [1536, 864], [1024, 768], [1440, 900]]) {
+    test(`${width} x ${height}`, async ({ page, open }) => {
+      await page.setViewportSize({ width, height });
+      await open(EMPTY);
+      await expectGrimoireTwoWholeRows(page);
+      await expect(page.getByRole('textbox', { name: /Search by name/ })).toBeFocused();
+    });
+  }
+
+  // a viewport a little over two rows could not scroll far enough to put the last row on a boundary
+  for (const [width, height] of [[1280, 720], [1366, 768]]) {
+    test(`the last classic stays in view on a whole row at ${width} x ${height}`, async ({ page, open }) => {
+      await page.setViewportSize({ width, height });
+      await open(GRASSHOPPER);
+      await expectGrimoireOnWholeRow(page, true);
+    });
+  }
+
+  test('the header is one line: title, count and search share a row, the chips sit below on one line', async ({ page, open }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await open(EMPTY);
+    await page.keyboard.press('g');
+    await expect(options(page).first()).toBeVisible();
+    const mid = (selector: string, nth: 'first' | 'last' = 'first') =>
+      page.locator(selector)[nth]().evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2;
+      });
+    const [title, count, search, chip, lastChip] = await Promise.all([
+      mid('.grim__title h2'),
+      mid('.grim__title p'),
+      mid('.grim__search'),
+      mid('.grim-chip'),
+      mid('.grim-chip', 'last'),
+    ]);
+    expect(Math.abs(title - search)).toBeLessThan(6);
+    expect(Math.abs(count - title)).toBeLessThan(12);
+    expect(chip).toBeGreaterThan(search + 30);
+    expect(Math.abs(lastChip - chip)).toBeLessThan(2);
+    await expect(page.locator('.grim__title p')).toBeVisible();
   });
 });
