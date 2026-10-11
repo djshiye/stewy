@@ -473,7 +473,7 @@ body.is-dragging .bottle:active .bottle__art { opacity: 0.4; }
   (min-width: 1300px) and (max-aspect-ratio: 5/6) {
   .shelf { --item-w: 92px; --edge: 16px; }
   .shelf__legend { display: none; }
-  .shelf__search { width: 208px; }
+  .shelf__search { width: 220px; }
 }
 
 /* ---------- short desktop viewports ---------- */
