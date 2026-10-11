@@ -125,6 +125,10 @@ export const RECIPES: Recipe[] = [
     note: 'Tall, bubbly gin lemonade.',
     build: [['gin', 45], ['lemon_juice', 30], ['simple_syrup', 15], ['soda_water', 60]] },
 
+  { id: 'ramos_gin_fizz', name: 'Ramos Gin Fizz', glass: 'highball', method: 'shake',
+    note: 'Cream and egg white fizz, scented with orange flower water.',
+    build: [['gin', 50], ['lemon_juice', 15], ['lime_juice', 15], ['simple_syrup', 25], ['heavy_cream', 25], ['egg_white', 25], ['soda_water', 45]] },
+
   { id: 'paloma', name: 'Paloma', glass: 'highball', method: 'build', garnish: 'Salt rim, grapefruit wedge',
     note: "Tequila and grapefruit soda, Mexico’s favourite.",
     build: [['tequila', 50], ['lime_juice', 15], ['grapefruit_soda', 100], ['salt', 1]] },

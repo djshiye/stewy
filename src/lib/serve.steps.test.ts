@@ -84,3 +84,25 @@ describe('text helpers', () => {
     expect(serveCaption({ method: 'shake', glass: 'coupe' })).toBe('Served up');
   });
 });
+
+describe('Ramos Gin Fizz', () => {
+  it('dry shakes the cream and egg white, shakes with ice, strains and tops with soda', () => {
+    const ramos = RECIPES.find((r) => r.id === 'ramos_gin_fizz')!;
+    const card = serveCard(ramos.build.map(([id, ml]) => ({ id, ml })), 'Ramos Gin Fizz', 'oz');
+    expect(card.match?.id).toBe('ramos_gin_fizz');
+    expect(card.method).toBe('shake');
+    expect(card.glass).toBe('highball');
+    const s = methodSteps(card);
+    expect(s[0]).toBe('Add everything except the soda water to a shaker');
+    expect(s[1]).toBe('Shake without ice for 15 seconds to emulsify the cream and egg white');
+    expect(s[2]).toBe('Add ice and shake hard for 15 seconds');
+    expect(s[3]).toMatch(/^Double strain into a highball glass/);
+    expect(s[4]).toBe('Top with soda water');
+    expect(ramos.note).toMatch(/orange flower water/);
+  });
+
+  it('keeps the short dry shake for egg white without cream', () => {
+    const s = steps(brew(['bourbon', 45], ['lemon_juice', 25], ['simple_syrup', 15], ['egg_white', 20]));
+    expect(s).toContain('Shake without ice for 8 seconds to foam the egg white');
+  });
+});

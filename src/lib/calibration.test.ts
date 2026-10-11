@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { INGREDIENTS } from '../data/ingredients';
 import { RECIPES } from '../data/recipes';
-import { harmony } from './harmony';
+import { harmony, suggestions } from './harmony';
 import { scoreDeltas, topSuggestions } from './coach';
 
 const toBrew = (b: [string, number][]): BrewEntry[] => b.map(([id, ml]) => ({ id, ml }));
@@ -28,6 +28,9 @@ const CLASH_SUITE: Record<string, [string, number][]> = {
   curdled_cola: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['cola', 120]],
   curdled_soda: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['soda_water', 120]],
   curdled_tonic: [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['tonic_water', 120]],
+  ramos_without_egg_white: [
+    ['gin', 50], ['lemon_juice', 15], ['lime_juice', 15], ['simple_syrup', 25], ['heavy_cream', 25], ['soda_water', 45],
+  ],
   sweet_tower: [['simple_syrup', 40], ['grenadine', 20], ['vodka', 10]],
   sour_tower: [['lemon_juice', 60], ['lime_juice', 30], ['gin', 10]],
   bitter_tower: [['campari', 60], ['angostura', 4], ['espresso', 30]],
@@ -44,6 +47,14 @@ const CLASH_SUITE: Record<string, [string, number][]> = {
     ['lime_juice', 15], ['lemon_juice', 10], ['cola', 30], ['simple_syrup', 5],
   ],
 };
+
+const RAMOS: [string, number][] = [
+  ['gin', 50], ['lemon_juice', 15], ['lime_juice', 15], ['simple_syrup', 25], ['heavy_cream', 25], ['egg_white', 25],
+  ['soda_water', 45],
+];
+const without = (b: [string, number][], id: string) => b.filter(([x]) => x !== id);
+const swap = (b: [string, number][], from: string, to: string): [string, number][] => b.map(([x, ml]) => [x === from ? to : x, ml]);
+const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((s) => /curdle/.test(s.text));
 
 /** Small deterministic PRNG (mulberry32). */
 function rng(seed: number) {
@@ -85,6 +96,72 @@ describe('calibration', () => {
   it('never suggests a fix for a curdled brew that is really a bigger mixer', () => {
     const tops = topSuggestions(toBrew([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30]]));
     expect(tops.filter((t) => t.delta > 20).map((t) => `${t.ing.id} +${t.delta}`)).toEqual([]);
+  });
+
+  it('never offers egg white as a fix, or lights it green, for a sugarless curdled brew', () => {
+    const sugarless = [
+      CLASH_SUITE.cream_lime, CLASH_SUITE.cream_lemon_gin, CLASH_SUITE.cream_mezcal, CLASH_SUITE.mezcal_cream_lime,
+      CLASH_SUITE.milk_grapefruit_mezcal, CLASH_SUITE.curdled_soda, CLASH_SUITE.curdled_ginger_beer,
+      [['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30]] as [string, number][],
+    ];
+    for (const b of sugarless) {
+      const egg = scoreDeltas(toBrew(b))?.get('egg_white');
+      expect(egg?.delta ?? 0, JSON.stringify(b)).toBeLessThanOrEqual(5);
+      expect(topSuggestions(toBrew(b), 40).find((t) => t.ing.id === 'egg_white'), JSON.stringify(b)).toBeUndefined();
+    }
+  });
+
+  it('lets egg white, sugar and a long shake carry cream through citrus, in the shape of a Ramos Gin Fizz', () => {
+    expect(score(RAMOS)).toBeGreaterThanOrEqual(80);
+    expect(harmony(toBrew(RAMOS))?.parts.clash).toBeCloseTo(0);
+    expect(score(swap(RAMOS, 'heavy_cream', 'milk'))).toBeGreaterThanOrEqual(80);
+    // spec range of a Ramos: gin 45 to 60, syrup 20 to 30, cream 20 to 30, egg white 20 to 30, soda 30 to 60
+    const low: string[] = [];
+    for (const gin of [45, 60]) for (const syrup of [20, 25, 30]) for (const cream of [20, 25, 30])
+      for (const egg of [20, 25, 30]) for (const soda of [30, 45, 60]) {
+        const b: [string, number][] = [
+          ['gin', gin], ['lemon_juice', 15], ['lime_juice', 15], ['simple_syrup', syrup], ['heavy_cream', cream],
+          ['egg_white', egg], ['soda_water', soda],
+        ];
+        if (score(b) < 80) low.push(`${gin}/${syrup}/${cream}/${egg}/${soda} ${score(b)}`);
+      }
+    expect(low).toEqual([]);
+  });
+
+  it('keeps the Ramos exception narrow: no egg white, no sugar, Irish cream or too little egg all stay curdled', () => {
+    expect(score(without(RAMOS, 'egg_white'))).toBeLessThanOrEqual(55);
+    expect(score(without(RAMOS, 'simple_syrup'))).toBeLessThanOrEqual(55);
+    expect(score(swap(RAMOS, 'heavy_cream', 'irish_cream'))).toBeLessThanOrEqual(55);
+    expect(score([['irish_cream', 45], ['lemon_juice', 30], ['egg_white', 30]])).toBeLessThanOrEqual(55);
+    expect(score([['irish_cream', 45], ['lemon_juice', 30], ['egg_white', 30], ['simple_syrup', 20]])).toBeLessThanOrEqual(55);
+    expect(score([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['egg_white', 30]])).toBeLessThanOrEqual(55);
+    expect(score([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['egg_white', 30], ['simple_syrup', 20]])).toBeLessThanOrEqual(55);
+    expect(score(RAMOS.map(([id, ml]) => [id, id === 'egg_white' ? 6 : ml] as [string, number]))).toBeLessThanOrEqual(55);
+    expect(score(RAMOS.map(([id, ml]) => [id, id === 'heavy_cream' ? 60 : ml] as [string, number]))).toBeLessThanOrEqual(55);
+  });
+
+  it('ramps the Ramos exception in smoothly as egg white and syrup come in', () => {
+    for (const id of ['egg_white', 'simple_syrup']) {
+      let prev = 0;
+      for (let ml = 0; ml <= 30; ml += 0.5) {
+        const b = toBrew(RAMOS.map(([x, v]) => [x, x === id ? ml : v] as [string, number]));
+        const c = harmony(b)?.parts.clash ?? 0;
+        if (ml > 0) expect(Math.abs(c - prev), `${id} ${ml} ml`).toBeLessThan(6);
+        prev = c;
+      }
+    }
+  });
+
+  it('says nothing about curdling for a Ramos, and still does for the curdled brews', () => {
+    expect(curdleTip(RAMOS)).toBe(false);
+    expect(curdleTip(without(RAMOS, 'egg_white'))).toBe(true);
+    expect(curdleTip(without(RAMOS, 'simple_syrup'))).toBe(true);
+    expect(curdleTip(swap(RAMOS, 'heavy_cream', 'irish_cream'))).toBe(true);
+    // every dairy plus acid brew in the clash suite, none of which has egg white
+    for (const k of [
+      'cream_lime', 'cream_lemon_gin', 'milk_grapefruit_mezcal', 'irish_cream_lemon', 'mezcal_cream_lime',
+      'curdled_ginger_beer', 'curdled_cola', 'curdled_soda', 'curdled_tonic', 'ramos_without_egg_white',
+    ]) expect(curdleTip(CLASH_SUITE[k]), k).toBe(true);
   });
 
   it('keeps a lone spirit at 62 or less, a lone syrup or juice at 50 or less', () => {

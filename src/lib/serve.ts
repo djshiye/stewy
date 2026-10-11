@@ -368,7 +368,10 @@ export function methodSteps(
     case 'shake':
       if (hasId('egg_white')) {
         steps.push(`Add ${everything(all)} to a shaker`);
-        steps.push('Shake without ice for 8 seconds to foam the egg white');
+        // cream and egg white together (a Ramos) need a longer dry shake to emulsify
+        steps.push(hasId('heavy_cream') || hasId('milk')
+          ? 'Shake without ice for 15 seconds to emulsify the cream and egg white'
+          : 'Shake without ice for 8 seconds to foam the egg white');
         steps.push(`Add ice and shake hard for ${SHAKE_SECONDS} seconds`);
       } else {
         steps.push(`Add ${everything(all)} to a shaker with ice`);

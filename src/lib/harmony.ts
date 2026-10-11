@@ -138,6 +138,11 @@ interface Shape {
   cream: number;
   /** Curdling dairy (cream, milk, Irish cream). Egg white and coconut cream do not curdle. */
   dairy: number;
+  /** Cream and milk only: the dairy a Ramos-style egg white emulsion can hold. */
+  richDairy: number;
+  eggWhite: number;
+  /** Syrup with real sweetness (2 or more). */
+  syrup: number;
   hasLiqueur: boolean;
   /** A non-spirit ingredient that brings real sweetness (2 or more). */
   sweetSrc: boolean;
@@ -151,7 +156,7 @@ interface Shape {
 
 function shapeOf(brew: BrewEntry[]): Shape {
   const s: Shape = {
-    liquid: 0, booze: 0, strong: 0, spirits: 0, spirit: 0, long: 0, sparkling: 0, fizz: 0, acid: 0, cream: 0, dairy: 0,
+    liquid: 0, booze: 0, strong: 0, spirits: 0, spirit: 0, long: 0, sparkling: 0, fizz: 0, acid: 0, cream: 0, dairy: 0, richDairy: 0, eggWhite: 0, syrup: 0,
     hasLiqueur: false, sweetSrc: false, sweetMod: false, dryMod: false, tagged: 0,
   };
   const seen = new Set<string>();
@@ -185,13 +190,22 @@ function addVolume(s: Shape, ing: Ingredient, ml: number) {
   if ((ing.group === 'Juices' && ((t.sour ?? 0) >= 1 || (t.citrus ?? 0) >= 1)) || (t.sour ?? 0) >= 2) s.acid += ml;
   if ((t.creamy ?? 0) >= 2) s.cream += ml;
   if (DAIRY.has(ing.id)) s.dairy += ml;
+  if (EMULSIFIABLE.has(ing.id)) s.richDairy += ml;
+  if (ing.id === 'egg_white') s.eggWhite += ml;
+  if (ing.group === 'Syrups' && (t.sweet ?? 0) >= 2) s.syrup += ml;
 }
 
 /** Dairy that splits in acid. Egg white and coconut cream are creamy but stay out of this. */
 const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
+/** Dairy an egg white emulsion can hold. Irish cream carries its own whiskey and stays out. */
+const EMULSIFIABLE = new Set(['heavy_cream', 'milk']);
 const CURDLE = 0.2;
 /** Clash a real pour of dairy with real acid always carries, however long the drink is topped. */
 const CURDLE_FLOOR = 0.45;
+/** Egg white per ml of dairy: nothing below the low end, the full rescue at the high end (a Ramos runs
+    from two to three parts of egg white to three of cream, so the top sits just under two thirds). */
+const EMULSION_EGG_LO = 0.4;
+const EMULSION_EGG_HI = 0.66;
 const SHAPELESS = 16;
 const TAPER_START = 78;
 const TAPER_END = 90;
@@ -201,6 +215,18 @@ const LONE_CAP = 44;
 /** 0 at or below `lo`, 1 at or above `hi`, linear between. */
 function ramp(x: number, lo: number, hi: number): number {
   return clamp((x - lo) / (hi - lo), 0, 1);
+}
+
+/** How far a Ramos-style emulsion holds the cream against the acid, 0..1. It takes egg white in
+    proportion to the dairy (about two parts to three), a real syrup, a modest dairy share and
+    cream or milk rather than Irish cream; every condition fades in on its own ramp. */
+function emulsion(shape: Shape): number {
+  if (shape.dairy <= 0 || shape.liquid <= 0) return 0;
+  const egg = ramp(shape.eggWhite / shape.dairy, EMULSION_EGG_LO, EMULSION_EGG_HI);
+  const sugar = ramp(shape.syrup / shape.liquid, 0.02, 0.06);
+  const modest = 1 - ramp(shape.dairy / shape.liquid, 0.22, 0.34);
+  const pure = ramp(shape.richDairy / shape.dairy, 0.85, 1);
+  return egg * sugar * modest * pure;
 }
 
 /** Signed sweet versus sour+bitter lean of a raw profile. */
@@ -274,18 +300,21 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   const psmk = (F.smoky ?? 0) / tot;
   const pcof = (F.coffee ?? 0) / tot;
   let clash = 0;
+  // 0 when egg white, sugar and a long hard shake keep the cream whole (a Ramos), 1 otherwise
+  const held = 1 - emulsion(shape);
   let creamClash = 0;
   if (pc > 0.10) {
-    creamClash += Math.min(pc, pacid);        // cream + acid: curdle
+    let curdle = Math.min(pc, pacid);         // cream + acid: curdle
+    if (pacid > 0.05) curdle += CURDLE;       // any real acid curdles cream, however little
+    creamClash += curdle * held;
     creamClash += Math.min(pc, psmk) * 0.7;   // cream + smoke: muddy
-    if (pacid > 0.05) creamClash += CURDLE;   // any real acid curdles cream, however little
-    if (share(shape.fizz) >= 0.4) creamClash += CURDLE; // cream in a big fizzy pour splits and foams
+    if (share(shape.fizz) >= 0.4) creamClash += CURDLE * held; // cream in a big fizzy pour splits and foams
   }
   const dairyW = ramp(share(shape.dairy), 0.02, 0.08);
   if (dairyW > 0) {
     const acidW = ramp(share(shape.acid), 0.02, 0.08);
     const fizzW = ramp(share(shape.fizz), 0.3, 0.5);
-    creamClash = Math.max(creamClash, dairyW * (acidW * CURDLE_FLOOR + fizzW * CURDLE));
+    creamClash = Math.max(creamClash, dairyW * (acidW * CURDLE_FLOOR + fizzW * CURDLE) * held);
   }
   clash += creamClash;
   clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
@@ -383,7 +412,7 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
     out.push({ text: 'Quite bitter. A touch of sweetness would round it out.', kind: 'warn' });
   const shape = shapeOf(brew);
   const curdles = shape.liquid > 0 && shape.dairy / shape.liquid >= 0.05 && shape.acid > 0;
-  if (has('creamy') && (has('citrus') || has('sour')) && ((F.creamy ?? 0) > tot * 0.12 || curdles))
+  if (emulsion(shape) < 0.5 && has('creamy') && (has('citrus') || has('sour')) && ((F.creamy ?? 0) > tot * 0.12 || curdles))
     out.push({ text: 'Cream and citrus can curdle. Pick one or the other.', kind: 'bad' });
   if (n === 1)
     out.push({ text: 'Add a modifier like citrus, something sweet or bitters to make it a cocktail.', kind: '' });
