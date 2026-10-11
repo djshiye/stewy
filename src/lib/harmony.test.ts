@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
-import { describe as describeIng, flavorNotes, harmony, suggestions, VERDICT } from './harmony';
+import { coffeeAcidClashes, curdles, describe as describeIng, flavorNotes, harmony, suggestions, VERDICT } from './harmony';
 
 /** Frozen copies of the 18 original classics, so the lock does not move with recipe data. */
 const CLASSICS: Record<string, [string, number][]> = {
@@ -212,11 +212,17 @@ describe('copy', () => {
       toBrew([['mezcal', 45], ['heavy_cream', 30]]),
       toBrew([['cranberry_juice', 58.5], ['absinthe', 3], ['espresso', 19]]),
     ];
-    for (const b of sludge) {
+    const heads = [
+      'The lemon juice turns the espresso sour and harsh. Pick one or the other.',
+      'The flavours fight each other, so nothing here comes together.',
+      'The cranberry juice turns the espresso sour and harsh. Pick one or the other.',
+    ];
+    sludge.forEach((b, i) => {
       const [head] = suggestions(harmony(b), b);
       expect(harmony(b)!.score, JSON.stringify(b)).toBeLessThan(42);
-      expect(head.text, JSON.stringify(b)).toBe('The flavours fight each other, so nothing here comes together.');
-    }
+      expect(head.text, JSON.stringify(b)).toBe(heads[i]);
+      expect(head.kind, JSON.stringify(b)).toBe('bad');
+    });
     // a White Russian with an orange slice scores in the 70s: plain, not praised
     const russian = toBrew([['vodka', 50], ['coffee_liqueur', 20], ['heavy_cream', 30], ['orange_slice', 3]]);
     expect(suggestions(harmony(russian), russian)[0].text).toBe('A good brew with room to grow.');
@@ -229,6 +235,69 @@ describe('copy', () => {
 
   it('still warns about curdling when the cream is topped up with a long mixer', () => {
     const b = toBrew([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]]);
-    expect(suggestions(harmony(b), b).map((s) => s.text)).toContain('Cream and citrus can curdle. Pick one or the other.');
+    expect(suggestions(harmony(b), b).map((s) => s.text)).toContain('The cream splits against the lime juice. Pick one or the other.');
+  });
+
+  it('names the dairy and the acid that split, as the tasting note does', () => {
+    const tip = (xs: [string, number][]) => {
+      const b = toBrew(xs);
+      const found = suggestions(harmony(b), b).find((s) => /split/.test(s.text));
+      expect(found?.kind, JSON.stringify(xs)).toBe('bad');
+      return found?.text;
+    };
+    expect(tip([['milk', 20], ['cognac', 30], ['creme_de_cacao', 20], ['lemon_juice', 5]]))
+      .toBe('The milk splits against the lemon juice. Pick one or the other.');
+    expect(tip([['heavy_cream', 30], ['gin', 45], ['grapefruit_juice', 40]]))
+      .toBe('The cream splits against the grapefruit juice. Pick one or the other.');
+    // coconut cream only splits against sharp acid, and sparkling wine and tonic are not citrus
+    expect(tip([['coconut_cream', 30], ['champagne', 60], ['tonic_water', 60]]))
+      .toBe('The coconut cream splits against the champagne. Pick one or the other.');
+    expect(tip([['irish_cream', 40], ['vodka', 30], ['lime_juice', 25]]))
+      .toBe('The Irish cream splits against the lime juice. Pick one or the other.');
+  });
+
+  it('names the coffee and the acid when coffee meets acid, with or without a curdle', () => {
+    const heads = (xs: [string, number][]) => { const b = toBrew(xs); return suggestions(harmony(b), b); };
+    expect(heads([['coffee_liqueur', 40], ['vodka', 40], ['lime_juice', 20]])[0])
+      .toEqual({ text: 'The lime juice turns the coffee liqueur sour and harsh. Pick one or the other.', kind: 'bad' });
+    // no juice at all: the citrus liqueur is the acid
+    expect(heads([['espresso', 25], ['grand_marnier', 30]])[0].text)
+      .toBe('The Grand Marnier turns the espresso sour and harsh. Pick one or the other.');
+    // a trace of acid costs under 5 points and is not worth a tip
+    const trace = toBrew([['vodka', 40], ['coffee_liqueur', 20], ['espresso', 30], ['lemon_juice', 1]]);
+    expect(coffeeAcidClashes(harmony(trace)!)).toBe(false);
+    expect(suggestions(harmony(trace), trace).some((s) => /harsh/.test(s.text))).toBe(false);
+    // the classic Espresso Martini is clean
+    const em = toBrew(CLASSICS.espresso_martini);
+    expect(coffeeAcidClashes(harmony(em)!)).toBe(false);
+  });
+
+  it('puts a warning ahead of the praise, never beside it: a curdle at 80 or more drops the praise', () => {
+    // scores 80 or more yet pays more than 5 points of curdle
+    const curdled80 = [
+      toBrew([['coconut_cream', 28], ['campari', 34.5], ['egg_white', 21.5], ['cognac', 62.5]]),
+      toBrew([['cachaca', 47.5], ['campari', 19.5], ['heavy_cream', 42.5], ['tequila', 39]]),
+    ];
+    for (const b of curdled80) {
+      const h = harmony(b)!;
+      expect(h.score, JSON.stringify(b)).toBeGreaterThanOrEqual(80);
+      expect(curdles(h)).toBe(true);
+      const tips = suggestions(h, b);
+      expect(tips[0].kind).toBe('bad');
+      expect(tips.some((s) => s.kind === 'good')).toBe(false);
+    }
+    // a mild coffee clash on a brew that still scores 80 is a plain warning, so the praise stays
+    const mild = toBrew([['tequila', 42], ['espresso', 16.5], ['pineapple_juice', 64.5]]);
+    const hm = harmony(mild)!;
+    expect(hm.score).toBeGreaterThanOrEqual(80);
+    expect(coffeeAcidClashes(hm)).toBe(true);
+    expect(suggestions(hm, mild).map((s) => s.kind)).toEqual(['good', 'warn']);
+  });
+
+  it('never praises next to a bad tip, across every brew in the suite', () => {
+    for (const b of allBrews()) {
+      const tips = suggestions(harmony(b), b);
+      if (tips.some((s) => s.kind === 'bad')) expect(tips.some((s) => s.kind === 'good'), JSON.stringify(b)).toBe(false);
+    }
   });
 });

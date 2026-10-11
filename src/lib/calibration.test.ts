@@ -55,7 +55,7 @@ const RAMOS: [string, number][] = [
 ];
 const without = (b: [string, number][], id: string) => b.filter(([x]) => x !== id);
 const swap = (b: [string, number][], from: string, to: string): [string, number][] => b.map(([x, ml]) => [x === from ? to : x, ml]);
-const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((s) => /curdle/.test(s.text));
+const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((s) => / split/.test(s.text));
 
 /** Worst score step per 0.5 ml, measured over the sweeps below plus a point of headroom. "Rest" is the
     other flavour-bearing liquid in the pot besides the amount being swept. Soda water carries no flavour,
@@ -426,7 +426,7 @@ describe('calibration', () => {
     }
     expect(score([['dark_rum', 60], ['pineapple_juice', 60], ['orange_juice', 30], ['coconut_cream', 45]])).toBeGreaterThanOrEqual(75);
     expect(score(CLASH_SUITE.coconut_cream_lime_scotch)).toBeLessThanOrEqual(55);
-    const tip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((x) => /curdle/.test(x.text));
+    const tip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((x) => / split/.test(x.text));
     expect(tip(CLASH_SUITE.coconut_cream_lime_scotch)).toBe(true);
     expect(tip([['white_rum', 60], ['coconut_cream', 45], ['pineapple_juice', 90]])).toBe(false);
   });

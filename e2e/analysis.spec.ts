@@ -32,6 +32,8 @@ test.describe('verdicts', () => {
     await open(CURDLED_TOPPED);
     expect(await scoreOf(page.locator('.ap'))).toBeLessThanOrEqual(55);
     await expect(page.locator('.ap')).toContainText(/curdle|clash/i);
+    // the tip names what splits, not just "cream and citrus"
+    await expect(page.locator('.ap')).toContainText('The cream splits against the lime juice. Pick one or the other.');
   });
 });
 

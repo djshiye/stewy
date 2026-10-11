@@ -5,6 +5,7 @@ import type { BrewEntry, FlavorDim, Ingredient, Recipe } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
 import { RECIPES } from '../data/recipes';
 import { clamp } from './color';
+import { inlineName } from './serve';
 
 // Pairwise flavour affinities (-1..1). Missing pairs default to +0.12.
 const AFF: Record<string, number> = {
@@ -116,6 +117,9 @@ export interface Harmony {
   /** Points of the clash that come from cream splitting against acid (dairy, or coconut cream against
       sharp acid): what the clash would give back with no acid in the pot. Part of `parts.clash`. */
   curdle: number;
+  /** Points of the clash that come from coffee meeting acid (espresso or coffee liqueur against juice or
+      sharp mixer). Part of `parts.clash`; the tip and the tasting note name it from 5 points. */
+  coffeeAcid: number;
 }
 
 /** Volumes and ingredient facts the archetype checks work from. Counted pieces and dashes
@@ -366,7 +370,7 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
     // only flavourless items (soda, salt, ice)
     return {
       score: 42, tier: tierFor(42), p: {}, F, tot,
-      parts: { ...NO_PARTS, base: 42 }, balance: null, archetype: null, curdle: 0,
+      parts: { ...NO_PARTS, base: 42 }, balance: null, archetype: null, curdle: 0, coffeeAcid: 0,
     };
   }
   const dims = Object.keys(F) as FlavorDim[];
@@ -465,8 +469,11 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   // what the acid alone costs the cream, never below none
   const curdleClash = Math.max(0, creamClash - dryClash);
   clash += creamClash;
-  clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
-  clash += fadeF(pcof, 'coffee') * fadeF(pacid, 'coffeeAcid') * CURDLE * 0.8;
+  // coffee + citrus/acid (added in two steps, as the score always has, so no rounding moves)
+  const coffeeAcidPlain = Math.min(pcof, pacid) * 0.8;
+  const coffeeAcidFade = fadeF(pcof, 'coffee') * fadeF(pacid, 'coffeeAcid') * CURDLE * 0.8;
+  clash += coffeeAcidPlain;
+  clash += coffeeAcidFade;
   score -= clash * 95;
   parts.clash = -clash * 95;
 
@@ -535,7 +542,7 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   }
 
   const final = clamp(Math.round(score), 3, 99);
-  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F), archetype, curdle: curdleClash * 95 };
+  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F), archetype, curdle: curdleClash * 95, coffeeAcid: (coffeeAcidPlain + coffeeAcidFade) * 95 };
 }
 
 /** Fit of a candidate ingredient against the current mix profile → 0..1. */
@@ -580,15 +587,31 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
   if (p('bitter') > 0.4 && p('sweet') < 0.08)
     out.push({ text: 'Quite bitter. A touch of sweetness would round it out.', kind: 'warn' });
   // the engine's own curdle, so the tip shows exactly when the score pays for one
-  if (curdles(h))
-    out.push({ text: 'Cream and citrus can curdle. Pick one or the other.', kind: 'bad' });
+  if (curdles(h)) {
+    const sides = curdleSides(brew);
+    out.push({
+      text: sides
+        ? `The ${said(sides.dairy)} splits against the ${said(sides.acid)}. Pick one or the other.`
+        : 'Cream and acid split in the pot. Pick one or the other.',
+      kind: 'bad',
+    });
+  }
+  // coffee turned harsh by acid, named like the tasting note names it; a brew that still scores well keeps
+  // its praise next to a plain warning, since the clash is a few points of an otherwise good brew
+  const roast = coffeeAcidClashes(h) ? coffeeAcidSides(brew, h) : null;
+  if (roast)
+    out.push({
+      text: `The ${said(roast.acid)} turns the ${said(roast.coffee)} sour and harsh. Pick one or the other.`,
+      kind: h.score >= 56 ? 'warn' : 'bad',
+    });
   if (n === 1)
     out.push({ text: 'Add a modifier like citrus, something sweet or bitters to make it a cocktail.', kind: '' });
   if (n > 7)
     out.push({ text: 'That is a lot of ingredients. Try removing one or two for clarity.', kind: 'warn' });
 
-  // praise only a brew that earns it; with nothing to warn about, a weaker one gets a plain line instead
-  if (h.score >= 80)
+  // praise only a brew that earns it, and never next to a warning: a curdle or a harsh coffee leads instead.
+  // With nothing to warn about, a weaker brew gets a plain line instead.
+  if (h.score >= 80 && !out.some((s) => s.kind === 'bad'))
     out.unshift({
       text: h.score >= 90
         ? 'A masterpiece. Pour it and take a bow.'
@@ -613,6 +636,67 @@ const CURDLE_NOTICE = 5;
 /** True when the brew pays a real curdle: cream or milk against acid, or coconut cream against sharp acid. */
 export function curdles(h: Harmony): boolean {
   return h.curdle >= CURDLE_NOTICE;
+}
+
+/** Points the coffee meeting acid must cost before the tip warns about it and the tasting note names it. */
+const COFFEE_ACID_NOTICE = 5;
+
+/** True when the brew pays a real coffee and acid clash (espresso or coffee liqueur against juice). */
+export function coffeeAcidClashes(h: Harmony): boolean {
+  return h.coffeeAcid >= COFFEE_ACID_NOTICE;
+}
+
+/** The biggest pour matching `test` (by `size`, ml unless told otherwise), or null. */
+function biggest(brew: BrewEntry[], test: (ing: Ingredient) => boolean, size = (_: Ingredient, ml: number) => ml): Ingredient | null {
+  let best: { ing: Ingredient; size: number } | null = null;
+  for (const e of brew) {
+    const ing = ING_BY_ID[e.id];
+    if (!ing || e.ml <= 0 || !test(ing)) continue;
+    const sz = size(ing, e.ml);
+    if (!best || sz > best.size) best = { ing, size: sz };
+  }
+  return best ? best.ing : null;
+}
+
+const tagOf = (ing: Ingredient, d: FlavorDim) => ing.tags[d] ?? 0;
+const isAcid = (ing: Ingredient) =>
+  (ing.group === 'Juices' && (tagOf(ing, 'sour') >= 1 || tagOf(ing, 'citrus') >= 1)) || tagOf(ing, 'sour') >= 2;
+/** The scoring curdles dairy with any sour or citrus liquid, a citrus liqueur too. */
+const isTangy = (ing: Ingredient) => !ing.unit && tagOf(ing, 'sour') + tagOf(ing, 'citrus') > 0;
+
+/** An ingredient set inside a sentence; cream reads "cream", not "heavy cream". */
+export const said = (ing: Ingredient) => (ing.id === 'heavy_cream' ? 'cream' : inlineName(ing.name));
+
+/** The dairy and the acid that split, for a brew that curdles (check `curdles(h)` first): cream or milk
+    against the biggest acid, or failing that any sour or citrus liquid; coconut cream against sharp acid.
+    Null when the pot holds no such pair to name. */
+export function curdleSides(brew: BrewEntry[]): { dairy: Ingredient; acid: Ingredient } | null {
+  const dairy = biggest(brew, (i) => DAIRY.has(i.id));
+  const acid = biggest(brew, (i) => isAcid(i) && i.id !== 'coconut_cream')
+    ?? biggest(brew, (i) => isTangy(i) && i.id !== 'coconut_cream');
+  if (dairy && acid) return { dairy, acid };
+  const coconut = biggest(brew, (i) => i.id === 'coconut_cream');
+  // what the score counts as sharp for coconut cream: sour or citrus weight that is not a mild fruit juice
+  // (lemon or lime, but also the tonic, wine or liqueur), named by how much of it the pot holds
+  const sharp = biggest(
+    brew,
+    (i) => tagOf(i, 'sour') + tagOf(i, 'citrus') > 0 && !(i.group === 'Juices' && tagOf(i, 'sour') < 2) && i.id !== 'coconut_cream',
+    (i, ml) => (tagOf(i, 'sour') + tagOf(i, 'citrus')) * ml,
+  );
+  return coconut && sharp ? { dairy: coconut, acid: sharp } : null;
+}
+
+/** The coffee and the acid that clash, or null when the pot holds no such pair. A juice or sharp mixer is
+    named first; a pot that pays a real clash (check `coffeeAcidClashes(h)`) with only a citrus liqueur,
+    sparkling wine, soda or a slice for acid names the one that carries the most sour and citrus. */
+export function coffeeAcidSides(brew: BrewEntry[], h: Harmony): { coffee: Ingredient; acid: Ingredient } | null {
+  const coffee = biggest(brew, (i) => tagOf(i, 'coffee') >= 1);
+  if (!coffee) return null;
+  const acid = biggest(brew, (i) => isAcid(i) && i.id !== 'coconut_cream')
+    ?? (coffeeAcidClashes(h)
+      ? biggest(brew, (i) => i !== coffee && tagOf(i, 'sour') + tagOf(i, 'citrus') > 0 && i.id !== 'coconut_cream', (i, ml) => (tagOf(i, 'sour') + tagOf(i, 'citrus')) * ml)
+      : null);
+  return acid ? { coffee, acid } : null;
 }
 
 /** A brew that clashes hard or scores below this is not "close to" any classic, whatever its volumes

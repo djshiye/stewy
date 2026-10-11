@@ -2,8 +2,7 @@
    how sweet the middle is and how it finishes. Pure and deterministic, no DOM. */
 import type { BrewEntry, FlavorDim, Ingredient } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
-import { curdles, DAIRY, isPoorBrew, type Harmony } from './harmony';
-import { inlineName } from './serve';
+import { coffeeAcidSides, curdles, curdleSides, DAIRY, isPoorBrew, said, type Harmony } from './harmony';
 
 /** How a dimension reads at the front of the glass. Sweet and boozy are told apart. */
 const FRONT: Partial<Record<FlavorDim, string>> = {
@@ -74,9 +73,6 @@ function biggest(xs: Poured[], test: (ing: Ingredient) => boolean): Ingredient |
   return best ? best.ing : null;
 }
 
-/** An ingredient set inside a sentence; cream reads "cream", not "heavy cream". */
-const said = (ing: Ingredient) => (ing.id === 'heavy_cream' ? 'cream' : inlineName(ing.name));
-
 /** Points the sweet or sour penalty must take before a fault calls the brew "far too" sweet or sharp
     (half the smallest full penalty), and before it mentions the lean at all. */
 const FAR_TOO = -4;
@@ -90,28 +86,20 @@ function fault(h: Harmony, brew: BrewEntry[]): string {
     if (ing && e.ml > 0) xs.push({ ing, ml: e.ml });
   }
   const tag = (ing: Ingredient, d: FlavorDim) => ing.tags[d] ?? 0;
-  const isAcid = (ing: Ingredient) => (ing.group === 'Juices' && (tag(ing, 'sour') >= 1 || tag(ing, 'citrus') >= 1)) || tag(ing, 'sour') >= 2;
-  // the scoring curdles dairy with any sour or citrus liquid, a citrus liqueur too
-  const isTangy = (ing: Ingredient) => !ing.unit && tag(ing, 'sour') + tag(ing, 'citrus') > 0;
 
   const dairy = biggest(xs, (i) => DAIRY.has(i.id));
-  const coconut = biggest(xs, (i) => i.id === 'coconut_cream');
-  const acid = biggest(xs, (i) => isAcid(i) && i.id !== 'coconut_cream');
-  const sharp = biggest(xs, (i) => tag(i, 'sour') >= 2 && i.id !== 'coconut_cream');
   const smoke = biggest(xs, (i) => tag(i, 'smoky') >= 1);
-  const coffee = biggest(xs, (i) => tag(i, 'coffee') >= 1);
   const fizzMl = xs.reduce((t, x) => t + (x.ing.carbonated ? x.ml : 0), 0);
   const liquidMl = xs.reduce((t, x) => t + (x.ing.unit ? 0 : x.ml), 0);
   const fizzy = liquidMl > 0 && fizzMl / liquidMl >= 0.4;
 
   // a curdle is named only when the score pays for one, not for every trace of juice near the cream
-  const curdled = curdles(h);
-  const tangy = curdled ? acid ?? biggest(xs, (i) => isTangy(i) && i.id !== 'coconut_cream') : null;
-  if (curdled && dairy && tangy) return `The ${said(dairy)} splits against the ${said(tangy)}, so it drinks thin and grainy.`;
-  if (curdled && coconut && sharp) return `The coconut cream splits against the ${said(sharp)}, so it drinks thin and grainy.`;
+  const split = curdles(h) ? curdleSides(brew) : null;
+  if (split) return `The ${said(split.dairy)} splits against the ${said(split.acid)}, so it drinks thin and grainy.`;
   if (dairy && fizzy) return `The ${said(dairy)} splits in all that fizz, so it drinks thin and foamy.`;
   if (dairy && smoke) return `The ${said(dairy)} smothers the ${said(smoke)}, so it drinks heavy and muddy.`;
-  if (coffee && acid) return `The ${said(acid)} turns the ${said(coffee)} sour and harsh.`;
+  const roast = coffeeAcidSides(brew, h);
+  if (roast) return `The ${said(roast.acid)} turns the ${said(roast.coffee)} sour and harsh.`;
   if (brew.length === 1) return 'A single ingredient on its own is a pour, not a drink.';
   // the sweet and sour penalties grow in, so only a real share of one says "far too"
   if (h.parts.sweetSour <= FAR_TOO) {

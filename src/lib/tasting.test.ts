@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { RECIPES } from '../data/recipes';
-import { harmony } from './harmony';
+import { harmony, suggestions } from './harmony';
 import { tastingNote } from './tasting';
 
 const brew = (...xs: [string, number][]): BrewEntry[] => xs.map(([id, ml]) => ({ id, ml }));
@@ -98,6 +98,28 @@ describe('tastingNote for a brew that goes wrong', () => {
     // triple sec curdles the cream in the score, so the note says so instead of blaming the spirit
     expect(noteFor(brew(['heavy_cream', 10], ['vodka', 45], ['triple_sec', 15])))
       .toBe('The cream splits against the triple sec, so it drinks thin and grainy.');
+  });
+
+  it('names coconut cream against the sparkling wine, and coffee against a citrus liqueur', () => {
+    expect(noteFor(brew(['coconut_cream', 30], ['champagne', 60], ['tonic_water', 60])))
+      .toBe('The coconut cream splits against the champagne, so it drinks thin and grainy.');
+    expect(noteFor(brew(['espresso', 25], ['grand_marnier', 30])))
+      .toBe('The Grand Marnier turns the espresso sour and harsh.');
+  });
+
+  it('names the same dairy and acid as the analysis tip', () => {
+    for (const b of [
+      brew(['milk', 20], ['cognac', 30], ['creme_de_cacao', 20], ['lemon_juice', 5]),
+      brew(['coconut_cream', 30], ['champagne', 60], ['tonic_water', 60]),
+      brew(['heavy_cream', 10], ['vodka', 45], ['triple_sec', 15]),
+      brew(['coffee_liqueur', 40], ['vodka', 40], ['lime_juice', 20]),
+    ]) {
+      const tip = suggestions(harmony(b), b).find((t) => /splits against|turns the/.test(t.text))?.text;
+      expect(tip, JSON.stringify(b)).toBeDefined();
+      // the tip is the note's own first clause, then the advice
+      const clause = (tip ?? '').replace('. Pick one or the other.', '');
+      expect(noteFor(b), JSON.stringify(b)).toMatch(new RegExp(`^${clause}[,.]`));
+    }
   });
 
   it('is always one plain sentence, even without the brew to name things', () => {
