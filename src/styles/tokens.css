@@ -114,6 +114,8 @@
   --dock-h: 196px;
   --gutter: 24px;
   --ui-zoom: 1;
+  /* the on-screen keyboard's height over the layout viewport; lib/keyboardInset.ts writes it while the dock search has focus */
+  --kb: 0px;
   /* container query units (cqw, cqh) come out times the zoom in engines that apply it twice (WebKit); the
      divisor is the zoom there, 1 elsewhere. See lib/cqUnits.ts. */
   --cq-k: 1;

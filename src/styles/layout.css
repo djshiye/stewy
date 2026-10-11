@@ -177,6 +177,8 @@
     height: calc(var(--dock-h) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     padding-right: env(safe-area-inset-right);
+    /* rides above the on-screen keyboard while the shelf search has focus (--kb is 0 otherwise) */
+    transform: translateY(calc(-1 * var(--kb)));
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     background: linear-gradient(180deg, #141a24, #0c1017);
     box-shadow:

@@ -76,3 +76,37 @@ for (const [name, key] of [['Grimoire', 'g'], ['Cellar', 'c']] as const) {
     expect(await page.evaluate(() => window.scrollY), 'and is still there after closing').toBe(300);
   });
 }
+
+test('the dock rides above the on-screen keyboard while the search has focus, and the Search key puts the keys away', async ({ page, open }) => {
+  // headless browsers have no keyboard: stand in for the visual viewport that iOS shrinks when it opens
+  await page.addInitScript(() => {
+    const fake = Object.assign(new EventTarget(), { height: innerHeight, offsetTop: 0, width: innerWidth, scale: 1, offsetLeft: 0, pageTop: 0, pageLeft: 0 });
+    Object.defineProperty(window, 'visualViewport', { value: fake, configurable: true });
+  });
+  await open(EMPTY);
+  const bottom = () => page.locator('.dock').evaluate((el) => Math.round(el.getBoundingClientRect().bottom));
+  const keyboard = (height: number, offsetTop = 0) => page.evaluate(([h, top]) => {
+    const vv = window.visualViewport as unknown as EventTarget & { height: number; offsetTop: number };
+    vv.height = h;
+    vv.offsetTop = top;
+    vv.dispatchEvent(new Event('resize'));
+  }, [height, offsetTop]);
+  expect(await bottom()).toBe(844);
+
+  await page.getByRole('button', { name: 'Search ingredients' }).tap();
+  const input = page.locator('.dock input[aria-label="Search ingredients"]');
+  await expect(input).toBeFocused();
+  await keyboard(508);
+  await expect.poll(bottom, 'the dock lifts by the keyboard height').toBe(844 - 336);
+  await keyboard(508, 100);
+  await expect.poll(bottom, 'less when the page was scrolled to reveal the field').toBe(844 - 236);
+  await keyboard(508);
+
+  await input.fill('gin');
+  await input.press('Enter');
+  await expect(input).not.toBeFocused();
+  await expect.poll(bottom, 'back in place once the keys are put away').toBe(844);
+  await expect(page.locator('.dock [data-bottle]').first()).toBeVisible();
+  await keyboard(300);
+  expect(await bottom(), 'no longer tracking after blur').toBe(844);
+});

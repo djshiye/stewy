@@ -6,6 +6,7 @@ import type { Group, Ingredient } from '../../data/types';
 import type { AppModel } from '../../app/types';
 import { INGREDIENTS, INGREDIENT_GROUPS } from '../../data/ingredients';
 import { amountLabel } from '../../lib/units';
+import { trackKeyboardInset } from '../../lib/keyboardInset';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
 import { Bottle } from './Bottle';
@@ -170,8 +171,26 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
     if (close) setSearchOpen(false);
   };
 
+  // While the dock search has focus, --kb on the root follows the on-screen keyboard and layout.css lifts the dock by
+  // it, so the field and the matching bottles stay above the keys. Stopped on blur, when the field closes, on unmount.
+  const stopKeyboard = useRef<(() => void) | null>(null);
+  const endKeyboard = useCallback(() => {
+    stopKeyboard.current?.();
+    stopKeyboard.current = null;
+  }, []);
+  const startKeyboard = () => {
+    if (dock && !stopKeyboard.current) stopKeyboard.current = trackKeyboardInset();
+  };
+  useEffect(() => {
+    if (!(dock && searchOpen)) endKeyboard();
+  }, [dock, searchOpen, endKeyboard]);
+  useEffect(() => endKeyboard, [endKeyboard]);
+
   const onSearchKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Enter') {
+      // the keyboard's Search key: put the keys away so the matches are in view (a mouse user keeps typing)
+      if (dock || window.matchMedia('(pointer: coarse)').matches) e.currentTarget.blur();
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
       if (query) clearSearch(dock);
@@ -275,7 +294,9 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
         aria-label="Search ingredients"
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={onSearchKeyDown}
+        onFocus={startKeyboard}
         onBlur={() => {
+          endKeyboard();
           if (dock && !query) setSearchOpen(false);
         }}
       />
