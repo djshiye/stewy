@@ -98,3 +98,12 @@ export function amountInfo(ing: Ingredient, unit: UnitKey): AmountInfo {
   const u = UNITS[unit];
   return { counted: false, per: u.toMl, label: u.label, chips: [...u.chips], dec: u.dec, step: u.step };
 }
+
+/** First words that stay capitalised inside a sentence. */
+const PROPER_FIRST = new Set(['Campari', 'Aperol', 'Angostura', 'Lillet', 'Grand', 'Bénédictine', 'Irish', 'Peychaud’s', 'Pimm’s']);
+
+/** An ingredient name set inside a sentence ("Sweet vermouth" to "sweet vermouth", "Campari" stays). */
+export function inlineName(name: string): string {
+  const first = name.split(' ')[0];
+  return PROPER_FIRST.has(first) ? name : name.charAt(0).toLowerCase() + name.slice(1);
+}

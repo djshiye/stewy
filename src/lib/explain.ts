@@ -1,7 +1,7 @@
 /* Plain-language reasons for a score change, made by diffing the harmony breakdown.
    Pure functions, no DOM. */
 import type { Archetype, Harmony } from './harmony';
-import { inlineName } from './serve';
+import { inlineName } from './units';
 
 /** What the change does to the ingredient: a first pour, more, less, taken out, or nothing. */
 export type ChangeKind = 'add' | 'more' | 'less' | 'remove' | 'same';

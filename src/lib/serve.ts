@@ -4,7 +4,7 @@ import type { BrewEntry, GlassKind, IceKind, Ingredient, Method, Recipe } from '
 import { ING_BY_ID } from '../data/ingredients';
 import { harmony, resemblance, VERDICT, type Tier } from './harmony';
 import { mixColor } from './color';
-import { amountLabel, isCounted, nounOf, perPiece, plural, trim, type UnitKey } from './units';
+import { amountLabel, inlineName, isCounted, nounOf, perPiece, plural, trim, type UnitKey } from './units';
 
 /** Water added by mixing, as a fraction of the pre-dilution volume. */
 export const DILUTION: Record<Method, number> = { stir: 0.22, shake: 0.28, build: 0.12, blend: 0.35 };
@@ -239,16 +239,10 @@ export function recipeText(card: ServeCard, url?: string): string {
   return out.join('\n');
 }
 
+// kept here for the callers that already import it from the serve module
+export { inlineName };
+
 /* ---------- additions for the serve sheet ---------- */
-
-/** First words that stay capitalised inside a sentence. */
-const PROPER_FIRST = new Set(['Campari', 'Aperol', 'Angostura', 'Lillet', 'Grand', 'Bénédictine', 'Irish', 'Peychaud’s', 'Pimm’s']);
-
-/** An ingredient name set inside a sentence ("Sweet vermouth" to "sweet vermouth", "Campari" stays). */
-export function inlineName(name: string): string {
-  const first = name.split(' ')[0];
-  return PROPER_FIRST.has(first) ? name : name.charAt(0).toLowerCase() + name.slice(1);
-}
 
 /** "a, b and c". */
 function joinList(items: string[]): string {

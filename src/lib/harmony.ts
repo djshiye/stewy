@@ -5,7 +5,7 @@ import type { BrewEntry, FlavorDim, Ingredient, Recipe } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
 import { RECIPES } from '../data/recipes';
 import { clamp } from './color';
-import { inlineName } from './serve';
+import { inlineName } from './units';
 
 // Pairwise flavour affinities (-1..1). Missing pairs default to +0.12.
 const AFF: Record<string, number> = {
