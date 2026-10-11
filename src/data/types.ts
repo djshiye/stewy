@@ -39,6 +39,9 @@ export type GlassKind =
 /** How a drink is mixed. */
 export type Method = 'shake' | 'stir' | 'build' | 'blend';
 
+/** What a drink is served over: nothing (served up), cubes, one large cube or crushed ice. */
+export type IceKind = 'none' | 'cubes' | 'large-cube' | 'crushed';
+
 export interface Ingredient {
   id: string;
   name: string;
@@ -78,6 +81,8 @@ export interface Recipe {
   method: Method;
   /** Serving garnish, plain text ("Orange peel"). */
   garnish?: string;
+  /** Overrides the ice the glass and method imply (a Ramos is strained up, with no ice). */
+  ice?: IceKind;
   /** One short line shown in the Grimoire. */
   note: string;
   /** [ingredient id, ml] pairs loaded straight into the cauldron. */

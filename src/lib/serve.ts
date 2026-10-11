@@ -1,6 +1,6 @@
 /* Serve inference: how a brew would be mixed, glassed, garnished and written
    down. Matched classics win; otherwise plain heuristics. Pure functions. */
-import type { BrewEntry, GlassKind, Ingredient, Method, Recipe } from '../data/types';
+import type { BrewEntry, GlassKind, IceKind, Ingredient, Method, Recipe } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
 import { harmony, resemblance, VERDICT, type Tier } from './harmony';
 import { mixColor } from './color';
@@ -32,6 +32,8 @@ export interface ServeCard {
   glass: GlassKind;
   method: Method;
   garnish: string | null;
+  /** The matched classic's own ice, when it differs from what the glass implies. */
+  ice?: IceKind;
   lines: ServeLine[];
   stats: BrewStats;
   score: number;
@@ -187,6 +189,7 @@ export function serveCard(brew: BrewEntry[], name: string, unit: UnitKey): Serve
     glass: inferGlass(brew, method, match),
     method,
     garnish: inferGarnish(brew, match),
+    ice: match?.ice,
     lines: resolve(brew).map(({ ing, ml }) => ({
       id: ing.id, name: ing.name, amount: amountLabel({ id: ing.id, ml }, ing, unit),
     })),
@@ -264,10 +267,9 @@ export const STIR_SECONDS = 30;
 export const SHAKE_SECONDS = 15;
 export const BLEND_SECONDS = 20;
 
-type ServeIce = 'none' | 'large-cube' | 'cubes' | 'crushed';
-
 /** Ice a glass is served over (mirrors the glassware drawing, without importing it). */
-function serveIce(glass: GlassKind, method: Method): ServeIce {
+function serveIce(glass: GlassKind, method: Method, override?: IceKind): IceKind {
+  if (override) return override;
   switch (glass) {
     case 'coupe': case 'martini': case 'flute': return 'none';
     case 'julep': case 'tiki': case 'hurricane': return 'crushed';
@@ -280,8 +282,8 @@ function serveIce(glass: GlassKind, method: Method): ServeIce {
 }
 
 /** The ice a serve is caption-worthy for ("Served over one large cube"). */
-export function serveCaption(card: Pick<ServeCard, 'method' | 'glass'>): string {
-  switch (serveIce(card.glass, card.method)) {
+export function serveCaption(card: Pick<ServeCard, 'method' | 'glass' | 'ice'>): string {
+  switch (serveIce(card.glass, card.method, card.ice)) {
     case 'large-cube': return 'Served over one large cube';
     case 'cubes': return 'Served over ice';
     case 'crushed': return 'Served over crushed ice';
@@ -315,7 +317,7 @@ function garnishParts(garnish: string | null): { rim: string | null; pieces: str
 
 /** Numbered-list instructions for a serve, e.g. "Add the gin, Campari and sweet vermouth to a mixing glass with ice". */
 export function methodSteps(
-  card: Pick<ServeCard, 'method' | 'glass' | 'garnish' | 'lines'>,
+  card: Pick<ServeCard, 'method' | 'glass' | 'garnish' | 'lines' | 'ice'>,
 ): string[] {
   const rows = card.lines
     .map((l) => ING_BY_ID[l.id])
@@ -326,7 +328,7 @@ export function methodSteps(
   const topText = joinList(tops.map((i) => inlineName(i.name)));
   const hasId = (id: string) => rows.some((i) => i.id === id);
   const glass = GLASS_LABEL[card.glass];
-  const ice = serveIce(card.glass, card.method);
+  const ice = serveIce(card.glass, card.method, card.ice);
   const own = card.lines.filter((l) => isGarnishLine(l.id)).map((l) => ({
     id: l.id, count: Math.max(1, parseInt(l.amount, 10) || 1),
   }));
@@ -380,7 +382,8 @@ export function methodSteps(
           : `Shake hard for ${SHAKE_SECONDS} seconds`);
       }
       steps.push(strain(hasId('espresso') || hasId('egg_white')));
-      if (tops.length) steps.push(`Top with ${topText}`);
+      // an egg white drink strained up is topped slowly so the foam rises (a Ramos)
+      if (tops.length) steps.push(ice === 'none' && hasId('egg_white') ? `Top slowly with ${topText} to lift the foam` : `Top with ${topText}`);
       break;
     case 'build':
       if (muddled) steps.push(`Gently press the mint in ${article(glass)} ${glass} to release its oil`);

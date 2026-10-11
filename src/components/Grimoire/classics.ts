@@ -75,7 +75,7 @@ function describe(recipe: Recipe): Classic {
     archetype: h?.archetype ?? null,
     color: mixColor(brew)?.css ?? NO_COLOR,
     garnish: garnishFor(recipe.garnish),
-    ice: iceFor(recipe.glass, recipe.method),
+    ice: iceFor(recipe.glass, recipe.method, recipe.ice),
     foam: foamFor(brew),
     key: keyIngredients(brew),
     haystack: fold([recipe.name, ...names].join(' ')),

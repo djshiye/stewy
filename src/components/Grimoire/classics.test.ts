@@ -15,6 +15,14 @@ describe('classics', () => {
     }
   });
 
+  it('draws the Ramos without ice and every other classic as before', () => {
+    expect(all.find((c) => c.recipe.id === 'ramos_gin_fizz')?.ice).toBe('none');
+    expect(all.find((c) => c.recipe.id === 'negroni')?.ice).toBe('large-cube');
+    expect(all.find((c) => c.recipe.id === 'tom_collins')?.ice).toBe('cubes');
+    expect(all.find((c) => c.recipe.id === 'mint_julep')?.ice).toBe('crushed');
+    expect(all.find((c) => c.recipe.id === 'daiquiri')?.ice).toBe('none');
+  });
+
   it('lists spirits first and lowers common nouns but keeps brands', () => {
     expect(all.find((c) => c.recipe.id === 'negroni')?.key).toBe('Gin, Campari, sweet vermouth');
     expect(all.find((c) => c.recipe.id === 'margarita')?.key).toBe('Tequila blanco, triple sec, lime juice');

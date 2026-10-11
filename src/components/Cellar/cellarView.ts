@@ -40,7 +40,7 @@ export function savedGlass(brew: BrewEntry[], color: string | null): SavedGlass 
   return {
     kind,
     color: color ?? mixColor(brew)?.css ?? NO_COLOR,
-    ice: iceFor(kind, method),
+    ice: iceFor(kind, method, match?.ice),
     garnish: garnishFor(inferGarnish(brew, match)),
     foam: foamFor(brew),
   };

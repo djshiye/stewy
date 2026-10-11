@@ -38,7 +38,7 @@ export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: Se
   const card = useMemo(() => serveCard(brew, name, unit), [brew, name, unit]);
   const steps = useMemo(() => methodSteps(card), [card]);
   const lines = useMemo(() => measureLines(brew, unit), [brew, unit]);
-  const note = useMemo(() => tastingNote(h), [h]);
+  const note = useMemo(() => tastingNote(h, brew), [h, brew]);
   const foam = useMemo(() => foamFor(brew), [brew]);
   const garnish = useMemo(() => garnishFor(card.garnish), [card.garnish]);
   const today = useMemo(() => new Date(), [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -57,7 +57,7 @@ export function ServeSheet({ open, model, onClose, onSave, onShare, onCopy }: Se
             <Glass
               kind={card.glass}
               color={mix?.css ?? card.color}
-              ice={iceFor(card.glass, card.method)}
+              ice={iceFor(card.glass, card.method, card.ice)}
               garnish={garnish}
               foam={foam}
               condensation

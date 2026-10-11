@@ -31,6 +31,14 @@ describe('savedGlass', () => {
     expect(g.ice).toBe('large-cube');
   });
 
+  it('draws a hand-built Ramos without ice, through the classic it matches', () => {
+    const ramos = [['gin', 50], ['lemon_juice', 15], ['lime_juice', 15], ['simple_syrup', 25], ['heavy_cream', 25], ['egg_white', 25], ['soda_water', 45]]
+      .map(([id, ml]) => ({ id: id as string, ml: ml as number }));
+    const g = savedGlass(ramos, null);
+    expect(g.kind).toBe('highball');
+    expect(g.ice).toBe('none');
+  });
+
   it('falls back to the mixed colour when none was saved', () => {
     expect(savedGlass(negroni, null).color).toMatch(/^rgb\(/);
   });

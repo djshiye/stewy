@@ -77,6 +77,14 @@ describe('iceFor', () => {
   });
 });
 
+describe('iceFor override', () => {
+  it('lets a recipe name its own ice and leaves everything else alone', () => {
+    expect(iceFor('highball', 'shake', 'none')).toBe('none');
+    expect(iceFor('highball', 'shake', undefined)).toBe('cubes');
+    expect(iceFor('coupe', 'shake', 'cubes')).toBe('cubes');
+  });
+});
+
 describe('foamFor', () => {
   it('is white for egg white and crema for espresso', () => {
     expect(foamFor([{ id: 'bourbon', ml: 45 }, { id: 'egg_white', ml: 20 }])).toBe(EGG_FOAM);

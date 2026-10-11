@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { RECIPES } from '../data/recipes';
+import { iceFor } from '../icons/garnish';
 import { inlineName, measureLines, methodSteps, serveCard, serveCaption } from './serve';
 
 const brew = (...xs: [string, number][]): BrewEntry[] => xs.map(([id, ml]) => ({ id, ml }));
@@ -79,6 +80,19 @@ describe('text helpers', () => {
     expect(inlineName('Sweet vermouth')).toBe('sweet vermouth');
     expect(inlineName('Pimm’s No. 1')).toBe('Pimm’s No. 1');
   });
+  it('keeps the ice every other classic had before the per-recipe override', () => {
+    const caption = (id: string) => {
+      const r = RECIPES.find((x) => x.id === id)!;
+      return serveCaption(serveCard(r.build.map(([i, ml]) => ({ id: i, ml })), r.name, 'ml'));
+    };
+    expect(caption('negroni')).toBe('Served over one large cube');
+    expect(caption('tom_collins')).toBe('Served over ice');
+    expect(caption('mojito')).toBe('Served over ice');
+    expect(caption('mint_julep')).toBe('Served over crushed ice');
+    expect(caption('daiquiri')).toBe('Served up');
+    // only the Ramos overrides the ice
+    expect(RECIPES.filter((r) => r.ice).map((r) => r.id)).toEqual(['ramos_gin_fizz']);
+  });
   it('captions the ice', () => {
     expect(serveCaption({ method: 'stir', glass: 'rocks' })).toBe('Served over one large cube');
     expect(serveCaption({ method: 'shake', glass: 'coupe' })).toBe('Served up');
@@ -96,10 +110,25 @@ describe('Ramos Gin Fizz', () => {
     expect(s[0]).toBe('Add everything except the soda water to a shaker');
     expect(s[1]).toBe('Shake without ice for 15 seconds to emulsify the cream and egg white');
     expect(s[2]).toBe('Add ice and shake hard for 15 seconds');
-    expect(s[3]).toMatch(/^Double strain into a highball glass/);
-    expect(s[4]).toBe('Top with soda water');
+    expect(s[3]).toBe('Double strain into a chilled highball glass');
+    expect(s[4]).toBe('Top slowly with soda water to lift the foam');
     expect(s[5]).toBe('Express a lemon twist over the drink, then drop it in');
-    expect(ramos.note).toMatch(/orange flower water/);
+    expect(s).toHaveLength(6);
+    expect(ramos.note).not.toMatch(/orange flower/i);
+  });
+
+  it('is served up, with no ice, as a recipe and as a hand-built brew', () => {
+    const ramos = RECIPES.find((r) => r.id === 'ramos_gin_fizz')!;
+    expect(ramos.ice).toBe('none');
+    const build = ramos.build.map(([id, ml]) => ({ id, ml }));
+    const mine = serveCard(build, 'My fizz', 'ml');
+    expect(mine.match?.id).toBe('ramos_gin_fizz');
+    expect(mine.ice).toBe('none');
+    expect(serveCaption(mine)).toBe('Served up');
+    expect(methodSteps(mine)).toEqual(methodSteps(serveCard(build, 'Ramos Gin Fizz', 'oz')));
+    expect(iceFor(mine.glass, mine.method, mine.ice)).toBe('none');
+    // without the override a shaken highball is still drawn over ice
+    expect(serveCaption({ glass: 'highball', method: 'shake' })).toBe('Served over ice');
   });
 
   it('keeps the short dry shake for egg white without cream', () => {

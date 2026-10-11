@@ -1,6 +1,6 @@
 /* Garnish and ice vocabulary for the glassware, plus the text parsers that map
    a recipe's garnish string, a brew and a mixing method onto it. Pure, no React. */
-import type { BrewEntry, GlassKind, Method } from '../data/types';
+import type { BrewEntry, GlassKind, IceKind, Method } from '../data/types';
 
 export const GARNISH_KINDS = [
   'orange-peel', 'orange-wheel', 'lime-wheel', 'lime-wedge', 'lemon-twist', 'mint-sprig',
@@ -12,7 +12,7 @@ export const GARNISH_KINDS = [
 
 export type GarnishKind = (typeof GARNISH_KINDS)[number];
 
-export type Ice = 'none' | 'cubes' | 'large-cube' | 'crushed';
+export type Ice = IceKind;
 
 /** Ordered keyword rules; the first match decides a fragment's kind. */
 const RULES: [RegExp, GarnishKind][] = [
@@ -54,8 +54,9 @@ export function garnishFor(text: string | null | undefined): GarnishKind[] {
   return out;
 }
 
-/** Ice a drink is served over, by glass and how it was mixed. */
-export function iceFor(glass: GlassKind, method: Method): Ice {
+/** Ice a drink is served over, by glass and how it was mixed. A recipe's own `ice` wins. */
+export function iceFor(glass: GlassKind, method: Method, override?: Ice): Ice {
+  if (override) return override;
   switch (glass) {
     case 'coupe':
     case 'martini':

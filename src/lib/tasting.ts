@@ -1,7 +1,9 @@
 /* A tasting note written from the flavour profile alone: what the drink opens with,
    how sweet the middle is and how it finishes. Pure and deterministic, no DOM. */
-import type { FlavorDim } from '../data/types';
+import type { BrewEntry, FlavorDim, Ingredient } from '../data/types';
+import { ING_BY_ID } from '../data/ingredients';
 import type { Harmony } from './harmony';
+import { inlineName } from './serve';
 
 /** How a dimension reads at the front of the glass. Sweet and boozy are told apart. */
 const FRONT: Partial<Record<FlavorDim, string>> = {
@@ -63,8 +65,68 @@ function finish(h: Harmony): string {
   return 'a balanced finish';
 }
 
-/** One plain sentence about how the drink tastes, or an empty string with nothing in the pot. */
-export function tastingNote(h: Harmony | null): string {
+/* A brew that clashes this hard, or scores below this, is not praised (the same line harmony.ts
+   draws before it will call a brew "close to" a classic). */
+const FAULT_CLASH = -20;
+const FAULT_SCORE = 40;
+
+/** Curdling dairy, the same set the scoring uses. */
+const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
+
+type Poured = { ing: Ingredient; ml: number };
+
+/** The biggest pour matching `test`, or null. */
+function biggest(xs: Poured[], test: (ing: Ingredient) => boolean): Ingredient | null {
+  let best: Poured | null = null;
+  for (const x of xs) if (test(x.ing) && (!best || x.ml > best.ml)) best = x;
+  return best ? best.ing : null;
+}
+
+/** An ingredient set inside a sentence; cream reads "cream", not "heavy cream". */
+const said = (ing: Ingredient) => (ing.id === 'heavy_cream' ? 'cream' : inlineName(ing.name));
+
+/** One plain sentence naming what is wrong with a brew, from the same signals the score uses. */
+function fault(h: Harmony, brew: BrewEntry[]): string {
+  const xs: Poured[] = [];
+  for (const e of brew) {
+    const ing = ING_BY_ID[e.id];
+    if (ing && e.ml > 0) xs.push({ ing, ml: e.ml });
+  }
+  const tag = (ing: Ingredient, d: FlavorDim) => ing.tags[d] ?? 0;
+  const isAcid = (ing: Ingredient) => (ing.group === 'Juices' && (tag(ing, 'sour') >= 1 || tag(ing, 'citrus') >= 1)) || tag(ing, 'sour') >= 2;
+
+  const dairy = biggest(xs, (i) => DAIRY.has(i.id));
+  const coconut = biggest(xs, (i) => i.id === 'coconut_cream');
+  const acid = biggest(xs, (i) => isAcid(i) && i.id !== 'coconut_cream');
+  const sharp = biggest(xs, (i) => tag(i, 'sour') >= 2 && i.id !== 'coconut_cream');
+  const smoke = biggest(xs, (i) => tag(i, 'smoky') >= 1);
+  const coffee = biggest(xs, (i) => tag(i, 'coffee') >= 1);
+  const fizzMl = xs.reduce((t, x) => t + (x.ing.carbonated ? x.ml : 0), 0);
+  const liquidMl = xs.reduce((t, x) => t + (x.ing.unit ? 0 : x.ml), 0);
+  const fizzy = liquidMl > 0 && fizzMl / liquidMl >= 0.4;
+
+  if (dairy && acid) return `The ${said(dairy)} splits against the ${said(acid)}, so it drinks thin and grainy.`;
+  if (coconut && sharp) return `The coconut cream splits against the ${said(sharp)}, so it drinks thin and grainy.`;
+  if (dairy && fizzy) return `The ${said(dairy)} splits in all that fizz, so it drinks thin and foamy.`;
+  if (dairy && smoke) return `The ${said(dairy)} smothers the ${said(smoke)}, so it drinks heavy and muddy.`;
+  if (coffee && acid) return `The ${said(acid)} turns the ${said(coffee)} sour and harsh.`;
+  if (brew.length === 1) return 'A single ingredient on its own is a pour, not a drink.';
+  if (h.parts.sweetSour < 0) {
+    return (h.p.sweet ?? 0) >= (h.p.sour ?? 0)
+      ? 'It is far too sweet, with nothing sharp to cut through it.'
+      : 'It is far too sharp, with nothing sweet to soften it.';
+  }
+  if ((h.p.boozy ?? 0) >= 0.45) return 'It is almost all spirit, with nothing to balance the burn.';
+  if (fizzy && fizzMl / liquidMl >= 0.6) return 'It is mostly mixer, so it drinks long and thin.';
+  if (h.parts.crowd < 0) return 'Too many ingredients are fighting, so nothing stands out.';
+  return 'The flavours fight each other, so nothing here comes together.';
+}
+
+/** One plain sentence about how the drink tastes, or an empty string with nothing in the pot.
+    A brew that clashes hard or scores poorly gets its main fault instead of praise; pass the
+    brew so the fault can name the ingredients. */
+export function tastingNote(h: Harmony | null, brew: BrewEntry[] = []): string {
   if (!h || h.tot <= 0) return '';
+  if (h.parts.clash <= FAULT_CLASH || h.score < FAULT_SCORE) return fault(h, brew);
   return `${opening(h)}, ${middle(h)}, ${finish(h)}.`;
 }
