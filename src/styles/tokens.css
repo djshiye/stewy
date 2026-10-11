@@ -262,6 +262,13 @@
   }
 }
 
+/* Safari before 26.4 (and any engine without zoom) applies zoom the old way: boxes report unzoomed rects,
+   pointers stay in viewport pixels and viewport units are not scaled. Those engines get no scale at all:
+   the attribute is set by lib/cqUnits.ts and beats every ladder rule above (higher specificity). */
+html[data-legacy-zoom] {
+  --ui-zoom: 1;
+}
+
 html[data-cq-zoom] {
   --cq-k: var(--ui-zoom);
 }

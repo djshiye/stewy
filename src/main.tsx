@@ -7,8 +7,9 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/layout.css';
 import App from './App';
-import { applyCqZoomFix } from './lib/cqUnits';
+import { applyCqZoomFix, applyLegacyZoomGuard } from './lib/cqUnits';
 
+applyLegacyZoomGuard();
 applyCqZoomFix();
 
 createRoot(document.getElementById('root')!).render(
