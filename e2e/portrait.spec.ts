@@ -1,6 +1,6 @@
 import { test, expect, MAI_TAI, NEGRONI, settled } from './fixtures';
 
-// From 1000 wide, a viewport taller than 6 : 5 stacks the shell: the stage spans the width and the recipe and
+// From 1000 wide, a viewport taller than 5 : 4 stacks the shell: the stage spans the width and the recipe and
 // analysis cards sit side by side below it (src/styles/layout.css). Squares and landscape keep three columns.
 const boxes = (page: import('@playwright/test').Page) =>
   page.evaluate(() => {
@@ -46,7 +46,7 @@ test.describe('tall desktop 1024 x 1366', () => {
   });
 });
 
-for (const [w, h] of [[1000, 1000], [1100, 1100], [1280, 1024], [1366, 1024]]) {
+for (const [w, h] of [[1000, 1000], [1000, 1200], [1100, 1100], [1280, 1024], [1366, 1024]]) {
   test.describe(`${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 

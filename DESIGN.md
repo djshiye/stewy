@@ -236,7 +236,7 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
   start and, where the units are wrong, sets `data-cq-zoom` on the root; `--cq-k` in tokens.css then
   becomes the zoom and every `cq` length is divided by it.
 
-### Tall desktops and portrait large tablets (1000 wide and up, taller than 6 : 5)
+### Tall desktops and portrait large tablets (1000 wide and up, taller than 5 : 4)
 ```
     +--------------------------------------------------------------------------+
     |                       the pot, full width of the stage                    |
@@ -248,13 +248,14 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
 iPad Pro 12.9 and Air 13 in portrait (1024 x 1366) and portrait monitors (1080 x 1920, 1440 x 2560).
 Three columns would squeeze the pot into a 330px middle column and starve both cards, so the stage
 spans the width and the recipe and analysis cards sit side by side below it, each about half. The
-trigger is `(min-width: 1000px) and (max-aspect-ratio: 5/6)`, an aspect-ratio query rather than
-`orientation: portrait`, because orientation counts a square as portrait. 5 / 6 keeps 1000 x 1000,
-1100 x 1100 and 1280 x 1024 on three columns; at 1000 wide the stacked pot first matches the
-three-column pot at about 1000 x 1250 and grows with every extra pixel of height, and the cards gain
-the radar either way. The shell stays `100dvh` with no page scroll. The cards row is 44% of the shell,
-at least 560px and at most 700px, so the pot takes the rest (528px wide at 1024 x 1366, 1025px at
-1080 x 1920, capped at 1280px). The cards scroll inside as on short desktops. The recipe card uses the
+trigger is `(min-width: 1000px) and (max-aspect-ratio: 4/5)`, an aspect-ratio query rather than
+`orientation: portrait`, because orientation counts a square as portrait. 4 / 5 keeps 1000 x 1000,
+1100 x 1100 and 1280 x 1024 on three columns. At 1000 wide stacking starts at 1250 tall, where the
+stacked pot (413px) is level with the three-column pot (396px) and grows with every pixel of height;
+a looser 5 / 6 would make the pot smaller than today between 1200 and 1250 tall (329px against 396px).
+The shell stays `100dvh` with no page scroll. The cards row is 40% of the shell, at least 540px and
+at most 700px, so the pot takes the rest (552px wide at 1024 x 1366, about 1000px at 1080 x 1920,
+capped at 1280px). The cards scroll inside as on short desktops. The recipe card uses the
 tight short-desktop header, so six rows fit at 1024 x 1366. At 488px a card is wide enough for the
 radar beside the meters, so the 1000 to 1279 tweaks (no radar, 2 x 2 breakdown) are undone here.
 The pour dial is a viewport modal, so it is unaffected.
