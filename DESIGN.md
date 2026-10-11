@@ -242,7 +242,7 @@ Columns `336px / 1fr / 380px`, gap 24, page padding 24. The shelf is 224px tall 
   Safari before 26.4 (and any engine without `zoom`) implements the property the old way, so the
   scale is switched off there; see "Safari and iOS" (section 7).
 
-### Tall desktops and portrait large tablets (1000 wide and up, taller than 6 : 5)
+### Tall desktops and portrait large tablets (1000 wide and up, taller than 5 : 6)
 ```
     +--------------------------------------------------------------------------+
     |                       the pot, full width of the stage                    |
@@ -626,7 +626,7 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   `@media (hover: hover)` with `:active` feedback.
 - **The close X** is centred on the title row on every layout (`--grim-mid`).
 - **The detail pane** fades the edge that has more past it when a long build scrolls (`useScrollFade`).
-- **The in-pot glass.** The glass of the cell marked "In the pot" gives up 7 to 11px of height to stay 3px
+- **The in-pot glass.** The glass of the cell marked "In the pot" gives up the height it needs to stay 3px
   clear of the label, so the pineapple on a Piña Colada never touches it.
 - **Cost of 56 glasses.** Cells use `content-visibility: auto`, and `contain-intrinsic-block-size` is the
   cell height less its padding and bottom rule, which matches the usual one-line-name row (a two-line name
@@ -703,8 +703,10 @@ so Safari and iOS 16.4 is the floor. What WebKit does differently, and what the 
   `max(0, innerHeight - visualViewport.height - offsetTop)`; `.dock` is lifted with `translateY(-kb)`. Enter
   blurs the field on the dock and on coarse pointers, so the Search key puts the keyboard away. The listeners
   and the property go on blur.
-- **16px fields on coarse pointers.** iOS zooms the page on focus below 16px, so the shelf search, the Grimoire
-  search, the brew name on the recipe card and the Cellar rename field are at least 16px under `(pointer: coarse)`.
+- **16px fields.** iOS zooms the page on focus below 16px. The shelf search and the Grimoire search are 16px
+  under `(pointer: coarse)` (the shelf also hides its `/` hint and widens the back bar field to 244px); the
+  brew name and the Cellar rename field are larger than that already. `touch.spec.ts` pins all four at 16px
+  or more.
 - **Hover only on hovering pointers.** A tap on iOS leaves `:hover` stuck on the control, so every `:hover` rule
   (UI controls, shelf, recipe, dial, analysis, Cellar, Grimoire) sits inside `@media (hover: hover)` and
   touch gets the same look from `:active`. Serve has no hover rules.
