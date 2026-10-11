@@ -1,4 +1,4 @@
-import { test, expect, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
+import { test, expect, BRAMBLE, GRASSHOPPER, expectGrimoireOnWholeRow, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -54,4 +54,16 @@ test('the dial still works after the Grimoire closed', async ({ page, open }) =>
   await bottle(page, 'gin').click();
   await pourButton(page).click();
   await expect(rows(page)).toHaveCount(1);
+});
+
+test.describe('opening with a classic in the pot', () => {
+  test('a mid-list classic is in view and the first visible row is whole', async ({ page, open }) => {
+    await open(BRAMBLE);
+    await expectGrimoireOnWholeRow(page, true);
+  });
+
+  test('the last classic keeps its badge in view and the first visible row whole', async ({ page, open }) => {
+    await open(GRASSHOPPER);
+    await expectGrimoireOnWholeRow(page, false);
+  });
 });

@@ -29,6 +29,16 @@ export const MOJITO: PotState = {
   ],
   name: 'Mojito',
 };
+export const GRASSHOPPER: PotState = {
+  unit: 'oz',
+  brew: [{ id: 'creme_de_menthe', ml: 30 }, { id: 'creme_de_cacao', ml: 30 }, { id: 'heavy_cream', ml: 30 }],
+  name: 'Grasshopper',
+};
+export const BRAMBLE: PotState = {
+  unit: 'oz',
+  brew: [{ id: 'gin', ml: 40 }, { id: 'lemon_juice', ml: 15 }, { id: 'simple_syrup', ml: 10 }, { id: 'blackberry_liqueur', ml: 15 }],
+  name: 'Bramble',
+};
 export const CURDLED_TOPPED: PotState = {
   unit: 'ml',
   brew: [{ id: 'heavy_cream', ml: 30 }, { id: 'lime_juice', ml: 25 }, { id: 'mezcal', ml: 30 }, { id: 'ginger_beer', ml: 120 }],
@@ -103,6 +113,8 @@ export const test = base.extend<Fixtures>({
       });
       await page.goto('/' + (options.hash ?? ''), { waitUntil: options.waitUntil ?? 'load' });
       await expect(page.locator('.topbar').first()).toBeVisible();
+      // let React's passive effects (hotkeys, listeners) run before a test starts typing
+      await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => setTimeout(done, 0))));
     });
   },
 });
@@ -187,4 +199,27 @@ export async function closeSheet(page: Page): Promise<void> {
   await sheetReady(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('[role=dialog]')).toHaveCount(0);
+}
+
+/**
+ * The Grimoire opens scrolled to the classic in the pot, on a whole row: no cell is cut by the top edge, and the
+ * classic is in view (the whole cell when `wholeCell`, else at least its "In the pot" badge). The sheet re-aims
+ * while it settles, so this polls. Tolerances are 2 to 3 px for sub-pixel zoom.
+ */
+export async function expectGrimoireOnWholeRow(page: Page, wholeCell: boolean): Promise<void> {
+  await page.keyboard.press('g');
+  await expect(page.locator('.grim-cell__pot')).toBeVisible();
+  await expect.poll(async () =>
+    page.evaluate((whole) => {
+      const scroller = document.querySelector('.grim__scroll')!.getBoundingClientRect();
+      const badge = document.querySelector('.grim-cell__pot')!.getBoundingClientRect();
+      const cell = document.querySelector('.grim-cell__pot')!.closest('.grim-cell')!.getBoundingClientRect();
+      const cutAtTop = [...document.querySelectorAll('.grim-cell')].filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.top < scroller.top - 3 && r.bottom > scroller.top + 3;
+      }).length;
+      const box = whole ? cell : badge;
+      return { inView: box.top >= scroller.top - 2 && box.bottom <= scroller.bottom + 2, cutAtTop };
+    }, wholeCell),
+  ).toEqual({ inView: true, cutAtTop: 0 });
 }

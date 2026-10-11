@@ -7,8 +7,7 @@ for (const [label, viewport, touch, second] of [
   test.describe(`skip link (${label})`, () => {
     test.use({ viewport, hasTouch: touch, isMobile: touch, deviceScaleFactor: touch ? 2 : 1 });
 
-    test('the first Tab lands on the skip link, the second on the first top-bar control', async ({ page, open, browserName }) => {
-      test.skip(browserName === 'webkit', 'Tab skips links and buttons in Safari unless the system setting is on; WebKit has its own check below');
+    test('the first Tab lands on the skip link, the second on the first top-bar control', async ({ page, open }) => {
       await open(NEGRONI);
       await page.keyboard.press('Tab');
       await expect(page.locator(':focus')).toHaveText(/Skip to main content/);
