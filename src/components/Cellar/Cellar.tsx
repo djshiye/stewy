@@ -292,7 +292,7 @@ function CellarBody({ items, onLoad, onRename, onDelete, onOpenGrimoire }: BodyP
             Saved on this device only.
             {safari && (
               <span className="cellar__foot-note">
-                Safari clears saved brews after 7 days without a visit. Add Stewy to your Home Screen or Dock to keep them.
+                Safari clears saved brews after 7 days without a visit. Add Stewy to your Home&nbsp;Screen or Dock to keep them.
               </span>
             )}
           </p>

@@ -189,6 +189,7 @@
 .cellar__foot-note {
   display: block;
   margin-top: var(--s1);
+  text-wrap: pretty;
 }
 
 /* ---------- empty: an empty glass shelf ---------- */
