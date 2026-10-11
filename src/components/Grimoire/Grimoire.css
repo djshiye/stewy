@@ -1,6 +1,18 @@
 /* The Grimoire: a recipe book index. Hairline-ruled cells, no card chrome; each classic
    stands in its own glass on a soft pool of its own colour. Tokens only. */
 
+/* where the title row's centre sits below the sheet's top edge (desktop), and the height of the sheet's close
+   button, so the button can be centred on that row: the blocks below that change the header change --grim-mid */
+.grim-sheet {
+  --grim-mid: 42px;
+  --grim-close-h: 36px;
+}
+@media (min-width: 1000px) {
+  .grim-sheet .ui-sheet__close {
+    top: calc(var(--grim-mid) - var(--grim-close-h) / 2);
+  }
+}
+
 .grim {
   position: relative;
   flex: 1;
@@ -91,9 +103,15 @@
   color: var(--tx-3);
   transition: background-color var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
 }
-.grim__clear:hover {
+.grim__clear:active {
   background: var(--hover);
   color: var(--tx-1);
+}
+@media (hover: hover) {
+  .grim__clear:hover {
+    background: var(--hover);
+    color: var(--tx-1);
+  }
 }
 
 /* ---------- chips ---------- */
@@ -119,9 +137,16 @@
     color var(--t-hover) var(--ease-out),
     box-shadow var(--t-hover) var(--ease-out);
 }
-.grim-chip:hover {
+.grim-chip:active {
   color: var(--tx-1);
   background: #252c3a;
+}
+/* a hover fill sticks after a tap on iOS and reads as on, so it only exists where there is a real hover */
+@media (hover: hover) {
+  .grim-chip:hover {
+    color: var(--tx-1);
+    background: #252c3a;
+  }
 }
 .grim-chip[aria-pressed='true'] {
   background: var(--ink-600);
@@ -174,6 +199,7 @@
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   cursor: pointer;
+  touch-action: manipulation;
   outline: none;
   -webkit-user-select: none;
   user-select: none;
@@ -278,6 +304,13 @@
 .grim-cell[aria-selected='true'] .grim-cell__stage::before {
   opacity: 1;
 }
+/* a press on touch: there is no hover, so the cell answers the finger itself */
+.grim-cell:active {
+  background: rgba(190, 205, 230, 0.045);
+}
+.grim-cell[aria-selected='true']:active {
+  background: rgba(var(--accent-rgb), 0.06);
+}
 
 .grim-cell__name {
   margin-top: var(--s4);
@@ -307,7 +340,7 @@
 }
 .grim-cell__pot {
   position: absolute;
-  top: var(--s4);
+  top: var(--s2);
   right: var(--s5);
   display: inline-flex;
   align-items: center;
@@ -323,6 +356,12 @@
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
+}
+/* the label sits over the top corner of the stage, where a tall glass's garnish (the pineapple on the Pina
+   Colada, the mint on a Mojito) reaches. The glass of the cell in the pot gives up the 11px or so it needs
+   to stay 3px clear of the label's box, so the two never touch. */
+.grim-cell:has(.grim-cell__pot) .grim-cell__glass {
+  height: calc(100% - max(0px, var(--s2) + 16px + 3px - var(--cell-pt)));
 }
 
 @keyframes grim-in {
@@ -415,6 +454,17 @@
   overscroll-behavior: contain;
   padding: 56px var(--s6) var(--s4);
 }
+
+/* a long build scrolls under the footer: fade the edge that has more past it (the hook sets the attributes) */
+.grim-detail__scroll[data-more-above],
+.grim-detail__scroll[data-more-below] {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+}
+.grim-detail__scroll[data-more-above] { --fade-top: 20px; }
+.grim-detail__scroll[data-more-below] { --fade-bottom: 28px; }
 
 .grim-detail__stage {
   position: relative;
@@ -562,9 +612,15 @@
   font-weight: 500;
   transition: background-color var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
 }
-.grim-detail__back:hover {
+.grim-detail__back:active {
   background: var(--hover);
   color: var(--tx-1);
+}
+@media (hover: hover) {
+  .grim-detail__back:hover {
+    background: var(--hover);
+    color: var(--tx-1);
+  }
 }
 
 /* ---------- empty pane ---------- */
@@ -686,8 +742,11 @@
   padding: var(--s3) var(--s4) var(--s4);
 }
 
-/* ---------- narrower desktops ---------- */
-@media (min-width: 1000px) and (max-width: 1279px) {
+/* ---------- narrower desktops ----------
+   1000 to 1279 wide, and portrait monitors: the zoom ladder (tokens.css) makes their stack read 1070 to 1250
+   CSS px wide, but media queries see the physical width (1300 and up), so they get these same rules
+   (the portrait query is the one in layout.css and tokens.css). */
+@media (min-width: 1000px) and (max-width: 1279px), (min-width: 1300px) and (max-aspect-ratio: 5/6) {
   .grim {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
@@ -728,12 +787,19 @@
   .grim-detail__foot {
     padding: var(--s4) var(--s5) var(--s5);
   }
+  /* the eight chips come to 581px with this pad, so they stay on one line down to 1000 wide (588px free) */
+  .grim-chip {
+    padding: 0 12px;
+  }
+  .grim-sheet {
+    --grim-mid: 40px;
+  }
 }
 
-/* desktop windows under 940px tall: the modal is 760px or less, so the header folds into one line
-   (title, the count beside it, a compact search) with the chips right below. That leaves the index
-   630px at 900 tall, two whole rows of 315px, where the stacked header left 586. */
-@media (min-width: 1000px) and (max-height: 939px) {
+/* every desktop height: the modal is 760px at most, so the header folds into one line (title, the count
+   beside it, a compact search) with the chips right below. That leaves the index 630px in a 760px modal,
+   two whole rows of 315px, where the stacked header left 586 (and about 1.86 rows at 1080 tall and up). */
+@media (min-width: 1000px) {
   .grim__head {
     align-items: center;
     padding-top: var(--s5);
@@ -756,23 +822,24 @@
   .grim__chips { padding-top: var(--s3); }
   .grim__scroll { margin-top: var(--s3); }
 }
-@media (min-width: 1000px) and (max-width: 1279px) and (max-height: 939px) {
-  /* the eight chips come to 581px with a tighter pad, so they stay on one line down to 1000 wide (588px free) */
-  .grim-chip { padding: 0 12px; }
-}
 
 /* short desktop windows (a 656px modal at 720 tall): smaller cells give the index two whole rows,
    and the build stays above the load button */
-@media (min-width: 1000px) and (max-height: 820px) {
+@media (min-width: 1000px) and (max-height: 823px) {
+  .grim-sheet { --grim-mid: 38px; }
   .grim__title h2 { font-size: 32px; line-height: 36px; }
   .grim__grid { --cell-h: 267px; }
   .grim-cell { --cell-pt: var(--s4); }
   .grim-cell__stage { height: 128px; }
   .grim-detail__scroll {
-    padding-top: 52px;
+    padding-top: 40px;
+  }
+  .grim-detail__foot {
+    padding-top: var(--s3);
+    padding-bottom: var(--s5);
   }
   .grim-detail__stage {
-    height: 136px;
+    height: 116px;
     margin-bottom: var(--s3);
   }
   .grim-detail__name {
@@ -783,14 +850,14 @@
     margin-top: var(--s4);
   }
   .grim-detail__build li {
-    padding: 4px 0;
+    padding: 3px 0;
   }
   .grim-detail__facts {
     margin-top: var(--s3);
     padding-top: var(--s3);
   }
 }
-@media (min-width: 1000px) and (max-width: 1279px) and (max-height: 820px) {
+@media (min-width: 1000px) and (max-width: 1279px) and (max-height: 823px) {
   .grim__grid { --cell-h: 265px; }
   .grim-cell__stage { height: 132px; }
 }
@@ -864,7 +931,6 @@
     line-height: 24px;
   }
   .grim-cell__pot {
-    top: var(--s3);
     right: var(--s3);
   }
   .grim__overlay .grim-detail__stage {
@@ -876,12 +942,26 @@
 }
 
 @media (pointer: coarse) {
-  /* the chip row clips sideways scroll, so room for the 44px hit box (the chips stay 36px) sits in its padding */
-  .grim__chips { padding-bottom: 4px; }
   .grim__clear { position: relative; }
   .grim__clear::before { content: ''; position: absolute; inset: -10px; }
-  /* the compact 36px search on short desktops keeps a 44px hit box without changing the layout */
-  .grim__search::before { content: ''; position: absolute; inset: -4px 0; }
+  /* the search is a real 44px field (not the compact 36px of the one-line header) with 16px type: iOS zooms
+     the page on focus below that, which matters on an iPad in the desktop layout as much as on a phone */
+  .grim__search { height: 44px; }
+  .grim__search input { font-size: 16px; }
+}
+@media (pointer: coarse) and (max-width: 999px) {
+  /* the chip row clips sideways scroll, so room for the 44px hit box (the chips stay 36px) sits in its padding */
+  .grim__chips { padding-bottom: 4px; }
+}
+@media (pointer: coarse) and (min-width: 1000px) {
+  /* the 44px row puts the title row's centre 42px down, and the sheet's close button grows to 44px too (ui.css) */
+  .grim-sheet {
+    --grim-mid: 42px;
+    --grim-close-h: 44px;
+  }
+  /* the 32px chips keep their look; an invisible ::before grows the hit box to 44px */
+  .grim-chip { position: relative; }
+  .grim-chip::before { content: ''; position: absolute; inset: -6px 0; }
 }
 
 @media (max-width: 599px) {

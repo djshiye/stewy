@@ -18,8 +18,9 @@ import { ING_BY_ID } from '../../data/ingredients';
 import { VERDICT, tierFor } from '../../lib/harmony';
 import { GLASS_LABEL, methodLine } from '../../lib/serve';
 import { amountLabel, type UnitKey } from '../../lib/units';
-import { useIsDesktop } from '../../app/useMediaQuery';
+import { useIsDesktop, useMediaQuery } from '../../app/useMediaQuery';
 import { Glass } from '../../icons/Glass';
+import { useScrollFade } from '../Analysis/useScrollFade';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
 import { classicCount, filterClassics, FILTERS, getClassics, METHOD_LABEL, scoreColor, type Classic, type FilterKey } from './classics';
@@ -206,12 +207,14 @@ interface DetailProps {
   onBack?(): void;
 }
 
+/** Keyed by the classic at the call sites: a pick remounts it, which restarts the fade-in and the scroll fade's watch. */
 function Detail({ c, unit, inPot, onLoad, onBack }: DetailProps) {
   const { recipe } = c;
   const tier = tierFor(c.score);
+  const scrollRef = useScrollFade<HTMLDivElement>();
   return (
-    <div className="grim-detail" key={recipe.id}>
-      <div className="grim-detail__scroll">
+    <div className="grim-detail">
+      <div className="grim-detail__scroll" ref={scrollRef}>
         {onBack && (
           <button type="button" className="grim-detail__back" onClick={onBack}>
             <CaretLeft size={18} aria-hidden="true" />
@@ -287,8 +290,14 @@ function columnsOf(items: HTMLElement[]): number {
   return Math.max(1, n);
 }
 
+/** A real mouse or trackpad: only then does opening the sheet focus the search field. A touch screen (an iPad with the
+ *  desktop layout, as much as a phone) would raise its keyboard over the index, so the title takes the focus instead. */
+const FINE_POINTER = '(hover: hover) and (pointer: fine)';
+
 function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; onLoad(r: Recipe): void; unit: UnitKey }) {
   const desktop = useIsDesktop();
+  const finePointer = useMediaQuery(FINE_POINTER);
+  const focusSearch = desktop && finePointer; // phones keep the title whatever the pointer
   const all = getClassics();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
@@ -476,7 +485,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       <div className="grim__main" inert={overlayOpen}>
         <header className="grim__head">
           <div className="grim__title">
-            <h2 id="grimoire-title" className="serif" tabIndex={-1} data-autofocus={desktop ? undefined : ''}>
+            <h2 id="grimoire-title" className="serif" tabIndex={-1} data-autofocus={focusSearch ? undefined : ''}>
               The Grimoire
             </h2>
             <p aria-live="polite">{count}</p>
@@ -491,7 +500,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
               autoComplete="off"
               spellCheck={false}
               enterKeyHint="search"
-              data-autofocus={desktop ? '' : undefined}
+              data-autofocus={focusSearch ? '' : undefined}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Escape' && query) {
@@ -603,7 +612,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       {desktop && (
         <aside className="grim__pane" aria-label="Classic details">
           {selected ? (
-            <Detail c={selected} unit={unit} inPot={selected.recipe.id === currentId} onLoad={loadSelected} />
+            <Detail key={selected.recipe.id} c={selected} unit={unit} inPot={selected.recipe.id === currentId} onLoad={loadSelected} />
           ) : (
             <PaneHint />
           )}
@@ -613,6 +622,7 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       {overlayOpen && selected && (
         <aside className="grim__overlay" ref={overlayRef} aria-label={`${selected.recipe.name} details`}>
           <Detail
+            key={selected.recipe.id}
             c={selected}
             unit={unit}
             inPot={selected.recipe.id === currentId}
