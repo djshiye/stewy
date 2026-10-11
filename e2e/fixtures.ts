@@ -295,6 +295,30 @@ export async function finishAnimations(page: Page): Promise<void> {
 }
 
 /**
+ * Waits until the Grimoire's index has stood still for five frames. The sheet slides in with a script-driven spring that
+ * finishAnimations cannot end, and headless WebKit draws a frame only on demand, so this asks for frames itself.
+ */
+export async function waitForIndexStill(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        const el = document.querySelector('.grim__scroll')!;
+        let prev = '';
+        let still = 0;
+        const tick = () => {
+          const r = el.getBoundingClientRect();
+          const now = `${r.top}|${r.left}|${r.height}`;
+          still = now === prev ? still + 1 : 0;
+          prev = now;
+          if (still >= 5) done();
+          else requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
+}
+
+/**
  * The Grimoire opens scrolled to the classic in the pot, on a whole row: no cell is cut by the top edge, and the
  * classic is in view (the whole cell when `wholeCell`, else at least its "In the pot" badge). The sheet re-aims
  * while it settles, so this polls. Tolerances are 2 to 3 px for sub-pixel zoom.

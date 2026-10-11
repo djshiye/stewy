@@ -272,7 +272,7 @@
 .grim-cell__glass {
   position: relative;
   z-index: 1;
-  height: 100%;
+  height: calc(100% - var(--pot-band));
   width: auto;
   max-width: 100%;
   transition: transform var(--t-settle) var(--ease-spring);
@@ -288,7 +288,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .grim-cell:hover .grim-cell__glass {
+  .grim-cell:not(:has(.grim-cell__pot)):hover .grim-cell__glass {
     transform: translateY(-5px);
   }
   .grim-cell:hover .grim-cell__stage::before {
@@ -340,13 +340,13 @@
 }
 .grim-cell__pot {
   position: absolute;
-  top: var(--s2);
+  top: var(--s1);
   right: var(--s5);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  line-height: 16px;
+  line-height: 14px;
   font-weight: 500;
   color: var(--accent);
 }
@@ -357,11 +357,14 @@
   border-radius: 50%;
   background: var(--accent);
 }
-/* the label sits over the top corner of the stage, where a tall glass's garnish (the pineapple on the Pina
-   Colada, the mint on a Mojito) reaches. The glass of the cell in the pot gives up the 11px or so it needs
-   to stay 3px clear of the label's box, so the two never touch. */
-.grim-cell:has(.grim-cell__pot) .grim-cell__glass {
-  height: calc(100% - max(0px, var(--s2) + 16px + 3px - var(--cell-pt)));
+/* The label sits over the top corner of the stage, where a tall glass's garnish (the pineapple on the Pina
+   Colada, the mint on a Mojito) reaches. It is 4px down and 14px tall, and wants 3px of air below it, so its
+   band is 21px from the cell top edge: what the cell top padding does not cover is --pot-band, and every
+   glass gives it up, in the pot or not, so all the glasses in a view share one scale and the label never touches
+   one (1 to 9px of a glass, by breakpoint). The hover lift is dropped in the cell in the pot, where its 5px would
+   eat the 3px of air. */
+.grim-cell {
+  --pot-band: max(0px, calc(var(--s1) + 14px + 3px - var(--cell-pt)));
 }
 
 @keyframes grim-in {

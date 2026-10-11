@@ -644,8 +644,13 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
 - **The close X** is centred on the title row on desktop (1000 wide and up, `--grim-mid`) and in phone landscape.
   On phones in portrait and on tablets it keeps the sheet's default spot, 16px from the top.
 - **The detail pane** fades the edge that has more past it when a long build scrolls (`useScrollFade`).
-- **The in-pot glass.** The glass of the cell marked "In the pot" gives up the height it needs to stay 3px
-  clear of the label, so the pineapple on a Piña Colada never touches it.
+- **The in-pot label and the glass scale.** "In the pot" sits 4px below the cell's top edge (12px type, 14px tall) and
+  needs 3px of air under it. Every glass, in the pot or not, gives up whatever of that 21px the cell's top padding
+  does not cover (`--pot-band`: 1px at 20px padding, 5px at 16px, 9px at 12px), so all the glasses in a view are
+  one size and the pineapple on a Piña Colada never touches the label. (An earlier version shrank only the glass
+  in the pot, which read as a drawing error beside an identical glass: 7 to 15px shorter.) The hover lift is dropped
+  on the cell in the pot, where its 5px would eat the 3px of air. `grimoire.spec.ts` pins both: one size across
+  the drawn glasses, and the label at least 2.5px above the glass in its cell.
 - **Cost of 56 glasses.** Cells use `content-visibility: auto`, and `contain-intrinsic-block-size` is the
   cell height less its padding and bottom rule, which matches the usual one-line-name row (a two-line name
   or a three-line key draws taller, so the estimate is close, not exact, and the opening scroll re-aims as the

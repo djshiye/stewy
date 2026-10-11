@@ -1,4 +1,4 @@
-import { test, expect, BRAMBLE, GRASSHOPPER, brewNamed, noKeyboard, expectGrimoireOnWholeRow, expectGrimoireTwoWholeRows, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet } from './fixtures';
+import { test, expect, BRAMBLE, GRASSHOPPER, brewNamed, noKeyboard, waitForIndexStill, finishAnimations, expectGrimoireOnWholeRow, expectGrimoireTwoWholeRows, bottle, dialog, pourButton, rows, toast, EMPTY, closeSheet, type PotState } from './fixtures';
 
 // Everything below @desktop is a desktop sizing sweep: it sets its own viewport, presses G and checks the desktop
 // geometry. The mobile WebKit projects run the flows that have a touch way (open from the top bar, filter, load).
@@ -77,6 +77,46 @@ test('the dial still works after the Grimoire closed', async ({ page, open, open
   await press(bottle(page, 'gin'));
   await press(pourButton(page));
   await expect(rows(page)).toHaveCount(1);
+});
+
+// The Piña Colada has the tallest garnish (the pineapple), the one that reaches the label's corner of its cell.
+const PINA_COLADA: PotState = {
+  unit: 'oz',
+  brew: [{ id: 'white_rum', ml: 50 }, { id: 'coconut_cream', ml: 30 }, { id: 'pineapple_juice', ml: 90 }],
+  name: 'Piña Colada',
+};
+
+/** Every glass drawn in the index is one size, in the pot or not, and the 'In the pot' label ends 2.5px or more above the one in its cell. */
+async function expectPotGlassLikeItsNeighbours(page: import('@playwright/test').Page) {
+  await expect(page.locator('.grim-cell__pot')).toBeVisible();
+  await waitForIndexStill(page);
+  await finishAnimations(page);
+  const m = await page.evaluate(() => {
+    const heights = [...document.querySelectorAll('.grim-cell__stage svg')].map((el) => el.getBoundingClientRect().height);
+    const label = document.querySelector('.grim-cell__pot')!.getBoundingClientRect();
+    const glass = document.querySelector('.grim-cell:has(.grim-cell__pot) .grim-cell__stage svg')!.getBoundingClientRect();
+    return { drawn: heights.length, spread: Math.max(...heights) - Math.min(...heights), gap: glass.top - label.bottom };
+  });
+  expect(m.drawn).toBeGreaterThan(1);
+  expect(m.spread).toBeLessThan(1);
+  expect(m.gap).toBeGreaterThanOrEqual(2.5);
+}
+
+test('the glass of the classic in the pot is the size of its neighbours, and its label stays clear of it', async ({ page, open, openGrimoire }) => {
+  await open(PINA_COLADA);
+  await openGrimoire();
+  await expectPotGlassLikeItsNeighbours(page);
+});
+
+test.describe('the in-pot glass at the sizes of the zoom ladder', { tag: '@desktop' }, () => {
+  for (const [width, height] of [[1440, 900], [1280, 720], [1000, 800], [1920, 1080], [1024, 1366], [1440, 2560]]) {
+    test(`${width} x ${height}`, async ({ page, open }) => {
+      await page.setViewportSize({ width, height });
+      await open(PINA_COLADA);
+      await page.keyboard.press('g');
+      await expectPotGlassLikeItsNeighbours(page);
+    });
+  }
 });
 
 test.describe('opening with a classic in the pot', { tag: '@desktop' }, () => {
