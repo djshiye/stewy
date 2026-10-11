@@ -182,8 +182,8 @@
   transition: background-color var(--t-hover) var(--ease-out);
   /* 56 glasses: only the screenful in view is styled and painted. The size is the cell's real
      height at each breakpoint (--cell-h, below) less its padding and bottom rule, because the intrinsic
-     size is the content box. So a skipped cell is as tall as a drawn one, and the scroll length and
-     scrollIntoView stay true while the sheet opens. */
+     size is the content box. So a skipped cell matches the usual drawn row (a one-line name); rows with
+     a two-line name or a three-line key draw taller, so the scroll length is close, not exact. */
   content-visibility: auto;
   contain-intrinsic-block-size: auto calc(var(--cell-h) - var(--cell-pt) - var(--cell-pb) - 1px);
 }
@@ -747,6 +747,10 @@
   }
   .grim__title p {
     margin-top: 0;
+    /* the widest count ('55 of 56 classics') is reserved, so the title block keeps one width and the
+       search never shifts sideways while you type or pick a chip */
+    min-width: 8em;
+    font-variant-numeric: tabular-nums;
   }
   .grim__search { height: 36px; }
   .grim__chips { padding-top: var(--s3); }
@@ -876,6 +880,8 @@
   .grim__chips { padding-bottom: 4px; }
   .grim__clear { position: relative; }
   .grim__clear::before { content: ''; position: absolute; inset: -10px; }
+  /* the compact 36px search on short desktops keeps a 44px hit box without changing the layout */
+  .grim__search::before { content: ''; position: absolute; inset: -4px 0; }
 }
 
 @media (max-width: 599px) {

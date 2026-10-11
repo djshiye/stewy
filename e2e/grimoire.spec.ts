@@ -111,4 +111,28 @@ test.describe('two whole rows of classics before any scrolling', () => {
     expect(Math.abs(lastChip - chip)).toBeLessThan(2);
     await expect(page.locator('.grim__title p')).toBeVisible();
   });
+
+  // the count sits beside the title and changes as you type; the search must not move under the caret
+  for (const [width, height] of [[1000, 800], [1024, 768], [1280, 720]]) {
+    test(`the search keeps its box while the count changes at ${width} x ${height}`, async ({ page, open }) => {
+      await page.setViewportSize({ width, height });
+      await open(EMPTY);
+      await page.keyboard.press('g');
+      await expect(options(page).first()).toBeVisible();
+      const box = () =>
+        // layout offsets, so the sheet's opening scale does not read as a shift
+        page.locator('.grim__search').evaluate((el) => [(el as HTMLElement).offsetLeft, (el as HTMLElement).offsetWidth]);
+      const rest = await box();
+      await page.keyboard.press('n');
+      await expect(page.locator('.grim__title p')).toContainText(' of ');
+      expect(await box()).toEqual(rest);
+      await page.keyboard.type('eg');
+      await expect(page.locator('.grim__title p')).toContainText(/^\d of /);
+      expect(await box()).toEqual(rest);
+      await page.keyboard.press('Escape');
+      await page.getByRole('button', { name: 'Sours' }).click();
+      await expect(page.locator('.grim__title p')).toContainText(' of ');
+      expect(await box()).toEqual(rest);
+    });
+  }
 });
