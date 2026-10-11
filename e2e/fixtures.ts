@@ -211,6 +211,9 @@ export async function expectGrimoireOnWholeRow(page: Page, wholeCell: boolean): 
   await expect(page.locator('.grim-cell__pot')).toBeVisible();
   await expect.poll(async () =>
     page.evaluate((whole) => {
+      // Headless WebKit in the container draws a frame only when something forces one, so the entrance animations
+      // (a cell 8px low, the sheet at 0.96) can sit pending and skew the rects. Measure the settled layout.
+      for (const a of document.getAnimations()) if (Number.isFinite(a.effect?.getComputedTiming().endTime)) a.finish();
       const scroller = document.querySelector('.grim__scroll')!.getBoundingClientRect();
       const badge = document.querySelector('.grim-cell__pot')!.getBoundingClientRect();
       const cell = document.querySelector('.grim-cell__pot')!.closest('.grim-cell')!.getBoundingClientRect();
