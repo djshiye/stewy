@@ -91,6 +91,25 @@
   }
 }
 
+/* ---------- tall desktops (1000 and up, taller than 6 : 5) ----------
+   iPad Pro 12.9 and Air 13 in portrait (1024 x 1366), portrait monitors (1080 x 1920, 1440 x 2560).
+   Three columns would squeeze the pot into a 330px middle column, so the stage spans the width
+   and the recipe and analysis cards sit side by side below it, each about half. An aspect-ratio
+   query, not orientation: a square counts as portrait there. 5 / 6 keeps 1000 x 1000, 1100 x 1100
+   and 1280 x 1024 on three columns (a 1000 x 1200 window is the narrowest that stacks). The shell
+   stays 100dvh; the cards scroll inside as on short desktops. The cards row is a share of the
+   shell (44%, at least 560px, at most 700px) so the pot gets the rest. */
+@media (min-width: 1000px) and (max-aspect-ratio: 5/6) {
+  .counter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) minmax(0, clamp(560px, 44%, 700px));
+  }
+
+  .slot--stage { grid-column: 1 / -1; grid-row: 1; }
+  .slot--recipe { grid-column: 1; grid-row: 2; }
+  .slot--analysis { grid-column: 2; grid-row: 2; }
+}
+
 /* ---------- mobile (below 1000): one stack and a fixed dock ---------- */
 @media (max-width: 999px) {
   /* clip, not hidden: hidden would turn body into a scroll container and break sticky */

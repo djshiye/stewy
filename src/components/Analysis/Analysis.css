@@ -530,6 +530,17 @@
   .ap__meters { gap: var(--s3); }
 }
 
+/* ---------- tall desktops (see layout.css): each card is about half the width, wide enough for the
+   radar beside the breakdown as on a 1440 x 900 screen, so the 1000 to 1279 tweaks are undone ---------- */
+@media (min-width: 1000px) and (max-aspect-ratio: 5/6) {
+  .ap__body { padding: var(--s4) var(--s5); gap: 10px; }
+  .ap__profile { grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr); }
+  .ap[data-empty] .ap__profile { grid-template-columns: minmax(0, 200px); }
+  .radar { display: block; }
+  .ap__parts { grid-template-columns: none; gap: 10px; }
+  .ap__meters { gap: 0 var(--s4); }
+}
+
 /* ---------- short laptop screens (1280 and up): the radar gives way to a 2 x 2 breakdown ----------
    so the verdict, the numbers and "Try adding" all fit without cutting a label in half. */
 @media (min-width: 1280px) and (max-height: 819px) {
