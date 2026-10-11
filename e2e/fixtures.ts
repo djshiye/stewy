@@ -40,6 +40,8 @@ export interface OpenOptions {
   hash?: string;
   /** Items for the Cellar (localStorage key stewy.cellar.v1). */
   cellar?: unknown[];
+  /** Navigation milestone to wait for; 'commit' returns as soon as the response arrives (cold-start checks). */
+  waitUntil?: 'commit' | 'domcontentloaded' | 'load';
 }
 
 interface Fixtures {
@@ -82,7 +84,7 @@ export const test = base.extend<Fixtures>({
       const items: [string, string][] = [['stewy.v2', typeof state === 'string' ? state : JSON.stringify(state)]];
       if (options.cellar) items.push(['stewy.cellar.v1', JSON.stringify(options.cellar)]);
       await page.addInitScript((seed: [string, string][]) => {
-        if (sessionStorage.getItem('__seeded')) return;
+        if (!location.protocol.startsWith('http') || sessionStorage.getItem('__seeded')) return;
         sessionStorage.setItem('__seeded', '1');
         for (const [k, v] of seed) localStorage.setItem(k, v);
       }, items);
@@ -99,7 +101,7 @@ export const test = base.extend<Fixtures>({
           },
         });
       });
-      await page.goto('/' + (options.hash ?? ''));
+      await page.goto('/' + (options.hash ?? ''), { waitUntil: options.waitUntil ?? 'load' });
       await expect(page.locator('.topbar').first()).toBeVisible();
     });
   },
@@ -150,4 +152,39 @@ export async function scoreOf(scope: Locator): Promise<number> {
 /** Waits for the entrance animations to finish so geometry reads are stable. */
 export async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.effect?.getTiming().iterations === Infinity || a.playState !== 'running'));
+}
+
+/**
+ * Drags a shelf bottle with the real mouse. Stops short of the pot by default so the ghost can be inspected;
+ * `drop` releases over the pot.
+ */
+export async function dragBottle(page: Page, id: string, to: 'pot' | { x: number; y: number }, drop: boolean): Promise<{ x: number; y: number }> {
+  const from = bottle(page, id).locator('.bottle__art');
+  await expect(from).toBeVisible();
+  await settled(page);
+  const b = (await from.boundingBox())!;
+  let target: { x: number; y: number };
+  if (to === 'pot') {
+    const pot = (await page.locator('.stage [role=img]').first().boundingBox())!;
+    target = { x: pot.x + pot.width / 2, y: pot.y + pot.height * 0.4 };
+  } else {
+    target = to;
+  }
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, b.y - 60, { steps: 6 });
+  await page.mouse.move(target.x, target.y, { steps: 12 });
+  await expect(page.locator('.drag-ghost')).toHaveCount(1);
+  if (drop) await page.mouse.up();
+  return target;
+}
+
+/** Waits for an open sheet to take focus: its key handlers are attached in the same step. */
+export const sheetReady = (page: Page) => expect(page.locator('[role=dialog]:focus-within')).toHaveCount(1);
+
+/** Closes the topmost sheet with Escape once it is ready. */
+export async function closeSheet(page: Page): Promise<void> {
+  await sheetReady(page);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[role=dialog]')).toHaveCount(0);
 }
