@@ -98,6 +98,7 @@ describe('Ramos Gin Fizz', () => {
     expect(s[2]).toBe('Add ice and shake hard for 15 seconds');
     expect(s[3]).toMatch(/^Double strain into a highball glass/);
     expect(s[4]).toBe('Top with soda water');
+    expect(s[5]).toBe('Express a lemon twist over the drink, then drop it in');
     expect(ramos.note).toMatch(/orange flower water/);
   });
 

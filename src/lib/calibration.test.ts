@@ -164,6 +164,102 @@ describe('calibration', () => {
     ]) expect(curdleTip(CLASH_SUITE[k]), k).toBe(true);
   });
 
+  it('is not a universal rescue: only gin, plain soda, cream or milk and a real egg white and syrup make a Ramos', () => {
+    const pots: [string, number][][] = [
+      [['scotch', 50], ['lemon_juice', 25], ['milk', 15], ['egg_white', 15], ['simple_syrup', 25], ['tonic_water', 90]],
+      [['tequila', 50], ['grapefruit_juice', 25], ['milk', 15], ['egg_white', 15], ['simple_syrup', 25]],
+      [['mezcal', 50], ['lime_juice', 25], ['heavy_cream', 15], ['egg_white', 15], ['simple_syrup', 25], ['tonic_water', 90]],
+      [['mezcal', 50], ['lime_juice', 25], ['heavy_cream', 15], ['egg_white', 15], ['simple_syrup', 25], ['soda_water', 90]],
+      [['vodka', 50], ['cranberry_juice', 35], ['milk', 15], ['egg_white', 15], ['simple_syrup', 15], ['cola', 90]],
+      swap(RAMOS, 'gin', 'tequila'), swap(RAMOS, 'gin', 'scotch'), swap(RAMOS, 'gin', 'mezcal'),
+      swap(RAMOS, 'soda_water', 'tonic_water'), swap(RAMOS, 'soda_water', 'cola'), swap(RAMOS, 'soda_water', 'ginger_beer'),
+      without(RAMOS, 'soda_water'),
+    ];
+    for (const b of pots) expect(score(b), JSON.stringify(b)).toBeLessThanOrEqual(55);
+    // a wide grid of dairy, acid, egg white, sweetener, spirit and mixer: only gin with soda is ever rescued
+    let worst = 0;
+    for (const sp of ['vodka', 'tequila', 'mezcal', 'scotch', 'white_rum', 'bourbon'])
+      for (const ac of ['lemon_juice', 'lime_juice', 'grapefruit_juice', 'cranberry_juice'])
+        for (const d of ['heavy_cream', 'milk'])
+          for (const dm of [10, 15, 20, 30])
+            for (const egg of [15, 25, 30])
+              for (const sw of ['simple_syrup', 'honey_syrup'])
+                for (const mx of [null, 'soda_water', 'tonic_water', 'cola', 'ginger_beer'])
+                  for (const spm of [45, 60]) {
+                    const b: [string, number][] = [[sp, spm], [ac, 25], [d, dm], ['egg_white', egg], [sw, 20]];
+                    if (mx) b.push([mx, 60]);
+                    worst = Math.max(worst, score(b));
+                  }
+    expect(worst).toBeLessThan(70);
+    // and gin without the soda is not the Ramos either
+    worst = 0;
+    for (const ac of ['lemon_juice', 'lime_juice', 'grapefruit_juice'])
+      for (const mx of [null, 'tonic_water', 'cola', 'ginger_beer'])
+        for (const dm of [10, 20, 30]) {
+          const b: [string, number][] = [['gin', 50], [ac, 25], ['heavy_cream', dm], ['egg_white', dm], ['simple_syrup', 20]];
+          if (mx) b.push([mx, 60]);
+          worst = Math.max(worst, score(b));
+        }
+    expect(worst).toBeLessThan(70);
+  });
+
+  it('does not offer egg white as the cure for a sweetened curdled pot either', () => {
+    const pots: [string, number][][] = [
+      [['tequila', 45], ['milk', 30], ['grapefruit_juice', 45], ['honey_syrup', 15]],
+      [['gin', 45], ['heavy_cream', 30], ['lemon_juice', 20], ['simple_syrup', 15]],
+      [['mezcal', 45], ['lime_juice', 25], ['heavy_cream', 30], ['simple_syrup', 15]],
+      [['vodka', 45], ['cranberry_juice', 45], ['heavy_cream', 30], ['simple_syrup', 15]],
+      [['scotch', 45], ['lemon_juice', 25], ['milk', 15], ['simple_syrup', 25], ['tonic_water', 90]],
+    ];
+    for (const b of pots) {
+      const egg = scoreDeltas(toBrew(b))?.get('egg_white');
+      expect(egg?.delta ?? 0, JSON.stringify(b)).toBeLessThanOrEqual(8);
+      expect(topSuggestions(toBrew(b), 40).find((t) => t.ing.id === 'egg_white'), JSON.stringify(b)).toBeUndefined();
+    }
+    // the real thing: a Ramos missing only its egg white is told to add it
+    expect(scoreDeltas(toBrew(without(RAMOS, 'egg_white')))?.get('egg_white')?.delta).toBeGreaterThan(20);
+  });
+
+  it('moves the score smoothly as a Ramos comes together, with no step of more than 12 points per 0.5 ml', () => {
+    const bases: [string, number][][] = [
+      RAMOS,
+      [['gin', 50], ['lemon_juice', 25], ['simple_syrup', 15], ['heavy_cream', 15], ['egg_white', 15], ['soda_water', 45]],
+      swap([['gin', 60], ['lemon_juice', 15], ['lime_juice', 15], ['simple_syrup', 30], ['heavy_cream', 30], ['egg_white', 30], ['soda_water', 60]], 'heavy_cream', 'milk'),
+    ];
+    for (const base of bases)
+      for (const [id] of base.filter(([x]) => ['egg_white', 'simple_syrup', 'heavy_cream', 'milk'].includes(x))) {
+        let prev = score(base.map(([x, v]) => [x, x === id ? 0.5 : v] as [string, number]));
+        for (let ml = 1; ml <= 45; ml += 0.5) {
+          const now = score(base.map(([x, v]) => [x, x === id ? ml : v] as [string, number]));
+          expect(Math.abs(now - prev), `${id} ${ml} ml`).toBeLessThanOrEqual(12);
+          prev = now;
+        }
+      }
+  });
+
+  it('lets a small clash dim a classic shape instead of dropping it', () => {
+    // a Moscow Mule with a few ml of cream is penalised in proportion, never by a 25 point step
+    let prev = score([['vodka', 45], ['lime_juice', 15], ['ginger_beer', 120]]);
+    for (let ml = 0.5; ml <= 12; ml += 0.5) {
+      const now = score([['vodka', 45], ['lime_juice', 15], ['ginger_beer', 120], ['heavy_cream', ml]]);
+      expect(Math.abs(now - prev), `${ml} ml cream`).toBeLessThanOrEqual(12);
+      prev = now;
+    }
+  });
+
+  it('lets coconut cream stand up to pineapple, as a Piña Colada does, but still sours with sharp acid', () => {
+    for (const rum of [40, 50, 60]) for (const coco of [20, 30, 45]) for (const pine of [45, 60, 90]) {
+      const b: [string, number][] = [['white_rum', rum], ['coconut_cream', coco], ['pineapple_juice', pine]];
+      expect(score(b), JSON.stringify(b)).toBeGreaterThanOrEqual(75);
+      expect(harmony(toBrew(b))?.parts.clash, JSON.stringify(b)).toBeGreaterThan(-6);
+    }
+    expect(score([['dark_rum', 60], ['pineapple_juice', 60], ['orange_juice', 30], ['coconut_cream', 45]])).toBeGreaterThanOrEqual(75);
+    expect(score(CLASH_SUITE.coconut_cream_lime_scotch)).toBeLessThanOrEqual(55);
+    const tip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((x) => /curdle/.test(x.text));
+    expect(tip(CLASH_SUITE.coconut_cream_lime_scotch)).toBe(true);
+    expect(tip([['white_rum', 60], ['coconut_cream', 45], ['pineapple_juice', 90]])).toBe(false);
+  });
+
   it('keeps a lone spirit at 62 or less, a lone syrup or juice at 50 or less', () => {
     const bad: string[] = [];
     for (const ing of INGREDIENTS) {

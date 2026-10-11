@@ -167,6 +167,19 @@ describe('serveCard, methodLine and recipeText', () => {
     }
   });
 
+  it('keeps the Piña Colada match for textbook-ratio variations', () => {
+    for (const b of [
+      brew(['white_rum', 60], ['coconut_cream', 45], ['pineapple_juice', 90]),
+      brew(['white_rum', 60], ['coconut_cream', 30], ['pineapple_juice', 45]),
+      brew(['white_rum', 60], ['coconut_cream', 30], ['pineapple_juice', 75]),
+    ]) {
+      const card = serveCard(b, 'Colada', 'oz');
+      expect(card.match?.id).toBe('pina_colada');
+      expect(card.glass).toBe('hurricane');
+      expect(card.method).toBe('blend');
+    }
+  });
+
   it('writes instructions', () => {
     expect(methodLine({ method: 'stir', glass: 'rocks' })).toBe('Stir with ice and strain into a rocks glass.');
     expect(methodLine({ method: 'shake', glass: 'coupe' })).toBe('Shake with ice and strain into a coupe.');
