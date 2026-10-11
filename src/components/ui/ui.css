@@ -44,12 +44,19 @@
 .ui-btn--sm:has(.ui-btn__icon) { padding-left: 10px; }
 .ui-btn--md:has(.ui-btn__icon) { padding-left: 10px; }
 
-.ui-btn--ghost:hover { background: var(--hover); color: var(--tx-1); }
+/* hover only where there is a hovering pointer (a tap on iOS leaves :hover stuck); :active carries the touch */
+@media (hover: hover) {
+  .ui-btn--ghost:hover { background: var(--hover); color: var(--tx-1); }
+}
+.ui-btn--ghost:active { background: var(--hover); color: var(--tx-1); }
 
 .ui-btn--secondary {
   box-shadow: 0 0 0 1px var(--line-2) inset;
 }
-.ui-btn--secondary:hover { background: rgba(190, 205, 230, 0.07); color: var(--tx-1); }
+@media (hover: hover) {
+  .ui-btn--secondary:hover { background: rgba(190, 205, 230, 0.07); color: var(--tx-1); }
+}
+.ui-btn--secondary:active { background: rgba(190, 205, 230, 0.07); color: var(--tx-1); }
 
 .ui-btn--primary {
   background: var(--accent);
@@ -59,11 +66,16 @@
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
     0 12px 28px -12px rgba(var(--accent-rgb), 0.65);
 }
-.ui-btn--primary:hover { background: var(--accent-hi); }
-.ui-btn--primary:active { transform: scale(0.98); }
+@media (hover: hover) {
+  .ui-btn--primary:hover { background: var(--accent-hi); }
+}
+.ui-btn--primary:active { background: var(--accent-hi); transform: scale(0.98); }
 
 .ui-btn--danger-ghost { color: var(--tx-2); }
-.ui-btn--danger-ghost:hover { background: rgba(242, 106, 91, 0.12); color: var(--bad); }
+@media (hover: hover) {
+  .ui-btn--danger-ghost:hover { background: rgba(242, 106, 91, 0.12); color: var(--bad); }
+}
+.ui-btn--danger-ghost:active { background: rgba(242, 106, 91, 0.12); color: var(--bad); }
 
 .ui-btn:disabled,
 .ui-btn[aria-disabled='true'] {
@@ -95,8 +107,10 @@
 .ui-ibtn--md { width: 36px; height: 36px; }
 .ui-ibtn--lg { width: 46px; height: 46px; }
 .ui-ibtn--outline { box-shadow: 0 0 0 1px var(--line-2) inset; }
-.ui-ibtn:hover { background: var(--hover); color: var(--tx-1); }
-.ui-ibtn:active { transform: scale(0.94); }
+@media (hover: hover) {
+  .ui-ibtn:hover { background: var(--hover); color: var(--tx-1); }
+}
+.ui-ibtn:active { background: var(--hover); color: var(--tx-1); transform: scale(0.94); }
 .ui-ibtn[aria-pressed='true'] { color: var(--accent); }
 .ui-ibtn:disabled { opacity: 0.35; pointer-events: none; }
 
@@ -145,7 +159,10 @@
 }
 .ui-seg--md .ui-seg__opt { height: 30px; min-width: 52px; padding: 0 var(--s3); font-size: 13px; }
 .ui-seg--sm .ui-seg__opt { height: 26px; min-width: 44px; padding: 0 10px; font-size: 12px; }
-.ui-seg__opt:hover { color: var(--tx-2); }
+@media (hover: hover) {
+  .ui-seg__opt:hover { color: var(--tx-2); }
+}
+.ui-seg__opt:active { color: var(--tx-2); }
 .ui-seg__opt[aria-checked='true'] { color: var(--tx-1); }
 
 .ui-seg__thumb {
@@ -337,7 +354,10 @@
   font-weight: 600;
   transition: background-color var(--t-hover) var(--ease-out);
 }
-.ui-toast__action:hover { background: rgba(var(--accent-rgb), 0.12); }
+@media (hover: hover) {
+  .ui-toast__action:hover { background: rgba(var(--accent-rgb), 0.12); }
+}
+.ui-toast__action:active { background: rgba(var(--accent-rgb), 0.12); }
 
 .ui-toast__kbd {
   flex: none;
