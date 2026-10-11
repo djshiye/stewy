@@ -682,6 +682,14 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   layout): after the first tap, in the first row and low in the index, the cell lies inside the index, below the
   header, clear of the bar and on a row top, and a second tap reaches it and opens the details; and on a phone on
   its side the first tap leaves every cell in view and the column where it was, within 1px.
+- **Phone landscape details.** The overlay (second tap) is two columns, so the build is in view at once instead of
+  below the fold: the back link, the glass (72 to 112px, `clamp(72px, 100dvh - 270px, 112px)`), the name and the
+  score stay on the left (sticky, one wrapper element around them, `.grim-detail__lead`, a plain block everywhere
+  else), and the note, the build and the facts sit on the right, with the Load button across the foot. The note
+  leaves room for the sheet's close button. A classic with a usual three or four line build shows it whole, with its
+  facts, from 343px tall up; a long one scrolls the right column under the same fade as the desktop pane (the
+  Ramos Gin Fizz, with seven lines, shows the build whole at 390px tall and scrolls the facts, and at 343px the
+  Mai Tai and the Mojito scroll them too).
 
 ### Cellar (sheet, list layout; 560 wide)
 Rows: a mini glass in the saved colour, the Newsreader name (rename inline), score dot,

@@ -1124,11 +1124,53 @@
   .grim-bar .ui-btn {
     width: 100%;
   }
+  /* the details in two columns, so the build is in view at once: the back link, the glass, the name and the score
+     on the left (kept in view as the right column scrolls), the note, the build and the facts on the right */
   .grim__overlay .grim-detail__scroll {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto auto auto 1fr;
+    align-content: start;
+    column-gap: var(--s6);
     padding-top: 28px;
+    padding-bottom: var(--s2);
+  }
+  .grim__overlay .grim-detail__lead {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    align-self: start;
+  }
+  .grim__overlay .grim-detail__scroll > :not(.grim-detail__lead) {
+    grid-column: 2;
   }
   .grim__overlay .grim-detail__stage {
-    height: 112px;
+    height: clamp(72px, calc(100dvh - 270px), 112px);
+  }
+  .grim__overlay .grim-detail__name {
+    font-size: 28px;
+    line-height: 32px;
+  }
+  .grim__overlay .grim-detail__note {
+    margin-top: 0;
+    padding-right: calc(44px + var(--s2)); /* clear the sheet's close button */
+  }
+  .grim__overlay .grim-detail__h {
+    margin-top: var(--s3);
+  }
+  .grim__overlay .grim-detail__build li {
+    padding: 3px 0;
+  }
+  .grim__overlay .grim-detail__facts {
+    align-self: start;
+    gap: var(--s1) var(--s3);
+    margin-top: var(--s2);
+    padding-top: var(--s2);
+  }
+  .grim__overlay .grim-detail__foot {
+    padding-top: var(--s2);
+    padding-bottom: var(--s3);
   }
 }
 @keyframes grim-bar-side-in {

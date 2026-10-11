@@ -215,20 +215,22 @@ function Detail({ c, unit, inPot, onLoad, onBack }: DetailProps) {
   return (
     <div className="grim-detail">
       <div className="grim-detail__scroll" ref={scrollRef}>
-        {onBack && (
-          <button type="button" className="grim-detail__back" onClick={onBack}>
-            <CaretLeft size={18} aria-hidden="true" />
-            Back to the index
-          </button>
-        )}
-        <div className="grim-detail__stage" style={{ '--c': c.color } as CSSProperties}>
-          <Glass kind={recipe.glass} color={c.color} garnish={c.garnish} ice={c.ice} foam={c.foam} fit className="grim-detail__glass" />
-        </div>
-        <h3 className="grim-detail__name serif">{recipe.name}</h3>
-        <div className="grim-detail__pills">
-          <ScoreMark score={c.score} className="grim-score--lg" />
-          <span className="grim-detail__verdict">{VERDICT[tier]}</span>
-          {inPot && <span className="grim-detail__pot">In the pot</span>}
+        <div className="grim-detail__lead">
+          {onBack && (
+            <button type="button" className="grim-detail__back" onClick={onBack}>
+              <CaretLeft size={18} aria-hidden="true" />
+              Back to the index
+            </button>
+          )}
+          <div className="grim-detail__stage" style={{ '--c': c.color } as CSSProperties}>
+            <Glass kind={recipe.glass} color={c.color} garnish={c.garnish} ice={c.ice} foam={c.foam} fit className="grim-detail__glass" />
+          </div>
+          <h3 className="grim-detail__name serif">{recipe.name}</h3>
+          <div className="grim-detail__pills">
+            <ScoreMark score={c.score} className="grim-score--lg" />
+            <span className="grim-detail__verdict">{VERDICT[tier]}</span>
+            {inPot && <span className="grim-detail__pot">In the pot</span>}
+          </div>
         </div>
         <p className="grim-detail__note">{recipe.note}</p>
 

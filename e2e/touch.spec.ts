@@ -161,6 +161,37 @@ test.describe('touch contexts', { tag: '@device' }, () => {
       .toEqual({ cellsStill: true, columnStill: true, count: before.cells.length });
   });
 
+  // The details overlay of a phone on its side has two columns, the glass and the name on the left and the build and
+  // the facts on the right, so a usual classic shows its whole build above the Load button without scrolling.
+  test('in phone landscape the details show the build beside the glass, without scrolling', async ({ page, open, openGrimoire, press, viewport }) => {
+    test.skip(!viewport || viewport.width >= 1000 || viewport.height > 500 || viewport.width <= viewport.height, 'only a phone on its side has the two-column details');
+    await open(EMPTY);
+    await openGrimoire();
+    const daiquiri = page.locator('[role=option][data-id="daiquiri"]');
+    await expect(daiquiri).toBeVisible();
+    await waitForIndexStill(page);
+    await press(daiquiri);
+    await expect(page.locator('.grim-bar')).toBeVisible();
+    await press(page.locator('.grim-bar__info'));
+    await expect(page.locator('.grim__overlay')).toBeVisible();
+    await expect
+      .poll(async () => {
+        await finishAnimations(page);
+        return page.evaluate(() => {
+          const rect = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+          const scroll = document.querySelector('.grim-detail__scroll')!;
+          const [lead, build, facts, view] = [rect('.grim-detail__lead'), rect('.grim-detail__build'), rect('.grim-detail__facts'), rect('.grim-detail__scroll')];
+          return {
+            sideBySide: lead.right <= build.left + 1,
+            buildWhole: build.top >= view.top && build.bottom <= view.bottom + 1,
+            factsWhole: facts.bottom <= view.bottom + 1,
+            noScroll: scroll.scrollHeight - scroll.clientHeight <= 1,
+          };
+        });
+      }, 'the build and the facts sit beside the glass, whole, with nothing to scroll')
+      .toEqual({ sideBySide: true, buildWhole: true, factsWhole: true, noScroll: true });
+  });
+
   // ------------------------------------------------------------ text fields are 16px or more (iOS zooms the page into smaller ones)
 
   const fontSize = (page: Page, selector: string) =>
