@@ -24,13 +24,6 @@
   min-height: 0;
 }
 
-/* the drag ghost carries the 48-unit tile icon; without a size its svg collapses to nothing */
-.drag-ghost > svg {
-  display: block;
-  width: 56px;
-  height: 56px;
-}
-
 /* ---------- desktop (1000 and up): the shell is 100dvh, no page scroll ---------- */
 @media (min-width: 1000px) {
   body {
@@ -242,7 +235,9 @@
 }
 
 /* ---------- big desktops: scale the whole interface ----------
-   zoom (current Chrome, Safari, Firefox) scales layout, text and pointer coordinates together.
+   zoom (current Chrome, Safari, Firefox) scales layout and text; pointer coordinates and
+   getBoundingClientRect stay in viewport pixels, so code that mixes them with CSS lengths measures
+   the zoom first (the measure pill scrub divides by it; the shelf tooltip measures its own width).
    dvh stays physical, so the shell divides its height by the factor. Sheets and the toaster are
    siblings of .app, so they carry the same zoom (first rule below); the drag ghost scales its child only
    (its position is written in raw viewport pixels). The factor steps live in tokens.css; this

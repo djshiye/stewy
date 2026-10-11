@@ -24,10 +24,23 @@ interface MeasurePillProps {
 
 interface Press {
   x: number;
+  /** viewport px per CSS px under the pill (CSS zoom on big desktops), read when the press starts */
+  zoom: number;
   ml: number;
   steps: number;
   active: boolean;
   pointerId: number;
+}
+
+/** Viewport pixels per CSS pixel at `el`, measured from a 100px probe so it holds in every engine
+ *  (clientX is in viewport pixels, while the thresholds below are in the pill's own CSS pixels). */
+function zoomAt(el: HTMLElement): number {
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;width:100px;height:0';
+  el.appendChild(probe);
+  const width = probe.getBoundingClientRect().width;
+  probe.remove();
+  return width > 0 ? width / 100 : 1;
 }
 
 /** A tactile measure: the amount above a mini LED scale. Drag sideways or use the arrow keys. */
@@ -51,13 +64,13 @@ export function MeasurePill({ ing, ml, unit, onSet, onOpen }: MeasurePillProps) 
 
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
-    press.current = { x: e.clientX, ml, steps: 0, active: false, pointerId: e.pointerId };
+    press.current = { x: e.clientX, zoom: zoomAt(e.currentTarget), ml, steps: 0, active: false, pointerId: e.pointerId };
   };
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
     const p = press.current;
     if (!p) return;
-    const dx = e.clientX - p.x;
+    const dx = (e.clientX - p.x) / p.zoom;
     if (!p.active) {
       if (Math.abs(dx) < THRESHOLD) return;
       p.active = true;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { motion } from 'motion/react';
 import { CaretLeft, CaretRight, MagnifyingGlass, Minus, X } from '@phosphor-icons/react';
@@ -21,6 +21,9 @@ export interface ShelfProps {
   onServe(): void;
   searchRef?: React.RefObject<HTMLInputElement | null>;
 }
+
+/** Smallest gap between the tooltip and the viewport edge, in viewport pixels. */
+const TIP_EDGE = 8;
 
 interface Tip {
   ing: Ingredient;
@@ -56,6 +59,8 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
   const railRef = useRef<HTMLDivElement | null>(null);
   const rowRef = useRef<HTMLUListElement | null>(null);
   const tipTimer = useRef<number | undefined>(undefined);
+  const tipRef = useRef<HTMLDivElement | null>(null);
+  const [tipLeft, setTipLeft] = useState<number | null>(null);
 
   const searching = query.trim().length > 0;
   const list = useMemo(
@@ -297,6 +302,15 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
   const tipDelta = tip ? model.deltas?.get(tip.ing.id) : undefined;
   const tipEntry = tip ? inPot.get(tip.ing.id) : undefined;
 
+  // centre the tooltip on its bottle, but keep its measured width inside the viewport (a fixed
+  // margin would be wrong whenever the text or the interface zoom changes the width)
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!tip || !el) return;
+    const half = el.getBoundingClientRect().width / 2 + TIP_EDGE;
+    setTipLeft(Math.min(Math.max(tip.x, half), Math.max(half, window.innerWidth - half)));
+  }, [tip, tipDelta, tipEntry, model.unit]);
+
   return (
     <aside className={rootCls} aria-label="Ingredients">
       <div className="shelf__bg" aria-hidden="true" />
@@ -415,10 +429,11 @@ export function Shelf({ model, variant, onPick, onDragStart, onServe, searchRef 
 
       {tip && !dock && (
         <div
+          ref={tipRef}
           className="shelf-tip"
           role="presentation"
           style={{
-            left: Math.min(Math.max(tip.x, 140), window.innerWidth - 140),
+            left: tipLeft ?? tip.x,
             bottom: window.innerHeight - tip.y + 8,
           }}
         >

@@ -181,6 +181,13 @@ body.is-dragging {
   filter: drop-shadow(0 14px 14px rgba(7, 9, 13, 0.6));
 }
 
+/* the drag ghost carries the 48-unit tile icon; without a size its svg collapses to nothing */
+.drag-ghost > svg {
+  display: block;
+  width: 56px;
+  height: 56px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ING_BY_ID } from '../../data/ingredients';
 import type { UnitKey } from '../../lib/units';
@@ -60,5 +60,36 @@ describe('MeasurePill', () => {
     screen.getByRole('button').focus();
     await userEvent.keyboard('{ArrowLeft}');
     expect(screen.getByRole('button', { name: 'Gin, <1 ml' })).toBeTruthy();
+  });
+
+  describe('scrub under interface zoom', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    /** Drags `px` viewport pixels from the pill, with each CSS pixel drawn as `zoom` viewport pixels. */
+    function scrub(zoom: number, px: number) {
+      HTMLElement.prototype.setPointerCapture = () => {};
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+        () => ({ width: 100 * zoom, height: 0, x: 0, y: 0, top: 0, left: 0, right: 100 * zoom, bottom: 0, toJSON() {} }) as DOMRect,
+      );
+      render(<Harness id="vodka" start={15} />);
+      const pill = screen.getByRole('button');
+      const base = { pointerId: 1, button: 0 };
+      fireEvent.pointerDown(pill, { ...base, clientX: 200 });
+      fireEvent.pointerMove(pill, { ...base, clientX: 200 + px });
+      return screen.getByRole('button').getAttribute('aria-label');
+    }
+
+    it('counts one step per 14 CSS pixels at zoom 1', () => {
+      // 100px: 1 step past the 6px threshold, then 6 more
+      expect(scrub(1, 100)).toBe('Vodka, 2.25 oz');
+    });
+
+    it('divides the drag by the zoom, so the same CSS distance gives the same steps', () => {
+      expect(scrub(2, 200)).toBe('Vodka, 2.25 oz');
+    });
+
+    it('a viewport drag that is short in CSS pixels moves fewer steps at a higher zoom', () => {
+      expect(scrub(2, 100)).toBe('Vodka, 1.5 oz');
+    });
   });
 });
