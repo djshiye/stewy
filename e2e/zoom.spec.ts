@@ -1,8 +1,9 @@
 import { test, expect, BRAMBLE, GRASSHOPPER, NEGRONI, EMPTY, bottle, dial, dragBottle, expectGrimoireOnWholeRow, pill, settled, shelfTab, storedPot } from './fixtures';
 
-// At 1800 x 1000 and above the interface is scaled with CSS zoom (src/styles/layout.css). Everything that
-// reads viewport pixels (tooltip, drag ghost, scrub distance, scroll offsets) has to agree with it.
-for (const [w, h] of [[1920, 1080], [2560, 1440]]) {
+// At 1800 x 1000 and above (and from 1300 wide on portrait monitors) the interface is scaled with CSS zoom
+// (src/styles/layout.css). Everything that reads viewport pixels (tooltip, drag ghost, scrub distance, scroll
+// offsets) has to agree with it, on the landscape ladder and on the portrait one.
+for (const [w, h] of [[1920, 1080], [2560, 1440], [1440, 2560], [2160, 3840]]) {
   test.describe(`${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 
@@ -13,12 +14,13 @@ for (const [w, h] of [[1920, 1080], [2560, 1440]]) {
         const zoom = parseFloat(getComputedStyle(document.querySelector('.app')!).zoom) || 1;
         const stage = document.querySelector('.stage')!;
         const pot = document.querySelector('.stg-pot')!.getBoundingClientRect();
-        return { zoom, potCss: pot.width / zoom, stageH: stage.clientHeight };
+        return { zoom, potCss: pot.width / zoom, stageW: stage.clientWidth, stageH: stage.clientHeight };
       });
       expect(m.zoom).toBeGreaterThan(1);
-      // desktop rule: min(stage width, (stage height - hint) x 1.2, 1000px)
-      expect(m.potCss).toBeLessThanOrEqual((m.stageH - 46) * 1.2 + 2);
-      expect(m.potCss).toBeGreaterThan((m.stageH - 46) * 1.2 * 0.8);
+      // desktop rule: min(stage width, (stage height - hint) x 1.2, 1000px); stacked rule: the cap is 1280px
+      const cap = h > w ? 1280 : 1000;
+      const expected = Math.min(m.stageW, (m.stageH - 46) * 1.2, cap);
+      expect(Math.abs(m.potCss - expected), `pot ${m.potCss} against ${expected}`).toBeLessThanOrEqual(2);
     });
 
     test('the shelf tooltip is centred over the bottle it belongs to', async ({ page, open }) => {
