@@ -1,4 +1,4 @@
-import { test, expect, EMPTY, MOJITO, NEGRONI, bottle, copied, dialog, pourButton, storedCellar, storedPot, toast, closeSheet } from './fixtures';
+import { test, expect, EMPTY, MOJITO, NEGRONI, bottle, copied, dialog, pourButton, storedCellar, storedPot, toast, closeSheet, sheetReady } from './fixtures';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -35,6 +35,7 @@ test.describe('serve sheet', () => {
   test('Copy recipe puts the recipe, score and verdict on the clipboard', async ({ page, open }) => {
     await open(NEGRONI);
     await page.keyboard.press('s');
+    await sheetReady(page);
     await page.getByRole('button', { name: 'Copy recipe' }).click();
     await expect(toast(page)).toHaveText(/Recipe copied/);
     const text = await copied(page);
@@ -46,6 +47,7 @@ test.describe('serve sheet', () => {
   test('Share link copies a #b= link', async ({ page, open }) => {
     await open(NEGRONI);
     await page.keyboard.press('s');
+    await sheetReady(page);
     await page.getByRole('button', { name: 'Share link' }).click();
     await expect(toast(page)).toHaveText(/Link copied/);
     expect(await copied(page)).toMatch(/#b=/);
@@ -54,6 +56,7 @@ test.describe('serve sheet', () => {
   test('Save to the Cellar saves and says so', async ({ page, open }) => {
     await open(NEGRONI);
     await page.keyboard.press('s');
+    await sheetReady(page);
     await saveButton(page).click();
     await expect(toast(page)).toHaveText(/Saved/);
     await expect.poll(async () => (await storedCellar(page)).length).toBe(1);

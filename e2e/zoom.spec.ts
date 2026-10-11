@@ -6,6 +6,21 @@ for (const [w, h] of [[1920, 1080], [2560, 1440]]) {
   test.describe(`${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 
+    test('the pot is sized from its stage in CSS pixels, not viewport pixels (container units under zoom)', async ({ page, open }) => {
+      await open(NEGRONI);
+      await settled(page);
+      const m = await page.evaluate(() => {
+        const zoom = parseFloat(getComputedStyle(document.querySelector('.app')!).zoom) || 1;
+        const stage = document.querySelector('.stage')!;
+        const pot = document.querySelector('.stg-pot')!.getBoundingClientRect();
+        return { zoom, potCss: pot.width / zoom, stageH: stage.clientHeight };
+      });
+      expect(m.zoom).toBeGreaterThan(1);
+      // desktop rule: min(stage width, (stage height - hint) x 1.2, 1000px)
+      expect(m.potCss).toBeLessThanOrEqual((m.stageH - 46) * 1.2 + 2);
+      expect(m.potCss).toBeGreaterThan((m.stageH - 46) * 1.2 * 0.8);
+    });
+
     test('the shelf tooltip is centred over the bottle it belongs to', async ({ page, open }) => {
       await open(EMPTY);
       await shelfTab(page, 'Spirits');
