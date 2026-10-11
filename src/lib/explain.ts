@@ -113,7 +113,8 @@ export function explainChangeWithTone(
   const balanceClause = lean < 0 ? `tips the balance toward ${sharpSide(after)}` : 'pushes the balance toward sweet';
 
   if (dStruct >= MIN_SHIFT || dStruct <= -MIN_SHIFT) {
-    if (after.archetype && after.archetype !== before.archetype) {
+    // a new label with less structure is a lost shape, not a gained one
+    if (after.archetype && after.archetype !== before.archetype && dStruct > 0) {
       push(dStruct * 1.2, `${S} gives the drink the shape of a proper ${ARCHETYPE_NAME[after.archetype]}.`,
         'up');
     } else if (before.archetype && !after.archetype) {

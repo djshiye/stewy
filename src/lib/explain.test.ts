@@ -33,6 +33,15 @@ describe('explainChange', () => {
     expect(text.startsWith('More sweet vermouth')).toBe(true);
   });
 
+  it('never credits a new shape when the structure falls', () => {
+    // champagne turns a spirit-forward drink (bonus 7) into a sparkling one (no bonus); the score still
+    // rises a point for other reasons, but the drink has lost a shape, not gained one
+    const before = brew(['angostura', 3.6], ['grand_marnier', 24], ['grenadine', 14.5], ['vodka', 77], ['white_rum', 14.5]);
+    const after = [...before, { id: 'champagne', ml: 90 }];
+    expect(harmony(after)!.parts.structure).toBeLessThan(harmony(before)!.parts.structure);
+    expect(explain(before, after, 'Champagne', 'add')).not.toMatch(/gives the drink the shape/);
+  });
+
   it('calls out a clash', () => {
     const before = brew(['heavy_cream', 30], ['mezcal', 30]);
     const text = explain(before, [...before, { id: 'lime_juice', ml: 25 }], 'Lime juice', 'add');

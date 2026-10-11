@@ -102,6 +102,19 @@ describe('topSuggestions', () => {
     expect(top.every((s) => s.ing.group !== 'Garnish')).toBe(true);
   });
 
+  it('does not suggest a splash whose only gain is a point of structure', () => {
+    // an Aperol and vermouth highball once got "absinthe 2.5 ml +1": a highball membership nudged along
+    const b = brew(['lemon_lime_soda', 50.5], ['aperol', 40], ['dry_vermouth', 17.5]);
+    const base = harmony(b)!;
+    const top = topSuggestions(b, 20);
+    expect(top.length).toBeGreaterThan(0);
+    for (const s of top) {
+      const after = harmony(withAdded(b, s.ing.id, s.ml))!;
+      if (s.delta < 2) expect(after.parts.structure - base.parts.structure, s.ing.id).toBeLessThan(s.delta / 2);
+    }
+    expect(top.some((s) => s.ing.id === 'absinthe' && s.delta < 2)).toBe(false);
+  });
+
   it('suggests nothing when no addition improves a great drink', () => {
     const daiquiri = brew(['white_rum', 45], ['lime_juice', 25], ['simple_syrup', 15]);
     for (const s of topSuggestions(daiquiri, 10)) expect(s.delta).toBeGreaterThan(0);

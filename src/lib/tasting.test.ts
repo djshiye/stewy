@@ -73,11 +73,22 @@ describe('tastingNote for a brew that goes wrong', () => {
 
   it('says a brew only leans sweet when the sweet penalty has only partly set in', () => {
     // the tonic's bitterness sits near the line that lets it balance the syrup, so the penalty is partial
-    const b = brew(['simple_syrup', 30], ['tonic_water', 15]);
+    const b = brew(['simple_syrup', 30], ['tonic_water', 14]);
     const h = harmony(b)!;
     expect(h.parts.sweetSour).toBeLessThan(-1);
     expect(h.parts.sweetSour).toBeGreaterThan(-4);
     expect(noteFor(b)).toBe('It leans too sweet, with too little sharpness to cut through it.');
+  });
+
+  it('names cream split in fizz, even when the brew keeps some of its shape', () => {
+    for (const b of [
+      brew(['heavy_cream', 15], ['mezcal', 45], ['ginger_beer', 120]),
+      brew(['heavy_cream', 10], ['gin', 45], ['soda_water', 60]),
+      brew(['heavy_cream', 15], ['mezcal', 45], ['cola', 120]),
+    ]) {
+      expect(harmony(b)!.score, JSON.stringify(b)).toBeGreaterThanOrEqual(40);
+      expect(noteFor(b), JSON.stringify(b)).toBe('The cream splits in all that fizz, so it drinks thin and foamy.');
+    }
   });
 
   it('is always one plain sentence, even without the brew to name things', () => {

@@ -161,6 +161,19 @@ describe('serveCard, methodLine and recipeText', () => {
     expect(card.garnish).toBe('Lime wheel');
   });
 
+  it('does not match cream split in fizz to the long drink it resembles', () => {
+    // these score in the forties, with a full split (19 points), and once matched a Moscow Mule, a Tom
+    // Collins and a Cuba Libre
+    for (const b of [
+      brew(['heavy_cream', 15], ['mezcal', 45], ['ginger_beer', 120]),
+      brew(['heavy_cream', 10], ['gin', 45], ['soda_water', 60]),
+      brew(['heavy_cream', 15], ['mezcal', 45], ['cola', 120]),
+    ]) {
+      expect(resemblance(b), JSON.stringify(b)).toBeNull();
+      expect(serveCard(b, 'Split', 'oz').match, JSON.stringify(b)).toBeNull();
+    }
+  });
+
   it('every classic still resembles itself, so none loses its match', () => {
     for (const r of RECIPES) {
       expect(resemblance(brew(...r.build))?.recipe.id, r.id).toBe(r.id);

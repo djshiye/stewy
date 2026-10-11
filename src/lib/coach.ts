@@ -72,6 +72,9 @@ export function scoreDeltas(brew: BrewEntry[]): Map<string, Delta> | null {
 
 /** From this score up, a suggestion may not change the brew's archetype. */
 const KEEP_SHAPE_SCORE = 80;
+/** Below this gain an addition is only suggested when the flavours earn it: a point that comes from the
+    structure is a shape's membership nudged along its fade, not a better drink. */
+const MIN_SHAPE_GAIN = 2;
 
 /** The best few additions, strongest first. Garnish only shows up when nothing else helps. */
 export function topSuggestions(brew: BrewEntry[], n = 3): CoachSuggestion[] {
@@ -84,7 +87,9 @@ export function topSuggestions(brew: BrewEntry[], n = 3): CoachSuggestion[] {
   for (const ing of INGREDIENTS) {
     const d = deltas.get(ing.id);
     if (!d || d.delta <= 0) continue;
-    if (keepShape && harmony(withAdded(brew, ing.id, d.ml))?.archetype !== base.archetype) continue;
+    const after = keepShape || d.delta < MIN_SHAPE_GAIN ? harmony(withAdded(brew, ing.id, d.ml)) : null;
+    if (keepShape && after?.archetype !== base.archetype) continue;
+    if (after && d.delta < MIN_SHAPE_GAIN && after.parts.structure - base.parts.structure >= d.delta / 2) continue;
     all.push({
       ing, ml: d.ml, delta: d.delta, score: base.score + d.delta,
       inBrew: brew.some((e) => e.id === ing.id),

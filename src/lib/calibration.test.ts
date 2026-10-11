@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { INGREDIENTS, ING_BY_ID } from '../data/ingredients';
 import { RECIPES } from '../data/recipes';
-import { harmony, suggestions } from './harmony';
+import { harmony, isPoorBrew, suggestions } from './harmony';
 import { scoreDeltas, topSuggestions } from './coach';
+import { perPiece } from './units';
 
 const toBrew = (b: [string, number][]): BrewEntry[] => b.map(([id, ml]) => ({ id, ml }));
 const score = (b: [string, number][]) => harmony(toBrew(b))?.score ?? 0;
@@ -56,10 +57,33 @@ const without = (b: [string, number][], id: string) => b.filter(([x]) => x !== i
 const swap = (b: [string, number][], from: string, to: string): [string, number][] => b.map(([x, ml]) => [x === from ? to : x, ml]);
 const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((s) => /curdle/.test(s.text));
 
-/** Worst score step per 0.5 ml measured over the sweeps below, plus a point of headroom: every classic
-    and every random pot of real size (5 measured), and random pots of any size (8 measured, a 10 ml pot). */
+/** Worst score step per 0.5 ml, measured over the sweeps below plus a point of headroom. "Rest" is the
+    other liquid in the pot besides the amount being swept.
+    - CLASSIC_STEP: every amount of every classic (5 measured) and the absinthe sour (5).
+    - REAL_POT_STEP: random pots with 30 ml or more of rest, outside the dairy and acid family (6 measured
+      over 20 seeds of 200 pots; the test runs 10 seeds of 100).
+    - SMALL_POT_STEP: the same with 10 to 30 ml of rest (12 measured: 0.5 ml of cranberry juice against
+      13 ml of syrup is a twenty-sixth of the drink, and turns a lone syrup into a sour). Under 10 ml of
+      rest there is no bound: 0.5 ml can be most of the pot, and then the flavour itself changes.
+    - DAIRY_ACID_STEP: dairy (cream, milk, Irish cream) with anything sour or citrus. Any real acid
+      curdles the dairy, costs its own points and spoils the shape, and that has to happen within a few ml,
+      so this family steps harder. Measured on the grid below and the random family: 18, 15, 12 and 8 for
+      10, 30, 60 and 90 ml of rest. */
 const CLASSIC_STEP = 6;
-const SMALL_POT_STEP = 9;
+const REAL_POT_STEP = 7;
+const SMALL_POT_STEP = 13;
+const DAIRY_ACID_STEP: [minRest: number, step: number][] = [[90, 9], [60, 13], [30, 16], [10, 19]];
+/** Worst change per counted piece or dash added to a classic, one to four of them: a sugar cube is 4 ml of
+    syrup at once (16 measured, a third cube in a Brandy Alexander); every other piece and dash moves a
+    classic far less (5 measured, an orange slice in a White Russian). */
+const SUGAR_CUBE_STEP = 17;
+const PIECE_STEP = 6;
+
+const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
+/** Dairy with any liquid that is sour or citrus: the curdle family. */
+const dairyAcid = (b: [string, number][]) =>
+  b.some(([x]) => DAIRY.has(x)) &&
+  b.some(([x]) => { const g = ING_BY_ID[x]; return !!g && !g.unit && (g.tags.sour ?? 0) + (g.tags.citrus ?? 0) > 0; });
 
 /** Small deterministic PRNG (mulberry32). */
 function rng(seed: number) {
@@ -72,25 +96,30 @@ function rng(seed: number) {
   };
 }
 
-/** The biggest score change between neighbouring 0.5 ml steps as each liquid amount in each brew is
-    swept from 0.5 ml to 120 ml (or 2.5 times its amount, if more) with the rest held. `minRest` keeps
-    only sweeps whose other liquid adds up to at least that many ml. */
-function worstStep(brews: [string, [string, number][]][], minRest = 0) {
-  let worst = { jump: 0, at: 'none' };
+interface Step { jump: number; at: string; rest: number }
+
+/** Every score change between neighbouring 0.5 ml steps as each liquid amount in each brew is swept from
+    0.5 ml to `max` ml (by default 120 ml, or 2.5 times its amount if more) with the rest held. */
+function steps(brews: [string, [string, number][]][], max?: number): Step[] {
+  const out: Step[] = [];
   for (const [name, base] of brews)
     base.forEach(([id, amt], i) => {
       if (ING_BY_ID[id]?.unit) return;
       const rest = base.reduce((t, [x, ml], j) => t + (j === i || ING_BY_ID[x]?.unit ? 0 : ml), 0);
-      if (rest < minRest) return;
-      const max = Math.max(120, 2.5 * amt);
+      const top = max ?? Math.max(120, 2.5 * amt);
       let prev = score(base.map(([x, v], j) => [x, j === i ? 0.5 : v] as [string, number]));
-      for (let ml = 1; ml <= max; ml += 0.5) {
+      for (let ml = 1; ml <= top; ml += 0.5) {
         const now = score(base.map(([x, v], j) => [x, j === i ? ml : v] as [string, number]));
-        if (Math.abs(now - prev) > worst.jump) worst = { jump: Math.abs(now - prev), at: `${name}: ${id} ${ml - 0.5} to ${ml} ml, ${prev} to ${now}` };
+        out.push({ jump: Math.abs(now - prev), at: `${name}: ${id} ${ml - 0.5} to ${ml} ml, ${prev} to ${now} (rest ${rest} ml)`, rest });
         prev = now;
       }
     });
-  return worst;
+  return out;
+}
+
+/** The biggest step among those with at least `minRest` ml of rest (and below `maxRest`). */
+function worst(xs: Step[], minRest = 0, maxRest = Infinity): Step {
+  return xs.reduce((w, x) => (x.rest >= minRest && x.rest < maxRest && x.jump > w.jump ? x : w), { jump: 0, at: 'none', rest: 0 });
 }
 
 /** Seeded random pots of 2 to 5 distinct ingredients at 0.5 to 1.5 times their default pour. */
@@ -281,20 +310,91 @@ describe('calibration', () => {
   });
 
   it('moves the score smoothly: no 0.5 ml step in any amount of any classic jumps it', () => {
-    const worst = worstStep(RECIPES.map((r) => [r.id, r.build]));
-    if (process.env.CALIB_LOG) console.log('classics', worst);
-    expect(worst.jump, worst.at).toBeLessThanOrEqual(CLASSIC_STEP);
+    const w = worst(steps(RECIPES.map((r) => [r.id, r.build])));
+    if (process.env.CALIB_LOG) console.log('classics', w);
+    expect(w.jump, w.at).toBeLessThanOrEqual(CLASSIC_STEP);
   });
 
-  it('moves the score smoothly for random pots too', () => {
-    const pots = randomPots(4242, 200);
-    // a pot of real size (30 ml or more besides the amount being swept)
-    const real = worstStep(pots, 30);
-    // and any pot at all: in a 10 ml pot 0.5 ml is a twentieth of the drink, so the steps are coarser
-    const any = worstStep(pots);
-    if (process.env.CALIB_LOG) console.log('random', real, any);
-    expect(real.jump, real.at).toBeLessThanOrEqual(CLASSIC_STEP);
-    expect(any.jump, any.at).toBeLessThanOrEqual(SMALL_POT_STEP);
+  it('moves the score smoothly for random pots too, across many seeds', () => {
+    const pots: [string, [string, number][]][] = [];
+    for (let seed = 1; seed <= 10; seed++) pots.push(...randomPots(seed, 100));
+    const plain = steps(pots.filter(([, b]) => !dairyAcid(b)));
+    const curdle = steps(pots.filter(([, b]) => dairyAcid(b)));
+    const real = worst(plain, 30), small = worst(plain, 10, 30);
+    if (process.env.CALIB_LOG) console.log('random', real, small, DAIRY_ACID_STEP.map(([r]) => worst(curdle, r)));
+    expect(real.jump, real.at).toBeLessThanOrEqual(REAL_POT_STEP);
+    expect(small.jump, small.at).toBeLessThanOrEqual(SMALL_POT_STEP);
+    for (const [rest, bound] of DAIRY_ACID_STEP) {
+      const w = worst(curdle, rest);
+      expect(w.jump, w.at).toBeLessThanOrEqual(bound);
+    }
+  }, 60000);
+
+  it('bounds the dairy and acid family where it steps hardest: the first ml of acid into dairy, and back', () => {
+    // Kahlua and milk, Irish cream, a White Russian and friends, each met by every kind of acid
+    const companions: [string, number][][] = [
+      [], [['coffee_liqueur', 15]], [['vodka', 45]], [['vodka', 50], ['coffee_liqueur', 20]], [['gin', 45], ['simple_syrup', 15]],
+      [['amaretto', 30]], [['bourbon', 60]],
+    ];
+    const acids = ['lemon_juice', 'lime_juice', 'orange_juice', 'grapefruit_juice', 'cranberry_juice', 'pineapple_juice', 'passion_fruit'];
+    const xs: Step[] = [];
+    for (const d of ['heavy_cream', 'milk', 'irish_cream']) for (const ml of [10, 15, 20, 30, 45, 90]) for (const c of companions)
+      for (const ac of acids) {
+        // the acid swept into the dairy, and the dairy swept into the acid
+        const into = steps([[`${d} ${ml}, ${ac}`, [[d, ml], ...c, [ac, 15]]]], 30).filter((x) => x.at.includes(`: ${ac} `));
+        const back = steps([[`${ac} ${ml}, ${d}`, [[d, 15], ...c, [ac, ml]]]], 30).filter((x) => x.at.includes(`: ${d} `));
+        xs.push(...into, ...back);
+      }
+    if (process.env.CALIB_LOG) console.log('dairy and acid', DAIRY_ACID_STEP.map(([r]) => worst(xs, r)));
+    for (const [rest, bound] of DAIRY_ACID_STEP) {
+      const w = worst(xs, rest);
+      expect(w.jump, w.at).toBeLessThanOrEqual(bound);
+    }
+    // the first half ml of lemon into Kahlua and milk was an 18 point step, and Irish cream with lime 17
+    for (const b of [[['milk', 20], ['coffee_liqueur', 15]], [['irish_cream', 30]]] as [string, number][][]) {
+      const acid = b.length > 1 ? 'lemon_juice' : 'lime_juice';
+      const jump = Math.abs(score([...b, [acid, 1]]) - score([...b, [acid, 0.5]]));
+      expect(jump, JSON.stringify(b)).toBeLessThanOrEqual(16);
+    }
+  }, 60000);
+
+  it('fades a strong absinthe into a sour as gently as any spirit', () => {
+    // at 68% a 0.5 ml step moves the alcohol share nearly twice as fast as a 40% spirit does
+    const w = worst(steps([['absinthe sour', [['absinthe', 5], ['lemon_juice', 25], ['simple_syrup', 15]]]], 40).filter((x) => x.at.includes(': absinthe ')));
+    expect(w.jump, w.at).toBeLessThanOrEqual(CLASSIC_STEP);
+  });
+
+  it('scores a classic halved, or made at two thirds, as the whole one', () => {
+    const off: string[] = [];
+    for (const r of RECIPES) for (const k of [0.5, 0.67]) {
+      // the Ramos needs a real pour of cream (16 ml or more) for its egg white to hold, so it is not
+      // made by the half; counted pieces and dashes stay as they are
+      if (r.id === 'ramos_gin_fizz' && k === 0.5) continue;
+      const scaled = r.build.map(([id, ml]) => [id, ING_BY_ID[id]?.unit ? ml : ml * k] as [string, number]);
+      const a = harmony(toBrew(r.build)), b = harmony(toBrew(scaled));
+      if (b?.archetype !== a?.archetype || Math.abs((b?.score ?? 0) - (a?.score ?? 0)) > 1)
+        off.push(`${r.id} at ${k}: ${a?.score} ${a?.archetype} to ${b?.score} ${b?.archetype}`);
+    }
+    expect(off).toEqual([]);
+    // the Grasshopper at 20 ml each scored 77, not 83, when small pots widened its flavour bands
+    expect(score([['creme_de_menthe', 20], ['creme_de_cacao', 20], ['heavy_cream', 20]])).toBe(score(RECIPES.find((r) => r.id === 'grasshopper')!.build));
+  });
+
+  it('moves a classic by a bounded amount per counted piece or dash', () => {
+    let cube = { jump: 0, at: 'none' }, other = { jump: 0, at: 'none' };
+    for (const r of RECIPES) for (const ing of INGREDIENTS.filter((i) => i.unit)) {
+      const held = r.build.find(([x]) => x === ing.id)?.[1] ?? 0;
+      const rest = r.build.filter(([x]) => x !== ing.id);
+      const at = (k: number) => score(held + k * perPiece(ing) > 0 ? [...rest, [ing.id, held + k * perPiece(ing)]] : rest);
+      for (let k = 1; k <= 4; k++) {
+        const jump = Math.abs(at(k) - at(k - 1));
+        const step = { jump, at: `${r.id} + ${k} ${ing.id}: ${at(k - 1)} to ${at(k)}` };
+        if (ing.id === 'sugar_cube') { if (jump > cube.jump) cube = step; } else if (jump > other.jump) other = step;
+      }
+    }
+    if (process.env.CALIB_LOG) console.log('pieces', cube, other);
+    expect(cube.jump, cube.at).toBeLessThanOrEqual(SUGAR_CUBE_STEP);
+    expect(other.jump, other.at).toBeLessThanOrEqual(PIECE_STEP);
   });
 
   it('lets a small clash dim a classic shape instead of dropping it', () => {
@@ -346,6 +446,42 @@ describe('calibration', () => {
     const median = (scores[149] + scores[150]) / 2;
     if (process.env.CALIB_LOG) console.log('median', median, 'p25', scores[75], 'p75', scores[225]);
     expect(median).toBeLessThan(70);
+  });
+
+  it('labels a brew with the shape that pays its bonus', () => {
+    // more than half a dessert (bonus 8) but all of a spirit-forward drink (bonus 7): the spirit-forward
+    // shape pays more, so it names the brew, where the first shape at half used to
+    expect(harmony(toBrew([['creme_de_menthe', 29], ['vodka', 44.5], ['irish_cream', 28]]))?.archetype).toBe('spirit-forward');
+    // a third of a spirit-forward drink pays a little bonus, but a brew that is all sour reads as a sour
+    expect(harmony(toBrew([['lillet_blanc', 22.5], ['pineapple_juice', 63], ['bourbon', 56]]))?.archetype).toBe('sour');
+    // a Mimosa is all sparkling (no bonus) and most of a highball, which pays
+    expect(harmony(toBrew([['champagne', 75], ['orange_juice', 75]]))?.archetype).toBe('highball');
+  });
+
+  it('curdles nothing with a garnish slice, a dash of bitters or a trace of juice', () => {
+    const russian: [string, number][] = [['vodka', 50], ['coffee_liqueur', 20], ['heavy_cream', 30]];
+    for (const extra of [['orange_slice', 3], ['orange_slice', 6], ['orange_bitters', 1.8], ['lemon_juice', 0.5]] as [string, number][]) {
+      const h = harmony(toBrew([...russian, extra]));
+      // the coffee and citrus still pull apart a little, but there is no curdle (19 points or more)
+      expect(h?.parts.clash, extra.join(' ')).toBeGreaterThan(-4);
+      expect(h?.score, extra.join(' ')).toBeGreaterThanOrEqual(74);
+    }
+  });
+
+  it('always counts cream split in fizz as a poor brew, however much shape it keeps', () => {
+    let poor = 0, all = 0;
+    for (const d of ['heavy_cream', 'milk']) for (const dm of [10, 15, 20, 30])
+      for (const sp of ['vodka', 'gin', 'mezcal', 'white_rum', 'bourbon']) for (const mx of ['soda_water', 'tonic_water', 'ginger_beer', 'cola'])
+        for (const mm of [60, 90, 120]) {
+          const h = harmony(toBrew([[d, dm], [sp, 45], [mx, mm]]))!;
+          all++;
+          if (isPoorBrew(h)) poor++;
+          // a full split clashes 19 points; anything that clashes that hard is poor
+          if (h.parts.clash <= -19) expect(isPoorBrew(h), `${d} ${dm} ${sp} ${mx} ${mm}`).toBe(true);
+        }
+    // 161 of 480 were poor before the shape learnt to survive a clash, and 48 just after
+    expect(poor).toBeGreaterThanOrEqual(161);
+    expect(all).toBe(480);
   });
 
   it('archetype bonuses sit in structure and the parts still add up', () => {
