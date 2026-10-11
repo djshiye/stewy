@@ -65,6 +65,7 @@ export function deltaWords(d: Delta | undefined): string | null {
   if (d.clash === true) return delta < 0
     ? `Clashes with the brew (curdles or muddies it), ${delta}`
     : 'Clashes with the brew (curdles or muddies it)';
+  if (d.curdles === true) return 'Splits against the acid already in the pot';
   if (delta >= 2) return `Raises the score by ${delta}`;
   if (delta === 1) return 'Raises the score slightly';
   if (delta === 0) return 'Leaves the score unchanged';

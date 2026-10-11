@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry } from '../data/types';
 import { INGREDIENTS, ING_BY_ID } from '../data/ingredients';
-import { harmony } from './harmony';
+import { curdles, DAIRY, harmony } from './harmony';
 import { fitFromDelta, scoreDeltas, topSuggestions, withAdded } from './coach';
 
 const brew = (...xs: [string, number][]): BrewEntry[] => xs.map(([id, ml]) => ({ id, ml }));
@@ -180,5 +180,47 @@ describe('Delta.clash', () => {
       const worse = (after?.parts.clash ?? 0) - (base?.parts.clash ?? 0) <= -5;
       expect(Boolean(e?.clash), ing.id).toBe(worse);
     }
+  });
+});
+
+describe('scoreDeltas on a curdled brew', () => {
+  // scores 40 and curdles; more milk would score 57 if the score alone decided
+  const CURDLED = brew(['milk', 20], ['cognac', 30], ['creme_de_cacao', 20], ['lemon_juice', 5]);
+
+  it('gives dairy no gain, whatever the score would say', () => {
+    expect(curdles(harmony(CURDLED)!)).toBe(true);
+    const d = scoreDeltas(CURDLED);
+    for (const id of DAIRY) {
+      const e = d?.get(id);
+      expect(e, id).toBeDefined();
+      expect(e?.delta, id).toBeLessThanOrEqual(0);
+      expect(e?.curdles, id).toBe(true);
+      expect(e?.clash, id).toBeFalsy();
+    }
+    // the simulation itself still says milk lifts the score; the rule overrides it
+    expect(harmony(withAdded(CURDLED, 'milk', 45))!.score).toBeGreaterThan(harmony(CURDLED)!.score);
+  });
+
+  it('leaves every other ingredient as simulated', () => {
+    const base = harmony(CURDLED)!.score;
+    const d = scoreDeltas(CURDLED);
+    for (const ing of INGREDIENTS) {
+      if (DAIRY.has(ing.id)) continue;
+      const e = d?.get(ing.id);
+      expect(e?.curdles, ing.id).toBeUndefined();
+      expect(harmony(withAdded(CURDLED, ing.id, e?.ml ?? 0))!.score - base, ing.id).toBe(e?.delta);
+    }
+    expect([...(d?.values() ?? [])].some((e) => e.delta >= 2)).toBe(true);
+  });
+
+  it('still lets dairy gain on a brew that does not curdle', () => {
+    const d = scoreDeltas(brew(['vodka', 45], ['coffee_liqueur', 30]));
+    expect(d?.get('heavy_cream')?.curdles).toBeUndefined();
+    expect(d?.get('heavy_cream')?.delta).toBeGreaterThan(0);
+  });
+
+  it('does not touch the coach output', () => {
+    const ids = topSuggestions(CURDLED, 10).map((s) => s.ing.id);
+    for (const id of DAIRY) expect(ids).not.toContain(id);
   });
 });

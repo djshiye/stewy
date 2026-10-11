@@ -63,6 +63,12 @@ describe('shelf indicators', () => {
     expect(deltaWords({ delta: -12, ml: 30, clash: true })).toBe('Clashes with the brew (curdles or muddies it), -12');
   });
 
+  it('words dairy on a curdled pot as a split, with no marker', () => {
+    const d = { delta: 0, ml: 30, curdles: true };
+    expect(deltaWords(d)).toBe('Splits against the acid already in the pot');
+    expect(indicatorFor(d)).toEqual({ kind: 'none' });
+  });
+
   it('lists the strongest flavour notes first', () => {
     const gin = INGREDIENTS.find((i) => i.id === 'gin')!;
     expect(flavourNotes(gin).length).toBeGreaterThan(0);
