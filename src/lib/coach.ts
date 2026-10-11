@@ -2,7 +2,7 @@
    how the harmony score would move. Pure functions, no DOM. */
 import type { BrewEntry, Ingredient } from '../data/types';
 import { INGREDIENTS } from '../data/ingredients';
-import { harmony } from './harmony';
+import { curdles, DAIRY, harmony } from './harmony';
 import { isCounted, perPiece } from './units';
 
 export interface Delta {
@@ -83,10 +83,14 @@ export function topSuggestions(brew: BrewEntry[], n = 3): CoachSuggestion[] {
   if (!deltas || !base) return [];
   // A strong brew with a clear shape keeps it: no telling a 90-point Espresso Martini to become a highball.
   const keepShape = base.score >= KEEP_SHAPE_SCORE && base.archetype !== null;
+  // A curdled brew is told to pick the cream or the citrus, so the coach offers no more dairy: more of it
+  // only waters the acid down, and the cream still splits.
+  const curdled = curdles(base);
   const all: CoachSuggestion[] = [];
   for (const ing of INGREDIENTS) {
     const d = deltas.get(ing.id);
     if (!d || d.delta <= 0) continue;
+    if (curdled && DAIRY.has(ing.id)) continue;
     const after = keepShape || d.delta < MIN_SHAPE_GAIN ? harmony(withAdded(brew, ing.id, d.ml)) : null;
     if (keepShape && after?.archetype !== base.archetype) continue;
     if (after && d.delta < MIN_SHAPE_GAIN && after.parts.structure - base.parts.structure >= d.delta / 2) continue;

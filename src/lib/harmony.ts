@@ -113,6 +113,9 @@ export interface Harmony {
   balance: number | null;
   /** The classic shape this brew follows, if any (its bonus sits in `parts.structure`). */
   archetype: Archetype | null;
+  /** Points of the clash that come from cream splitting against acid (dairy, or coconut cream against
+      sharp acid): what the clash would give back with no acid in the pot. Part of `parts.clash`. */
+  curdle: number;
 }
 
 /** Volumes and ingredient facts the archetype checks work from. Counted pieces and dashes
@@ -213,7 +216,7 @@ function addVolume(s: Shape, ing: Ingredient, ml: number) {
 }
 
 /** Dairy that splits in acid. Egg white and coconut cream are creamy but stay out of this. */
-const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
+export const DAIRY: ReadonlySet<string> = new Set(['heavy_cream', 'milk', 'irish_cream']);
 /** Dairy an egg white emulsion can hold. Irish cream carries its own whiskey and stays out. */
 const EMULSIFIABLE = new Set(['heavy_cream', 'milk']);
 const CURDLE = 0.2;
@@ -363,7 +366,7 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
     // only flavourless items (soda, salt, ice)
     return {
       score: 42, tier: tierFor(42), p: {}, F, tot,
-      parts: { ...NO_PARTS, base: 42 }, balance: null, archetype: null,
+      parts: { ...NO_PARTS, base: 42 }, balance: null, archetype: null, curdle: 0,
     };
   }
   const dims = Object.keys(F) as FlavorDim[];
@@ -439,6 +442,8 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   const tangW = fadeIn(ptang, BAND.tang, CURDLE_BLUR_ML / pot, 'lo');
   const acidW = fade(share(shape.acid), 'acid');
   let creamClash = fadeF(pc, 'creamy') * Math.min(pc, psmk) * 0.7; // cream + smoke: muddy
+  // the same clash with no acid in the pot, so the cost of the curdle alone can be told apart
+  let dryClash = creamClash;
   // coconut cream holds up against a mild fruit sour (a Piña Colada) and only sours with sharp acid
   const pcc = shape.coconutCreamy / tot;
   const psharp = Math.max(0, (F.sour ?? 0) + (F.citrus ?? 0) - shape.mildAcid) / tot;
@@ -446,14 +451,19 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   const dairyFlavour = fadeF(pcd, 'creamy');
   if (dairyFlavour > 0) {
     // dairy + acid curdles (any real acid, however little), and cream in a big fizzy pour splits and foams
-    const curdle = Math.min(pcd, ptang) + tangW * CURDLE + fade(share(shape.fizz), 'fizz') * CURDLE;
+    const split = fade(share(shape.fizz), 'fizz') * CURDLE;
+    const curdle = Math.min(pcd, ptang) + tangW * CURDLE + split;
     creamClash += dairyFlavour * curdle * held;
+    dryClash += dairyFlavour * split * held;
   }
   const dairyW = fade(share(shape.dairy), 'dairyPour');
   if (dairyW > 0) {
     const fizzW = ramp(share(shape.fizz), 0.3, 0.5);
     creamClash = Math.max(creamClash, dairyW * (acidW * CURDLE_FLOOR + fizzW * CURDLE) * held);
+    dryClash = Math.max(dryClash, dairyW * fizzW * CURDLE * held);
   }
+  // what the acid alone costs the cream, never below none
+  const curdleClash = Math.max(0, creamClash - dryClash);
   clash += creamClash;
   clash += Math.min(pcof, pacid) * 0.8;  // coffee + citrus/acid
   clash += fadeF(pcof, 'coffee') * fadeF(pacid, 'coffeeAcid') * CURDLE * 0.8;
@@ -525,7 +535,7 @@ export function harmony(brew: BrewEntry[]): Harmony | null {
   }
 
   const final = clamp(Math.round(score), 3, 99);
-  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F), archetype };
+  return { score: final, tier: tierFor(final), p, F, tot, parts, balance: lean(F), archetype, curdle: curdleClash * 95 };
 }
 
 /** Fit of a candidate ingredient against the current mix profile → 0..1. */
@@ -569,25 +579,40 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
     out.push({ text: 'Very sharp. A little syrup would soften it.', kind: 'warn' });
   if (p('bitter') > 0.4 && p('sweet') < 0.08)
     out.push({ text: 'Quite bitter. A touch of sweetness would round it out.', kind: 'warn' });
-  const shape = shapeOf(brew);
-  const curdles = shape.liquid > 0 && shape.dairy / shape.liquid >= 0.05 && shape.acid > 0;
-  const curdler = shape.dairyCreamy + ((F.sour ?? 0) + (F.citrus ?? 0) - shape.mildAcid > tot * 0.05 ? shape.coconutCreamy : 0);
-  if (emulsion(shape) < 0.5 && curdler > 0 && (has('citrus') || has('sour')) && (curdler > tot * 0.12 || curdles))
+  // the engine's own curdle, so the tip shows exactly when the score pays for one
+  if (curdles(h))
     out.push({ text: 'Cream and citrus can curdle. Pick one or the other.', kind: 'bad' });
   if (n === 1)
     out.push({ text: 'Add a modifier like citrus, something sweet or bitters to make it a cocktail.', kind: '' });
   if (n > 7)
     out.push({ text: 'That is a lot of ingredients. Try removing one or two for clarity.', kind: 'warn' });
 
-  if (!out.length || h.score >= 80)
+  // praise only a brew that earns it; with nothing to warn about, a weaker one gets a plain line instead
+  if (h.score >= 80)
     out.unshift({
       text: h.score >= 90
         ? 'A masterpiece. Pour it and take a bow.'
         : 'Beautifully balanced and ready to pour.',
       kind: 'good',
     });
+  else if (!out.length)
+    out.push(h.score >= 70
+      ? { text: 'A good brew with room to grow.', kind: '' }
+      : h.score >= 56
+        ? { text: 'Drinkable, but it does not quite come together yet.', kind: 'warn' }
+        : { text: 'The flavours fight each other, so nothing here comes together.', kind: 'bad' });
 
   return out.slice(0, 3);
+}
+
+/** Points the cream splitting against acid must cost before the brew counts as curdled: the tip warns
+    about it, the tasting note names it and the coach offers no more dairy. A trace of juice or a garnish
+    slice costs a point or two and counts as nothing. */
+const CURDLE_NOTICE = 5;
+
+/** True when the brew pays a real curdle: cream or milk against acid, or coconut cream against sharp acid. */
+export function curdles(h: Harmony): boolean {
+  return h.curdle >= CURDLE_NOTICE;
 }
 
 /** A brew that clashes hard or scores below this is not "close to" any classic, whatever its volumes

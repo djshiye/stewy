@@ -205,6 +205,28 @@ describe('copy', () => {
     expect(suggestions(null, []).length).toBe(1);
   });
 
+  it('praises only a brew that scores 80 or more, whatever is left to warn about', () => {
+    // these used to open with 'Beautifully balanced and ready to pour.' under a 'Cursed sludge' verdict
+    const sludge = [
+      toBrew([['espresso', 30], ['lemon_juice', 25], ['gin', 45]]),
+      toBrew([['mezcal', 45], ['heavy_cream', 30]]),
+      toBrew([['cranberry_juice', 58.5], ['absinthe', 3], ['espresso', 19]]),
+    ];
+    for (const b of sludge) {
+      const [head] = suggestions(harmony(b), b);
+      expect(harmony(b)!.score, JSON.stringify(b)).toBeLessThan(42);
+      expect(head.text, JSON.stringify(b)).toBe('The flavours fight each other, so nothing here comes together.');
+    }
+    // a White Russian with an orange slice scores in the 70s: plain, not praised
+    const russian = toBrew([['vodka', 50], ['coffee_liqueur', 20], ['heavy_cream', 30], ['orange_slice', 3]]);
+    expect(suggestions(harmony(russian), russian)[0].text).toBe('A good brew with room to grow.');
+    for (const b of allBrews()) {
+      const h = harmony(b);
+      const praised = suggestions(h, b).some((s) => s.kind === 'good');
+      expect(praised, JSON.stringify(b)).toBe((h?.score ?? 0) >= 80);
+    }
+  });
+
   it('still warns about curdling when the cream is topped up with a long mixer', () => {
     const b = toBrew([['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]]);
     expect(suggestions(harmony(b), b).map((s) => s.text)).toContain('Cream and citrus can curdle. Pick one or the other.');

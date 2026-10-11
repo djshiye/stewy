@@ -91,6 +91,15 @@ describe('tastingNote for a brew that goes wrong', () => {
     }
   });
 
+  it('names a curdle only when the score pays for one, and counts a citrus liqueur as the acid', () => {
+    // a trace of lemon costs this syrupy brew a point; it is poor for being far too sweet
+    expect(noteFor(brew(['heavy_cream', 5], ['simple_syrup', 45], ['lemon_juice', 0.5])))
+      .toBe('It is far too sweet, with nothing sharp to cut through it.');
+    // triple sec curdles the cream in the score, so the note says so instead of blaming the spirit
+    expect(noteFor(brew(['heavy_cream', 10], ['vodka', 45], ['triple_sec', 15])))
+      .toBe('The cream splits against the triple sec, so it drinks thin and grainy.');
+  });
+
   it('is always one plain sentence, even without the brew to name things', () => {
     expect(tastingNote(harmony(sludge))).toMatch(/^[A-Z][^.]+\.$/);
     expect(tastingNote(harmony(sludge))).not.toMatch(PRAISE);

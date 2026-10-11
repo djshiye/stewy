@@ -467,7 +467,23 @@ describe('calibration', () => {
       // the coffee and citrus still pull apart a little, but there is no curdle (19 points or more)
       expect(h?.parts.clash, extra.join(' ')).toBeGreaterThan(-4);
       expect(h?.score, extra.join(' ')).toBeGreaterThanOrEqual(74);
+      // and so no curdle tip, which used to fire on any dairy share next to any juice
+      expect(curdleTip([...russian, extra]), extra.join(' ')).toBe(false);
     }
+  });
+
+  it('warns about a curdle exactly when the score pays for one, a citrus liqueur included', () => {
+    // triple sec curdles the cream in the score (36, clash -18): the tip used to stay silent
+    const margaritaCream: [string, number][] = [['heavy_cream', 10], ['vodka', 45], ['triple_sec', 15]];
+    expect(harmony(toBrew(margaritaCream))!.curdle).toBeGreaterThan(15);
+    expect(curdleTip(margaritaCream)).toBe(true);
+    // a sweet brew with a trace of lemon costs a point of curdle: no tip, it is too sweet instead
+    const syrupy: [string, number][] = [['heavy_cream', 5], ['simple_syrup', 45], ['lemon_juice', 0.5]];
+    expect(harmony(toBrew(syrupy))!.curdle).toBeLessThan(2);
+    expect(curdleTip(syrupy)).toBe(false);
+    // cream split in fizz is no citrus curdle, and a classic carries none at all
+    expect(curdleTip(CLASH_SUITE.cream_tonic)).toBe(false);
+    for (const r of RECIPES) expect(harmony(toBrew(r.build))!.curdle, r.id).toBe(0);
   });
 
   it('always counts cream split in fizz as a poor brew, however much shape it keeps', () => {

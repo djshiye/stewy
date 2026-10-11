@@ -2,7 +2,7 @@
    how sweet the middle is and how it finishes. Pure and deterministic, no DOM. */
 import type { BrewEntry, FlavorDim, Ingredient } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
-import { isPoorBrew, type Harmony } from './harmony';
+import { curdles, DAIRY, isPoorBrew, type Harmony } from './harmony';
 import { inlineName } from './serve';
 
 /** How a dimension reads at the front of the glass. Sweet and boozy are told apart. */
@@ -65,9 +65,6 @@ function finish(h: Harmony): string {
   return 'a balanced finish';
 }
 
-/** Curdling dairy, the same set the scoring uses. */
-const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
-
 type Poured = { ing: Ingredient; ml: number };
 
 /** The biggest pour matching `test`, or null. */
@@ -94,6 +91,8 @@ function fault(h: Harmony, brew: BrewEntry[]): string {
   }
   const tag = (ing: Ingredient, d: FlavorDim) => ing.tags[d] ?? 0;
   const isAcid = (ing: Ingredient) => (ing.group === 'Juices' && (tag(ing, 'sour') >= 1 || tag(ing, 'citrus') >= 1)) || tag(ing, 'sour') >= 2;
+  // the scoring curdles dairy with any sour or citrus liquid, a citrus liqueur too
+  const isTangy = (ing: Ingredient) => !ing.unit && tag(ing, 'sour') + tag(ing, 'citrus') > 0;
 
   const dairy = biggest(xs, (i) => DAIRY.has(i.id));
   const coconut = biggest(xs, (i) => i.id === 'coconut_cream');
@@ -105,8 +104,11 @@ function fault(h: Harmony, brew: BrewEntry[]): string {
   const liquidMl = xs.reduce((t, x) => t + (x.ing.unit ? 0 : x.ml), 0);
   const fizzy = liquidMl > 0 && fizzMl / liquidMl >= 0.4;
 
-  if (dairy && acid) return `The ${said(dairy)} splits against the ${said(acid)}, so it drinks thin and grainy.`;
-  if (coconut && sharp) return `The coconut cream splits against the ${said(sharp)}, so it drinks thin and grainy.`;
+  // a curdle is named only when the score pays for one, not for every trace of juice near the cream
+  const curdled = curdles(h);
+  const tangy = curdled ? acid ?? biggest(xs, (i) => isTangy(i) && i.id !== 'coconut_cream') : null;
+  if (curdled && dairy && tangy) return `The ${said(dairy)} splits against the ${said(tangy)}, so it drinks thin and grainy.`;
+  if (curdled && coconut && sharp) return `The coconut cream splits against the ${said(sharp)}, so it drinks thin and grainy.`;
   if (dairy && fizzy) return `The ${said(dairy)} splits in all that fizz, so it drinks thin and foamy.`;
   if (dairy && smoke) return `The ${said(dairy)} smothers the ${said(smoke)}, so it drinks heavy and muddy.`;
   if (coffee && acid) return `The ${said(acid)} turns the ${said(coffee)} sour and harsh.`;

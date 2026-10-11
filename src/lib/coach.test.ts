@@ -115,6 +115,20 @@ describe('topSuggestions', () => {
     expect(top.some((s) => s.ing.id === 'absinthe' && s.delta < 2)).toBe(false);
   });
 
+  it('offers no more dairy to a curdled brew, which is told to pick the cream or the citrus', () => {
+    // more milk only watered the lemon down: 40 to 57, out of poor, next to the curdle tip
+    for (const b of [
+      brew(['milk', 20], ['cognac', 30], ['creme_de_cacao', 20], ['lemon_juice', 5]),
+      brew(['heavy_cream', 20], ['cognac', 30], ['creme_de_cacao', 20], ['pineapple_juice', 5]),
+      brew(['heavy_cream', 10], ['lemon_juice', 1]),
+    ]) {
+      const dairy = topSuggestions(b, 40).filter((s) => ['heavy_cream', 'milk', 'irish_cream'].includes(s.ing.id));
+      expect(dairy.map((s) => `${s.ing.id} +${s.delta}`), JSON.stringify(b)).toEqual([]);
+    }
+    // a brew with no curdle still gets cream where it helps
+    expect(topSuggestions(brew(['vodka', 50], ['coffee_liqueur', 20]), 40).some((s) => s.ing.id === 'heavy_cream')).toBe(true);
+  });
+
   it('suggests nothing when no addition improves a great drink', () => {
     const daiquiri = brew(['white_rum', 45], ['lime_juice', 25], ['simple_syrup', 15]);
     for (const s of topSuggestions(daiquiri, 10)) expect(s.delta).toBeGreaterThan(0);
