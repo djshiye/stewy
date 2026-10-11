@@ -49,8 +49,19 @@ describe('tailPadding', () => {
     expect(pad(660)).toBe(60);
   });
 
-  it('rounds up, and leaves a viewport under two rows alone', () => {
+  it('rounds up', () => {
     expect(pad(609.4)).toBe(10);
-    expect(pad(500)).toBe(0); // only the cell's own row would show it whole
+  });
+
+  it('lets the cell own row reach the top when no earlier row can show it whole', () => {
+    // viewport 500 (under two rows): max 1300, so the row at 1500 needs 200 px of room
+    expect(pad(500)).toBe(200);
+    // a phone in landscape: rows 190 apart, cells 181 tall, a 198 px view. The last row starts 8 px past the limit
+    const phone = [0, 190, 380, 570];
+    expect(tailPadding(phone, 570, 181, 198, 570 + 190)).toBe(8);
+  });
+
+  it('adds nothing when the view is shorter than the cell and the row is reachable anyway', () => {
+    expect(pad(200)).toBe(0); // max 1600
   });
 });

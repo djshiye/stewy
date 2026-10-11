@@ -388,9 +388,10 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
     const el = currentId ? list?.querySelector<HTMLElement>(`[data-id="${CSS.escape(currentId)}"]`) : null;
     if (!scroller || !list || !el) return;
     // The sheet's first layout is not its final one: off-screen cells collapse to their estimated height
-    // (content-visibility) a moment after opening, which moves every row. So aim again whenever the grid
-    // resizes, until the user takes over or the layout has had time to settle. Offsets, not rects: the
-    // sheet is still scaling in while this runs.
+    // (content-visibility) a moment after opening, and cells near the view swap their estimate for their real
+    // height, which moves the rows without changing the grid's own height (so nothing observes it). So aim
+    // again on every frame until the user takes over or the layout has had time to settle. Offsets, not rects:
+    // the sheet is still scaling in while this runs.
     const aim = () => {
       const items = Array.from(list.children) as HTMLElement[];
       const origin = items[0]?.offsetTop ?? 0;
@@ -407,18 +408,13 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       scroller.scrollTop = snapToRow(rowTops, cellTop, el.offsetHeight, scroller.clientHeight, content + room - scroller.clientHeight);
     };
     aim();
-    // re-aim on the next frame, not inside the observer callback: a scroll that moves cells in or out of
-    // content-visibility there makes WebKit report "ResizeObserver loop completed with undelivered notifications"
     let frame = 0;
-    const reaim = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(aim);
+    const loop = () => {
+      aim();
+      frame = requestAnimationFrame(loop);
     };
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reaim);
-    ro?.observe(list);
-    ro?.observe(scroller); // the header can reflow (fonts arriving) and change the viewport without touching the grid
+    frame = requestAnimationFrame(loop);
     const stop = () => {
-      ro?.disconnect();
       cancelAnimationFrame(frame);
       clearTimeout(timer);
     };
@@ -444,7 +440,15 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       const pad = parseFloat(getComputedStyle(scroller).scrollPaddingBottom) || 0;
       let by = 0;
       if (cell.top < view.top) by = cell.top - view.top;
-      else if (cell.bottom > view.bottom - pad) by = Math.min(cell.bottom - (view.bottom - pad), cell.top - view.top);
+      else if (cell.bottom > view.bottom - pad) {
+        // the least that shows the cell whole, and no more than its own top: land on the first row top in that
+        // range, so no sliver of the row above stays under the header
+        const least = cell.bottom - (view.bottom - pad);
+        const most = cell.top - view.top;
+        const tops = Array.from(listRef.current!.children, (c) => c.getBoundingClientRect().top - view.top);
+        const row = Math.min(...tops.filter((t) => t >= least - 0.5 && t <= most + 0.5), Infinity);
+        by = Number.isFinite(row) ? row : Math.min(least, most);
+      }
       if (Math.abs(by) >= 1) scroller.scrollTop += by / scale;
     };
     bring();

@@ -299,8 +299,9 @@ export async function finishAnimations(page: Page): Promise<void> {
  * classic is in view (the whole cell when `wholeCell`, else at least its "In the pot" badge). The sheet re-aims
  * while it settles, so this polls. Tolerances are 2 to 3 px for sub-pixel zoom.
  */
-export async function expectGrimoireOnWholeRow(page: Page, wholeCell: boolean): Promise<void> {
-  await page.keyboard.press('g');
+export async function expectGrimoireOnWholeRow(page: Page, wholeCell: boolean, openIt?: () => Promise<void>): Promise<void> {
+  if (openIt) await openIt(); // the openGrimoire fixture, on a touch context without a keyboard
+  else await page.keyboard.press('g');
   await expect(page.locator('.grim-cell__pot')).toBeVisible();
   await expect.poll(async () =>
     page.evaluate((whole) => {

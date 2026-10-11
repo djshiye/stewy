@@ -1,4 +1,4 @@
-import { test, expect, EMPTY, NEGRONI, bottle, dial, dialog, pourButton, rows, shelfTab, closeSheet } from './fixtures';
+import { test, expect, EMPTY, GRASSHOPPER, MOJITO, NEGRONI, bottle, expectGrimoireOnWholeRow, dial, dialog, pourButton, rows, shelfTab, closeSheet } from './fixtures';
 
 // The phone layout (the dock, the bottom sheets), below 1000 wide. The desktop projects emulate a phone with a
 // 390 x 844 touch context; the mobile WebKit projects (iPhone, iPhone SE, iPhone landscape, iPad portrait) bring
@@ -21,6 +21,15 @@ test('the dock and its hint are on screen', async ({ page, open }) => {
   await expect(page.locator('.dock')).toBeVisible();
   await expect(page.getByText('Tap a bottle below to pour')).toBeVisible();
 });
+
+// A phone's index is little more than a row tall. A classic in the pot (mid-list, where the rows above settle after
+// the first aim, or the last, which needs room below it) must still open whole, with no cut row under the header.
+for (const [label, state] of [['a mid-list classic', MOJITO], ['the last classic', GRASSHOPPER]] as const) {
+  test(`the Grimoire opens on a whole row with ${label} in the pot`, async ({ page, open, openGrimoire }) => {
+    await open(state);
+    await expectGrimoireOnWholeRow(page, true, openGrimoire);
+  });
+}
 
 test('tapping a bottle opens the dial as a bottom sheet and Pour adds a row', async ({ page, open }) => {
   await open(EMPTY);

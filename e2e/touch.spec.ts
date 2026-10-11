@@ -119,8 +119,16 @@ test.describe('touch contexts', { tag: '@device' }, () => {
         if (!cell || !view || !bar || !head) return 'missing';
         const inside = cell.top >= view.top - 1 && cell.bottom <= view.bottom + 1 && cell.left >= view.left - 1 && cell.right <= view.right + 1;
         const clear = cell.bottom <= bar.top + 1 || cell.right <= bar.left + 1; // above the bar, or left of it
-        return { below: view.top >= head.bottom - 1, inside, clear };
-      }, 'the picked cell is whole, below the header and clear of the bar').toEqual({ below: true, inside: true, clear: true });
+        // and the pick lands on a row boundary: no sliver of the row above under the header
+        const cutAtTop = await page.evaluate(() => {
+          const top = document.querySelector('.grim__scroll')!.getBoundingClientRect().top;
+          return [...document.querySelectorAll('.grim-cell')].filter((c) => {
+            const r = c.getBoundingClientRect();
+            return r.top < top - 3 && r.bottom > top + 3;
+          }).length;
+        });
+        return { below: view.top >= head.bottom - 1, inside, clear, cutAtTop };
+      }, 'the picked cell is whole, below the header and clear of the bar').toEqual({ below: true, inside: true, clear: true, cutAtTop: 0 });
 
       await press(cells.nth(pick)); // Playwright refuses a tap that lands on another element, such as the bar
       await expect(page.locator('.grim__overlay')).toBeVisible();
