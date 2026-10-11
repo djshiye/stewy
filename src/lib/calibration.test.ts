@@ -67,6 +67,9 @@ const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toB
     - SMALL_POT_STEP: the same with 10 to 30 ml of rest (12 measured: 0.5 ml of cranberry juice against
       13 ml of syrup is a twenty-sixth of the drink, and turns a lone syrup into a sour). Under 10 ml of
       rest there is no bound: 0.5 ml can be most of the pot, and then the flavour itself changes.
+      Seeds 1 to 100 find steps past both bounds, 8 (coconut cream meeting triple sec, 37 ml of rest) and
+      15 (lime into 10.5 ml of creme de violette), where a flavour band that starts at zero meets a small
+      pot; so do coffee pots with acid (10 and 18). Lowering them is a design call, not a pin.
     - DAIRY_ACID_STEP: dairy (cream, milk, Irish cream) with anything sour or citrus. Any real acid
       curdles the dairy, costs its own points and spoils the shape, and that has to happen within a few ml,
       so this family steps harder. Measured on the grid below and the random family: 18, 15, 12 and 8 for
