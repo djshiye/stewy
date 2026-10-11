@@ -95,7 +95,8 @@
    iPad Pro 12.9 and Air 13 in portrait (1024 x 1366, and about 1024 x 1266 in Safari once the tab and
    address bars are gone), iPad Pro 13 (1032 x 1280 to 1300), portrait monitors (1080 x 1920, 1440 x 2560).
    Three columns would squeeze the pot into a 330px middle column, so the stage spans the width
-   and the recipe and analysis cards sit side by side below it, each about half. An aspect-ratio
+   and the recipe and analysis cards sit side by side below it (recipe 4fr, analysis 7fr: the analysis card needs the width, its two-column body is the only way
+   to show a full brew in 520px). An aspect-ratio
    query, not orientation: a square counts as portrait there. 5 / 6 (0.833) is the loosest ratio that
    still keeps 1000 x 1000, 1100 x 1100 and 1280 x 1024 on three columns with room to spare, and it
    catches every Safari iPad viewport (0.79 to 0.81). From 1024 wide the stacked pot is never smaller
@@ -281,12 +282,32 @@
     zoom: var(--ui-zoom);
   }
 
-  /* the tooltip positions itself from viewport pixels, so it stands outside the zoom */
+  /* the tooltip positions itself from viewport pixels, so it stands outside the zoom; its box (width, padding,
+     lift above the bottle) is written in unzoomed pixels, so those carry the factor themselves */
   .app .shelf-tip {
     zoom: calc(1 / var(--ui-zoom));
+    max-width: calc(260px * var(--ui-zoom));
+    padding: calc(10px * var(--ui-zoom)) calc(12px * var(--ui-zoom));
+    translate: -50% calc(-1 * (var(--room) + 36px) * var(--ui-zoom));
   }
 
   .app .shelf-tip > * {
     zoom: var(--ui-zoom);
   }
+}
+
+/* ---------- portrait monitors: what the 1000 to 1279 wide rules would do ----------
+   The zoom ladder makes the stack read 1070 to 1250 CSS px wide, but media queries see the physical width
+   (1300 and up), so the narrow-desktop rules never match. The shelf is the one that breaks without them: its
+   legend squeezes the tabs and pushes Garnish and Extras out of the strip. Same values as Shelf.css 1000 to 1279. */
+@media (min-width: 1300px) and (max-aspect-ratio: 5/6) {
+  .app .shelf { --item-w: 92px; --edge: 16px; }
+  .app .shelf__legend { display: none; }
+  .app .shelf__search { width: 208px; }
+}
+
+/* the stage glow layers reach past the right edge of a stacked screen: clip them so scripts cannot scroll the
+   page sideways (clip, not hidden: no scroll container, nothing else is clipped) */
+@media (min-width: 1000px) and (max-aspect-ratio: 5/6) {
+  .app { overflow-x: clip; }
 }

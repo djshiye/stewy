@@ -12,6 +12,14 @@ const WORST: PotState = {
   name: 'Worst case',
 };
 
+/** A clamped equation ("floored at 3" adds a line to the sum): the brew that came out tightest in a sweep of every
+ * bottle, classic and pair, and overflowed the 520px card by 5px before the tall body was compacted. */
+const FLOORED: PotState = {
+  unit: 'oz',
+  brew: [{ id: 'lemon_juice', ml: 45 }, { id: 'heavy_cream', ml: 10 }],
+  name: 'Floored',
+};
+
 const boxes = (page: import('@playwright/test').Page) =>
   page.evaluate(() => {
     const zoom = parseFloat(getComputedStyle(document.querySelector('.app')!).zoom) || 1;
@@ -33,12 +41,18 @@ const boxes = (page: import('@playwright/test').Page) =>
       apScroll: apBody.scrollHeight - apBody.clientHeight,
       rowsScroll: rows.scrollHeight - rows.clientHeight,
       overflow: document.documentElement.scrollHeight - innerHeight,
+      overflowX: document.documentElement.scrollWidth - innerWidth,
+      tabs: [...document.querySelectorAll('.shelf__tabs [role=tab]')].map((t) => {
+        const strip = document.querySelector('.shelf__tabs')!.getBoundingClientRect();
+        const b = t.getBoundingClientRect();
+        return { name: t.textContent!.trim(), visible: Math.max(0, Math.min(b.right, strip.right) - Math.max(b.left, strip.left)) / b.width };
+      }),
     };
   });
 
 // The Safari iPad viewports (tab and address bars subtracted), the fullscreen iPad and 1000 x 1200.
 // The pot is never smaller than the 420px of the three-column layout it replaces (377px at 1000 x 1200).
-for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1032, 1300], [1024, 1366]]) {
+for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1032, 1300], [1024, 1366], [1100, 1500], [1200, 1600]]) {
   test.describe(`tall tablet ${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 
@@ -70,7 +84,7 @@ for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1
       expect(m.rowsScroll).toBe(0);
     });
 
-    for (const [label, state] of [['a Mai Tai', MAI_TAI], ['the worst-case brew (three suggestions, two tips, a clash)', WORST]] as const) {
+    for (const [label, state] of [['a Mai Tai', MAI_TAI], ['the worst-case brew (three suggestions, two tips, a clash)', WORST], ['a floored equation', FLOORED]] as const) {
       test(`the whole analysis card is readable without scrolling with ${label}`, async ({ page, open }) => {
         await open(state);
         await settled(page);
@@ -85,7 +99,7 @@ for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1
 
 // Portrait monitors: the stacked layout is scaled (zoom ladder keyed on the width) so it reads about 1080 to 1250
 // CSS pixels wide, and the pot is limited by its stage rather than by the 1280px cap while the stage has room.
-for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1], [1366, 2048, 1.2], [1440, 2560, 1.2], [1600, 2560, 1.4], [2160, 3840, 1.8]]) {
+for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1], [1366, 2048, 1.2], [1300, 2311, 1.2], [1440, 2560, 1.2], [1600, 2560, 1.4], [1750, 3111, 1.6], [2160, 3840, 1.8]]) {
   test.describe(`portrait monitor ${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 
@@ -110,13 +124,24 @@ for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1], [1366, 2048, 1.
       expect(m.overflow).toBe(0);
     });
 
-    test('the cards fit without scrolling, the radar shows', async ({ page, open }) => {
-      await open(WORST);
+    for (const state of [WORST, FLOORED]) {
+      test(`the cards fit without scrolling, the radar shows (${state.name})`, async ({ page, open }) => {
+        await open(state);
+        await settled(page);
+        const m = await boxes(page);
+        expect(m.apScroll).toBeLessThanOrEqual(0);
+        expect(m.rowsScroll).toBeLessThanOrEqual(0);
+        expect(m.radar).not.toBeNull();
+      });
+    }
+
+    test('every shelf tab sits inside the tab strip and the page cannot scroll sideways', async ({ page, open }) => {
+      await open(MAI_TAI);
       await settled(page);
       const m = await boxes(page);
-      expect(m.apScroll).toBeLessThanOrEqual(0);
-      expect(m.rowsScroll).toBeLessThanOrEqual(0);
-      expect(m.radar).not.toBeNull();
+      expect(m.tabs.length).toBeGreaterThan(6);
+      for (const t of m.tabs) expect(t.visible, `${t.name} in the tab strip`).toBeGreaterThan(0.99);
+      expect(m.overflowX).toBe(0);
     });
   });
 }

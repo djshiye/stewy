@@ -201,12 +201,13 @@
 
 /* portrait monitors (the stacked layout, 5 : 6 and taller): the same idea keyed on the width, because the
    stack is as wide as the screen and the pot, the cards and the text all read from it. Every step's lower
-   bound lands on a layout about 1080 CSS px wide and the step below it ends near 1200 to 1250 (the pot tops
-   out at about the stage width, so a wider layout only adds dead stage). The height minimum is built in:
-   5 : 6 and taller means at least 1.2 x the width, so the layout is never shorter than about 1300 CSS px.
-   iPads (1000 to 1100 wide) stay at 1.
-   1080 x 1920 and 1200 x 1920 read as they are, 1440 x 2560 reads 1200 x 2133, 1600 x 2560 reads 1143 x 1829,
-   2160 x 3840 reads 1080 x 1920 (a 4K monitor on its side). */
+   bound lands on a layout 1070 to 1110 CSS px wide; the step below it ends at 1150 to 1250 for the first
+   five steps and up to 1300 to 1440 for the last ones (the pot tops out at about the stage width, so a wider
+   layout only adds dead stage). The height minimum is built in: 5 : 6 and taller means at least 1.2 x the
+   width, so the layout is never shorter than about 1300 CSS px. iPads (1000 to 1100 wide) stay at 1.
+   1080 x 1920 and 1200 x 1920 read as they are (turned on its side, a 1080p monitor reads smaller than in
+   landscape: below about 1.08 the layout would drop under 1000 CSS px), 1440 x 2560 reads 1108 x 1969,
+   1600 x 2560 reads 1143 x 1829, 2160 x 3840 reads 1080 x 1920 (a 4K monitor on its side). */
 @media (min-width: 1300px) and (max-aspect-ratio: 5/6) {
   :root {
     --ui-zoom: 1.2;
