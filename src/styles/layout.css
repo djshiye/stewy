@@ -303,16 +303,6 @@
   }
 }
 
-/* ---------- portrait monitors: what the 1000 to 1279 wide rules would do ----------
-   The zoom ladder makes the stack read 1070 to 1250 CSS px wide, but media queries see the physical width
-   (1300 and up), so the narrow-desktop rules never match. The shelf is the one that breaks without them: its
-   legend squeezes the tabs and pushes Garnish and Extras out of the strip. Same values as Shelf.css 1000 to 1279. */
-@media (min-width: 1300px) and (max-aspect-ratio: 5/6) {
-  .app .shelf { --item-w: 92px; --edge: 16px; }
-  .app .shelf__legend { display: none; }
-  .app .shelf__search { width: 208px; }
-}
-
 /* the stage glow layers reach past the right edge of a stacked screen: clip them so scripts cannot scroll the
    page sideways (clip, not hidden: no scroll container, nothing else is clipped) */
 @media (min-width: 1000px) and (max-aspect-ratio: 5/6) {

@@ -104,7 +104,10 @@
   color: var(--tx-3);
   transition: color var(--t-hover) var(--ease-out);
 }
-.shelf__tab:hover { color: var(--tx-1); }
+@media (hover: hover) {
+  .shelf__tab:hover { color: var(--tx-1); }
+}
+.shelf__tab:active { color: var(--tx-1); }
 .shelf__tab[aria-selected='true'] { color: var(--tx-1); }
 .shelf__tab:focus-visible { outline-offset: -2px; }
 
@@ -152,7 +155,9 @@
   color: var(--tx-3);
   transition: box-shadow var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
 }
-.shelf__search:hover { box-shadow: 0 0 0 1px var(--line-2) inset; }
+@media (hover: hover) {
+  .shelf__search:hover { box-shadow: 0 0 0 1px var(--line-2) inset; }
+}
 .shelf__search:focus-within { color: var(--tx-2); box-shadow: 0 0 0 1px var(--line-2) inset; }
 .shelf__search:has(input:focus-visible) {
   outline: 2px solid var(--accent);
@@ -174,6 +179,10 @@
   user-select: text;
 }
 .shelf__search input::placeholder { color: var(--tx-3); opacity: 1; }
+/* iOS zooms the page when a field under 16px takes focus (iPads use this field too, at 13px) */
+@media (pointer: coarse) {
+  .shelf__search input { font-size: 16px; }
+}
 .shelf__search kbd { flex: none; margin-right: 2px; }
 
 .shelf__clear {
@@ -186,7 +195,10 @@
   color: var(--tx-2);
   transition: background-color var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
 }
-.shelf__clear:hover { background: var(--hover); color: var(--tx-1); }
+@media (hover: hover) {
+  .shelf__clear:hover { background: var(--hover); color: var(--tx-1); }
+}
+.shelf__clear:active { background: var(--hover); color: var(--tx-1); }
 
 /* ---------- body: the scrolling slab ---------- */
 .shelf__body {
@@ -395,7 +407,9 @@ body.is-dragging .bottle:active .bottle__art { opacity: 0.4; }
   transition: opacity var(--t-hover) var(--ease-out), transform var(--t-settle) var(--ease-spring), background-color var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
 }
 .shelf__nudge[data-show] { opacity: 1; pointer-events: auto; }
-.shelf__nudge:hover { background: var(--ink-700); }
+@media (hover: hover) {
+  .shelf__nudge:hover { background: var(--ink-700); }
+}
 .shelf__nudge--l { left: 4px; }
 .shelf__nudge--r { right: 4px; }
 @media (hover: none) {
@@ -448,8 +462,12 @@ body.is-dragging .bottle:active .bottle__art { opacity: 0.4; }
 .shelf__empty-hint { font-size: 13px; line-height: 18px; color: var(--tx-2); }
 .shelf__empty .ui-btn { margin-top: var(--s2); }
 
-/* ---------- 1000 to 1279: slimmer header and bottles ---------- */
-@media (min-width: 1000px) and (max-width: 1279px) {
+/* ---------- 1000 to 1279: slimmer header and bottles ----------
+   Portrait monitors from 1300 wide take the same rules: the zoom ladder (tokens.css) makes the stack read 1070 to
+   1250 CSS px wide, but media queries see the physical width, so the 1000 to 1279 query never matches there. Without
+   them the legend squeezes the tabs and pushes Garnish and Extras out of the strip. */
+@media (min-width: 1000px) and (max-width: 1279px),
+  (min-width: 1300px) and (max-aspect-ratio: 5/6) {
   .shelf { --item-w: 92px; --edge: 16px; }
   .shelf__legend { display: none; }
   .shelf__search { width: 208px; }
