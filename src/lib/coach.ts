@@ -54,15 +54,18 @@ export function scoreDeltas(brew: BrewEntry[]): Map<string, Delta> | null {
   let out: Map<string, Delta> | null = null;
   if (base) {
     out = new Map();
-    // A curdled brew is told to pick the cream or the acid, so more dairy is no gain: it only waters the
-    // acid down, and the cream still splits. Every reader of the deltas (shelf, coach) sees that here.
+    // A curdled brew is told to pick the cream or the acid, so an addition that leaves it curdled is no gain:
+    // it only waters the acid down, and the cream still splits. Dairy never counts (it is flagged for the
+    // shelf's words); anything else may, but only by ending the curdle. Every reader of the deltas (shelf,
+    // coach) sees that here.
     const curdled = curdles(base);
     for (const ing of INGREDIENTS) {
       let best: Delta | null = null;
       for (const ml of candidateAmounts(ing)) {
         const h = harmony(withAdded(brew, ing.id, ml));
         if (!h) continue;
-        const delta = h.score - base.score;
+        let delta = h.score - base.score;
+        if (curdled && curdles(h)) delta = Math.min(delta, 0);
         if (!best || delta > best.delta) {
           best = { delta, ml };
           // a real clash worsens by a few points; mere imbalance never moves this term

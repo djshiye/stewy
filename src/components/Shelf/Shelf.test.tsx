@@ -61,13 +61,13 @@ describe('Shelf badges on a curdled pot', () => {
     expect(liqueurs.get('irish_cream')).toBeNull();
   });
 
-  it('still shows +N on a bottle that really helps', async () => {
+  it('shows no green +N on any bottle while the pot stays curdled, however the score would move', async () => {
     const all = new Map<string, string | null>();
     for (const g of ['Spirits', 'Liqueurs', 'Mixers', 'Syrups']) {
       for (const [id, m] of await marksIn(g)) all.set(id, m);
       cleanup();
     }
-    expect([...all.values()]).toContain('raise');
+    expect([...all.values()]).not.toContain('raise');
   });
 
   it('shows the green +N on milk when the pot does not curdle', async () => {

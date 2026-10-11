@@ -91,7 +91,7 @@ describe('topSuggestions', () => {
   });
 
   it('still suggests for brews that have no shape', () => {
-    const shapeless = brew(['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]);
+    const shapeless = brew(['heavy_cream', 30], ['mezcal', 30], ['ginger_beer', 120]); // no acid, so no curdle
     expect(harmony(shapeless)?.archetype).toBeNull();
     expect(topSuggestions(shapeless).length).toBeGreaterThan(0);
   });
@@ -201,16 +201,28 @@ describe('scoreDeltas on a curdled brew', () => {
     expect(harmony(withAdded(CURDLED, 'milk', 45))!.score).toBeGreaterThan(harmony(CURDLED)!.score);
   });
 
-  it('leaves every other ingredient as simulated', () => {
+  it('holds every other addition that leaves it curdled, and gives the rest as simulated', () => {
     const base = harmony(CURDLED)!.score;
     const d = scoreDeltas(CURDLED);
+    let held = 0;
     for (const ing of INGREDIENTS) {
       if (DAIRY.has(ing.id)) continue;
       const e = d?.get(ing.id);
       expect(e?.curdles, ing.id).toBeUndefined();
-      expect(harmony(withAdded(CURDLED, ing.id, e?.ml ?? 0))!.score - base, ing.id).toBe(e?.delta);
+      const after = harmony(withAdded(CURDLED, ing.id, e?.ml ?? 0))!;
+      if (curdles(after)) {
+        // it only waters the acid down: the headline still says to pick one or the other
+        expect(e?.delta, ing.id).toBeLessThanOrEqual(0);
+        if (after.score > base) held++;
+      } else {
+        expect(after.score - base, ing.id).toBe(e?.delta);
+      }
     }
-    expect([...(d?.values() ?? [])].some((e) => e.delta >= 2)).toBe(true);
+    expect(held, 'some additions would have scored higher by dilution').toBeGreaterThan(0);
+  });
+
+  it('offers nothing to add while it stays curdled', () => {
+    expect(topSuggestions(CURDLED)).toEqual([]);
   });
 
   it('still lets dairy gain on a brew that does not curdle', () => {

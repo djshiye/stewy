@@ -1,14 +1,14 @@
 import { test, expect, MAI_TAI, NEGRONI, settled, type PotState } from './fixtures';
 
-// From 1000 wide, a viewport taller than 6 : 5 stacks the shell: the stage spans the width and the recipe and
+// From 1000 wide, a viewport 5 : 6 or taller stacks the shell: the stage spans the width and the recipe and
 // analysis cards sit side by side below it (src/styles/layout.css). Squares and landscape keep three columns.
 // From 1300 wide the stack is scaled with its own zoom ladder (src/styles/tokens.css), so geometry is read in CSS
 // pixels (viewport pixels divided by the zoom).
 
-/** The brew that fills the analysis card most: three suggestions, two tips, a clash and two penalty notes. */
+/** The brew that fills the analysis card most: three suggestions, three tips (two warnings and a coffee clash that the pot does not curdle, since a curdled pot offers nothing to add) and a clash. */
 const WORST: PotState = {
   unit: 'oz',
-  brew: [{ id: 'irish_cream', ml: 35 }, { id: 'honey_syrup', ml: 10 }, { id: 'orange_slice', ml: 5 }, { id: 'lemon_lime_soda', ml: 25 }],
+  brew: [{ id: 'irish_cream', ml: 25 }, { id: 'amaretto', ml: 5 }, { id: 'sugar_cube', ml: 27.5 }, { id: 'orange_bitters', ml: 15 }],
   name: 'Worst case',
 };
 
