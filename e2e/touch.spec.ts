@@ -1,4 +1,4 @@
-import { test, expect, EMPTY, MAI_TAI, NEGRONI, bottle, brewNamed, closeSheet, copied, dial, dialog, finishAnimations, settled, storedPot, stubShare, toast, toastAction } from './fixtures';
+import { test, expect, EMPTY, MAI_TAI, NEGRONI, bottle, brewNamed, closeSheet, copied, dial, dialog, finishAnimations, settled, waitForIndexStill, storedPot, stubShare, toast, toastAction } from './fixtures';
 import type { Page } from '@playwright/test';
 
 // Touch-only checks, run by the mobile WebKit projects (iPhone, iPhone SE, iPhone landscape, iPad, iPad landscape):
@@ -69,25 +69,8 @@ test.describe('touch contexts', { tag: '@device' }, () => {
           return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
         }, [selector, index] as const);
 
-      // the sheet slides in with a script-driven spring that finishAnimations cannot end, and headless WebKit draws a
-      // frame only on demand: ask for frames until the index has stood still for five of them
-      await page.evaluate(
-        () =>
-          new Promise<void>((done) => {
-            const el = document.querySelector('.grim__scroll')!;
-            let prev = '';
-            let still = 0;
-            const tick = () => {
-              const r = el.getBoundingClientRect();
-              const now = `${r.top}|${r.left}|${r.height}`;
-              still = now === prev ? still + 1 : 0;
-              prev = now;
-              if (still >= 5) done();
-              else requestAnimationFrame(tick);
-            };
-            tick();
-          }),
-      );
+      // the sheet slides in with a script-driven spring that finishAnimations cannot end
+      await waitForIndexStill(page);
 
       // the cell to pick: the first, or one low in the index: the last that the bottom edge cuts, else the last whose
       // bottom the bar will take (the bar under the index shortens it by the bar's height)
@@ -134,6 +117,49 @@ test.describe('touch contexts', { tag: '@device' }, () => {
       await expect(page.locator('.grim__overlay')).toBeVisible();
     });
   }
+
+  // In phone landscape the selection bar is a 188px column beside the index. The column is there from the start, showing
+  // the desktop pane's empty state, so the first pick swaps its content and the index keeps its width: the cells must
+  // not move under the finger (they used to reflow, 3 columns of a full-width index becoming 3 of 188px less).
+  test('in phone landscape the first pick does not move the cells', async ({ page, open, openGrimoire, press, viewport }) => {
+    test.skip(!viewport || viewport.width >= 1000 || viewport.height > 500 || viewport.width <= viewport.height, 'only a phone on its side has the column beside the index');
+    await open(EMPTY);
+    await openGrimoire();
+    const cells = page.locator('[role=option]');
+    await expect(cells.first()).toBeVisible();
+    await finishAnimations(page);
+    await waitForIndexStill(page);
+    const side = page.locator('.grim-side');
+    await expect(side.getByText('Pick a classic')).toBeVisible();
+    // the cells in view, and the column
+    const rects = () =>
+      page.evaluate(() => {
+        const box = (el: Element) => {
+          const r = el.getBoundingClientRect();
+          return [r.left, r.top, r.width, r.height];
+        };
+        const view = document.querySelector('.grim__scroll')!.getBoundingClientRect();
+        const cells = [...document.querySelectorAll('.grim-cell')].filter((c) => {
+          const r = c.getBoundingClientRect();
+          return r.top < view.bottom && r.bottom > view.top;
+        });
+        return { cells: cells.map(box), column: box(document.querySelector('.grim-side, .grim-bar')!) };
+      });
+    const before = await rects();
+    expect(before.cells.length).toBeGreaterThanOrEqual(3);
+    await press(cells.nth(1)); // a whole cell in the first row
+    await expect(page.locator('.grim-bar')).toBeVisible();
+    await expect(side).toHaveCount(0);
+    await expect(cells.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect
+      .poll(async () => {
+        await finishAnimations(page);
+        const after = await rects();
+        const diff = (a: number[][], b: number[][]) => Math.max(0, ...a.flatMap((r, i) => r.map((v, k) => Math.abs(v - (b[i]?.[k] ?? Infinity)))));
+        return { cellsStill: diff(before.cells, after.cells) < 1, columnStill: diff([before.column], [after.column]) < 1, count: after.cells.length };
+      }, 'the cells and the column stay where they were')
+      .toEqual({ cellsStill: true, columnStill: true, count: before.cells.length });
+  });
 
   // ------------------------------------------------------------ text fields are 16px or more (iOS zooms the page into smaller ones)
 

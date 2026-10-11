@@ -669,14 +669,19 @@ header); nothing is preselected, so the desktop pane starts on "Pick a classic".
   selected cell opens the details.
 - **Phone landscape** (`max-width: 999px`, landscape, `max-height: 500px`; the sheet is 322 to 404px tall). The
   header is one row (title and count, then the search) with the chips below, and the close button is centred
-  on that row. The selection bar is a 188px column beside the index, not a bar under it: the classic on top,
-  Load under it, a left border, sliding in from the side. The index is still 3 columns, so the first pick
-  narrows it by 188px and the cells reflow once. Cells are shorter (a stage of `clamp(72px, 94dvh - 252px,
+  on that row. The selection bar is a 188px column beside the index (`--side`), not a bar under it: the classic on
+  top, Load under it, a left border, sliding in from the side. The column is reserved from the start: until
+  something is picked it holds the desktop pane's empty state (two empty glasses at 56px, "Pick a classic" and the
+  line under it, which fits even at 343px tall), and the first pick swaps it for the bar. So the index is 188px
+  narrower from the first frame (still 3 columns: 182px cells at 734 wide, 219px at 844, 248px at 932) and the
+  cells do not reflow under the finger. The narrower cells wrap a key line or two, which still leaves a whole cell
+  in the index. Cells are shorter (a stage of `clamp(72px, 94dvh - 252px,
   120px)`, an 18px name, tighter padding) so a whole cell fits the index at every landscape height from 343px up.
   `touch.spec.ts` pins it on four of the five mobile projects (iPhone 15, iPhone SE, iPhone 15 landscape and iPad
   Pro 11 portrait; iPad landscape uses the desktop pane and skips it, and only iPhone 15 landscape has this
   layout): after the first tap, in the first row and low in the index, the cell lies inside the index, below the
-  header, clear of the bar and on a row top, and a second tap reaches it and opens the details.
+  header, clear of the bar and on a row top, and a second tap reaches it and opens the details; and on a phone on
+  its side the first tap leaves every cell in view and the column where it was, within 1px.
 
 ### Cellar (sheet, list layout; 560 wide)
 Rows: a mini glass in the saved colour, the Newsreader name (rename inline), score dot,

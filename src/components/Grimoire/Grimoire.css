@@ -989,6 +989,8 @@
 @media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
   .grim {
     --stage: clamp(72px, calc(94dvh - 252px), 120px);
+    /* the column beside the index: the pick bar, or the empty state until something is picked */
+    --side: 188px;
   }
   /* the close button (44px on touch) centred on the one-line header row */
   .grim-sheet {
@@ -1001,7 +1003,7 @@
   .grim__main {
     flex: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) var(--side);
     grid-template-rows: auto auto minmax(0, 1fr);
   }
   .grim__head {
@@ -1062,6 +1064,34 @@
     padding-top: var(--s2);
   }
 
+  /* the column's empty state: the pane's hint, kept to what fits the 190px or so of the index */
+  .grim-side {
+    grid-column: 2;
+    grid-row: 3;
+    display: flex;
+    width: var(--side);
+    margin-top: var(--s2);
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line-2);
+  }
+  .grim-side .grim-hint {
+    gap: var(--s1);
+    padding: var(--s3);
+  }
+  .grim-side .grim-hint__glasses {
+    height: 56px;
+    margin-bottom: var(--s2);
+  }
+  .grim-side .grim-hint__title {
+    font-size: 20px;
+    line-height: 24px;
+  }
+  .grim-side .grim-hint__text {
+    max-width: none;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
   /* the bar: a column beside the index, the classic on top and Load under it */
   .grim-bar {
     grid-column: 2;
@@ -1070,7 +1100,7 @@
     align-items: stretch;
     justify-content: center;
     gap: var(--s3);
-    width: 188px;
+    width: var(--side);
     margin-top: var(--s2);
     padding: var(--s3);
     border-top: 1px solid var(--line);

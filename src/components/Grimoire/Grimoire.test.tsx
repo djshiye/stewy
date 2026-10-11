@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { getClassics } from './classics';
 import { Grimoire } from './Grimoire';
 
@@ -122,5 +122,29 @@ describe('Grimoire deferred glasses', () => {
     expect(glassOf(cells[2])?.tagName.toLowerCase()).toBe('svg');
     expect(glassOf(cells[2])?.classList.contains('grim-cell__glass--in')).toBe(false);
     expect(glassOf(cells[3])?.tagName.toLowerCase()).toBe('span');
+  });
+});
+
+describe('Grimoire on a phone in landscape', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    // only the landscape phone query matches: not desktop (min-width 1000px), no fine pointer
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('orientation: landscape'), media: q, addEventListener() {}, removeEventListener() {},
+      addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('reserves the column beside the index with the pane hint, and the first pick swaps the bar into it', () => {
+    mount();
+    const side = document.querySelector('.grim-side');
+    expect(side?.textContent).toContain('Pick a classic');
+    expect(document.querySelector('.grim-bar')).toBeNull();
+    fireEvent.click(document.querySelector('.grim-cell')!);
+    expect(document.querySelector('.grim-side')).toBeNull();
+    expect(document.querySelector('.grim-bar')).not.toBeNull();
   });
 });

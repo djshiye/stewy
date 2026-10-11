@@ -294,10 +294,14 @@ function columnsOf(items: HTMLElement[]): number {
  *  desktop layout, as much as a phone) would raise its keyboard over the index, so the title takes the focus instead. */
 const FINE_POINTER = '(hover: hover) and (pointer: fine)';
 
+/** A phone on its side: the same query as the landscape block of Grimoire.css, where the selection bar is a column beside the index. */
+const LANDSCAPE_PHONE = '(max-width: 999px) and (orientation: landscape) and (max-height: 500px)';
+
 function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; onLoad(r: Recipe): void; unit: UnitKey }) {
   const desktop = useIsDesktop();
   const finePointer = useMediaQuery(FINE_POINTER);
   const focusSearch = desktop && finePointer; // phones keep the title whatever the pointer
+  const landscape = useMediaQuery(LANDSCAPE_PHONE) && !desktop;
   const all = getClassics();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
@@ -598,6 +602,12 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
           )}
         </div>
 
+        {/* the bar's column is there from the start in landscape, so the first pick does not move the index */}
+        {landscape && !selected && (
+          <div className="grim-side">
+            <PaneHint />
+          </div>
+        )}
         {!desktop && selected && (
           <div className="grim-bar" key={selected.recipe.id}>
             <button
