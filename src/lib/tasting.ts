@@ -2,7 +2,7 @@
    how sweet the middle is and how it finishes. Pure and deterministic, no DOM. */
 import type { BrewEntry, FlavorDim, Ingredient } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
-import type { Harmony } from './harmony';
+import { isPoorBrew, type Harmony } from './harmony';
 import { inlineName } from './serve';
 
 /** How a dimension reads at the front of the glass. Sweet and boozy are told apart. */
@@ -65,11 +65,6 @@ function finish(h: Harmony): string {
   return 'a balanced finish';
 }
 
-/* A brew that clashes this hard, or scores below this, is not praised (the same line harmony.ts
-   draws before it will call a brew "close to" a classic). */
-const FAULT_CLASH = -20;
-const FAULT_SCORE = 40;
-
 /** Curdling dairy, the same set the scoring uses. */
 const DAIRY = new Set(['heavy_cream', 'milk', 'irish_cream']);
 
@@ -127,6 +122,6 @@ function fault(h: Harmony, brew: BrewEntry[]): string {
     brew so the fault can name the ingredients. */
 export function tastingNote(h: Harmony | null, brew: BrewEntry[] = []): string {
   if (!h || h.tot <= 0) return '';
-  if (h.parts.clash <= FAULT_CLASH || h.score < FAULT_SCORE) return fault(h, brew);
+  if (isPoorBrew(h)) return fault(h, brew);
   return `${opening(h)}, ${middle(h)}, ${finish(h)}.`;
 }
