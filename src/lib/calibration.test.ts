@@ -58,7 +58,9 @@ const swap = (b: [string, number][], from: string, to: string): [string, number]
 const curdleTip = (b: [string, number][]) => suggestions(harmony(toBrew(b)), toBrew(b)).some((s) => /curdle/.test(s.text));
 
 /** Worst score step per 0.5 ml, measured over the sweeps below plus a point of headroom. "Rest" is the
-    other liquid in the pot besides the amount being swept.
+    other flavour-bearing liquid in the pot besides the amount being swept. Soda water carries no flavour,
+    and the flavour bands work on shares of the flavour, so 10 ml of Irish cream topped with 90 ml of soda
+    steps like 10 ml of Irish cream alone (14 points as lime comes in): its rest is 10 ml, not 100.
     - CLASSIC_STEP: every amount of every classic (5 measured) and the absinthe sour (5).
     - REAL_POT_STEP: random pots with 30 ml or more of rest, outside the dairy and acid family (6 measured
       over 20 seeds of 200 pots; the test runs 10 seeds of 100).
@@ -98,6 +100,9 @@ function rng(seed: number) {
 
 interface Step { jump: number; at: string; rest: number }
 
+/** Liquid that adds to the flavour profile; plain soda water adds none. */
+const flavoured = (id: string) => { const g = ING_BY_ID[id]; return !!g && !g.unit && Object.keys(g.tags).length > 0; };
+
 /** Every score change between neighbouring 0.5 ml steps as each liquid amount in each brew is swept from
     0.5 ml to `max` ml (by default 120 ml, or 2.5 times its amount if more) with the rest held. */
 function steps(brews: [string, [string, number][]][], max?: number): Step[] {
@@ -105,7 +110,7 @@ function steps(brews: [string, [string, number][]][], max?: number): Step[] {
   for (const [name, base] of brews)
     base.forEach(([id, amt], i) => {
       if (ING_BY_ID[id]?.unit) return;
-      const rest = base.reduce((t, [x, ml], j) => t + (j === i || ING_BY_ID[x]?.unit ? 0 : ml), 0);
+      const rest = base.reduce((t, [x, ml], j) => t + (j === i || !flavoured(x) ? 0 : ml), 0);
       const top = max ?? Math.max(120, 2.5 * amt);
       let prev = score(base.map(([x, v], j) => [x, j === i ? 0.5 : v] as [string, number]));
       for (let ml = 1; ml <= top; ml += 0.5) {
@@ -331,10 +336,11 @@ describe('calibration', () => {
   }, 60000);
 
   it('bounds the dairy and acid family where it steps hardest: the first ml of acid into dairy, and back', () => {
-    // Kahlua and milk, Irish cream, a White Russian and friends, each met by every kind of acid
+    // Kahlua and milk, Irish cream, a White Russian and friends, each met by every kind of acid; and the
+    // dairy topped with soda, which adds liquid but no flavour, so it steps like the dairy alone
     const companions: [string, number][][] = [
       [], [['coffee_liqueur', 15]], [['vodka', 45]], [['vodka', 50], ['coffee_liqueur', 20]], [['gin', 45], ['simple_syrup', 15]],
-      [['amaretto', 30]], [['bourbon', 60]],
+      [['amaretto', 30]], [['bourbon', 60]], [['soda_water', 90]],
     ];
     const acids = ['lemon_juice', 'lime_juice', 'orange_juice', 'grapefruit_juice', 'cranberry_juice', 'pineapple_juice', 'passion_fruit'];
     const xs: Step[] = [];
