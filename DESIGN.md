@@ -462,7 +462,8 @@ with a refractive ice cube, the drawn garnish (an expressed peel, not a cartoon 
 meniscus and condensation, standing on a bar top in a pool of its own colour. Right: the
 Newsreader title, a pill row (tier dot and score, glass, method, ABV after dilution),
 measures as menu lines with dotted leaders (active unit first, ml secondary), a tasting note
-generated from the profile, numbered method steps, garnish, and actions: Save to the Cellar
+generated from the profile (a brew that clashes hard or scores under 40 gets one plain sentence
+naming its main fault instead), numbered method steps, garnish, and actions: Save to the Cellar
 (primary), Share link (Web Share API on touch devices, copy fallback), Copy recipe. On phones
 the three actions share one row (the other two become icon buttons). Saving twice within 1.5
 seconds stores one item. Footer: "Brewed in Stewy" and the date.
@@ -489,8 +490,10 @@ back to the index before it closes the sheet.
 
 ### Cellar (sheet, list layout; 560 wide)
 Rows: a mini glass in the saved colour, the Newsreader name (rename inline), score dot,
-saved date, actions (load, rename, delete with undo). Empty state: an empty glass shelf,
-"Nothing saved yet. Serve a brew to keep it here.", and a button to open the Grimoire.
+saved date, actions (load, rename, delete with undo). After a delete, focus moves to the
+Delete button of the brew that took its place (the previous one when it was last; the heading
+when the list is empty), and Undo returns focus to the restored brew. Empty state: an empty glass
+shelf, "Nothing saved yet. Serve a brew to keep it here.", and a button to open the Grimoire.
 
 ### Toasts
 One at a time, 44px, `--r-md`, `--sh-3`, check icon, a plain sentence ("Removed lime juice"),

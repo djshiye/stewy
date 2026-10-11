@@ -35,8 +35,10 @@ light the room, and see exactly how the score is built.
   recognises them in your pot and understands drink shapes (spirit-forward,
   sour, highball, dessert), so a Negroni and a Mojito are judged on their own terms.
 - **The serve card.** Glassware, ice and garnish are inferred from what you
-  brewed. You get the measures, numbered method steps, a tasting note and the
-  strength after dilution, then save it to the Cellar, share a link or copy the recipe.
+  brewed (a Ramos Gin Fizz is strained up, with no ice). You get the measures,
+  numbered method steps, a tasting note and the strength after dilution, then save
+  it to the Cellar, share a link or copy the recipe. A brew that clashes hard gets
+  one plain line naming its fault instead of praise.
 - **The Grimoire.** All 56 classics as an illustrated index, filterable by
   method and style, ready to load into the pot.
 - **The Cellar.** Your saved brews, on this device only.
