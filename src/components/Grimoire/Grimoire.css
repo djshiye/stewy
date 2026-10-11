@@ -248,6 +248,15 @@
   transition: transform var(--t-settle) var(--ease-spring);
 }
 
+/* a glass drawn after its cell came near fades in; the placeholder before it takes no room, so the
+   cell (and every row top) is the same size with or without the glass */
+.grim-cell__glass--in {
+  animation: grim-glass-in 220ms var(--ease-out) both;
+}
+@keyframes grim-glass-in {
+  from { opacity: 0; }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .grim-cell:hover .grim-cell__glass {
     transform: translateY(-5px);

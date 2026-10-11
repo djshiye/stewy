@@ -1,8 +1,11 @@
 import {
+  createContext,
   memo,
   useCallback,
+  useContext,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -54,6 +57,85 @@ function ScoreMark({ score, className }: { score: number; className?: string }) 
   );
 }
 
+/* ---------- deferred glasses ---------- */
+
+/**
+ * Starts a watch on an element and returns how to stop it. The callback fires once, when the element comes
+ * near the scroller; `early` is true when that was found before the first paint (see `sweep`).
+ */
+type Watch = (el: Element, onNear: (early: boolean) => void) => () => void;
+
+/** How far beyond the scroller (as a share of its height, above and below) a cell counts as near. */
+const NEAR = '100% 0px';
+
+/**
+ * One IntersectionObserver for the whole index. Each cell's glass is a hand-built SVG of ~140 nodes, so
+ * drawing all of them up front dominated the time to open; they are drawn when their cell comes within
+ * a screen of the scroller instead. Null where IntersectionObserver
+ * does not (jsdom), in which case every glass is drawn straight away.
+ */
+function makeGate(): { watch: Watch; setRoot(el: Element | null): void; sweep(): void; dispose(): void } | null {
+  if (typeof IntersectionObserver === 'undefined') return null;
+  let io: IntersectionObserver | null = null;
+  let root: Element | null = null;
+  const waiting = new Map<Element, (early: boolean) => void>();
+  // The root (the scroller) is only known once its ref attaches, which is after its cells' layout effects.
+  const start = () => {
+    if (!root) return;
+    io ??= new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const fn = e.isIntersecting ? waiting.get(e.target) : undefined;
+          if (!fn) continue;
+          waiting.delete(e.target);
+          io?.unobserve(e.target);
+          fn(false);
+        }
+      },
+      { root, rootMargin: NEAR },
+    );
+    for (const el of waiting.keys()) io.observe(el);
+  };
+  const watch: Watch = (el, onNear) => {
+    waiting.set(el, onNear);
+    start();
+    return () => {
+      waiting.delete(el);
+      io?.unobserve(el);
+    };
+  };
+  return {
+    watch,
+    setRoot(el) {
+      if (!el || el === root) return;
+      root = el;
+      io?.disconnect();
+      io = null;
+      start();
+    },
+    // The observer reports a frame late, so cells that are in view right now (the screenful at open, after
+    // the pre-scroll) are found here by geometry instead, in a layout effect, and drawn before the first paint.
+    sweep() {
+      if (!root) return;
+      const r = root.getBoundingClientRect();
+      for (const [el, fn] of [...waiting]) {
+        const b = el.getBoundingClientRect();
+        if (b.bottom < r.top || b.top > r.bottom) continue;
+        waiting.delete(el);
+        io?.unobserve(el);
+        fn(true);
+      }
+    },
+    dispose() {
+      io?.disconnect();
+      io = null;
+      waiting.clear();
+    },
+  };
+}
+
+const GlassGate = createContext<Watch | null>(null);
+
 /* ---------- one entry of the index ---------- */
 
 interface CellProps {
@@ -68,8 +150,18 @@ interface CellProps {
 
 const Cell = memo(function Cell({ c, index, selected, inPot, tabbable, onSelect, onActive }: CellProps) {
   const { recipe } = c;
+  const watch = useContext(GlassGate);
+  const ref = useRef<HTMLLIElement>(null);
+  // 'first': drawn with the cell; 'late': drawn after it came near (fades in); 'none': not yet.
+  const [glass, setGlass] = useState<'none' | 'first' | 'late'>(!watch || inPot ? 'first' : 'none');
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (glass !== 'none' || !watch || !el) return;
+    return watch(el, (early) => setGlass(early ? 'first' : 'late'));
+  }, [glass, watch]);
   return (
     <li
+      ref={ref}
       role="option"
       aria-selected={selected}
       tabIndex={tabbable ? 0 : -1}
@@ -80,7 +172,18 @@ const Cell = memo(function Cell({ c, index, selected, inPot, tabbable, onSelect,
       onFocus={() => onActive(recipe.id)}
     >
       <div className="grim-cell__stage">
-        <Glass kind={recipe.glass} color={c.color} garnish={c.garnish} ice={c.ice} foam={c.foam} className="grim-cell__glass" />
+        {glass === 'none' ? (
+          <span className="grim-cell__glass grim-cell__glass--ph" aria-hidden="true" />
+        ) : (
+          <Glass
+            kind={recipe.glass}
+            color={c.color}
+            garnish={c.garnish}
+            ice={c.ice}
+            foam={c.foam}
+            className={glass === 'late' ? 'grim-cell__glass grim-cell__glass--in' : 'grim-cell__glass'}
+          />
+        )}
       </div>
       <h3 className="grim-cell__name serif">{recipe.name}</h3>
       <p className="grim-cell__key">{c.key}</p>
@@ -199,6 +302,16 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
   const openerRef = useRef<HTMLElement | null>(null);
   const wasOverlay = useRef(false);
 
+  const [gate] = useState(makeGate);
+  const scrollEl = useCallback(
+    (el: HTMLDivElement | null) => {
+      scrollRef.current = el;
+      gate?.setRoot(el);
+    },
+    [gate],
+  );
+  useEffect(() => () => gate?.dispose(), [gate]);
+
   const deferred = useDeferredValue(query);
   const visible = useMemo(() => filterClassics(all, filter, deferred), [all, filter, deferred]);
   const tabId = visible.some((c) => c.recipe.id === activeId) ? activeId : visible[0]?.recipe.id ?? null;
@@ -254,7 +367,8 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
   }, [overlayOpen]);
 
   // Opening with a classic in the pot: bring its entry into view (the index stays unselected).
-  useEffect(() => {
+  // A layout effect, so the first painted frame is already scrolled.
+  useLayoutEffect(() => {
     const scroller = scrollRef.current;
     const list = listRef.current;
     const el = currentId ? list?.querySelector<HTMLElement>(`[data-id="${CSS.escape(currentId)}"]`) : null;
@@ -285,6 +399,8 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       for (const e of events) scroller.removeEventListener(e, stop);
     };
   }, [currentId]);
+  // after the pre-scroll above: draw the glasses already in view before the first paint
+  useLayoutEffect(() => gate?.sweep(), [gate]);
 
   const toTop = () => scrollRef.current?.scrollTo({ top: 0 });
   const pickFilter = (key: FilterKey) => {
@@ -385,28 +501,30 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
           ))}
         </div>
 
-        <div className="grim__scroll" ref={scrollRef}>
+        <div className="grim__scroll" ref={scrollEl}>
           {visible.length ? (
-            <ul
-              ref={listRef}
-              className="grim__grid"
-              role="listbox"
-              aria-label="Classics"
-              onKeyDown={onKeyDown}
-            >
-              {visible.map((c, i) => (
-                <Cell
-                  key={c.recipe.id}
-                  c={c}
-                  index={i}
-                  selected={c.recipe.id === selectedId}
-                  inPot={c.recipe.id === currentId}
-                  tabbable={c.recipe.id === tabId}
-                  onSelect={onSelect}
-                  onActive={onActive}
-                />
-              ))}
-            </ul>
+            <GlassGate.Provider value={gate?.watch ?? null}>
+              <ul
+                ref={listRef}
+                className="grim__grid"
+                role="listbox"
+                aria-label="Classics"
+                onKeyDown={onKeyDown}
+              >
+                {visible.map((c, i) => (
+                  <Cell
+                    key={c.recipe.id}
+                    c={c}
+                    index={i}
+                    selected={c.recipe.id === selectedId}
+                    inPot={c.recipe.id === currentId}
+                    tabbable={c.recipe.id === tabId}
+                    onSelect={onSelect}
+                    onActive={onActive}
+                  />
+                ))}
+              </ul>
+            </GlassGate.Provider>
           ) : (
             <div className="grim__empty">
               <Glass kind="coupe" color="rgba(190, 205, 230, 0.5)" fill={0} className="grim__empty-glass" />
