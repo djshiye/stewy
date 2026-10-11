@@ -976,3 +976,131 @@
     border-right: 0;
   }
 }
+
+/* ---------- phones in landscape ----------
+   The sheet is 322 to 404px tall (94dvh of a 343 to 430px screen). The stacked header took 226 to 250 of that and
+   the bar 81 more, so the index kept 15 to 98px: not one cell, and a selected cell sat under the bar. Here the
+   header is one row (title, count and search, then the chips), the bar stands beside the index instead of under
+   it, and the cell is a little shorter, so a whole cell, with its two-line name and key, fits in the index at
+   every height from 343 up (a pick is scrolled into view by the sheet, see Grimoire.tsx). */
+@media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
+  .grim {
+    --stage: clamp(72px, calc(94dvh - 252px), 120px);
+  }
+  /* the close button (44px on touch) centred on the one-line header row */
+  .grim-sheet {
+    --grim-mid: 46px;
+    --grim-close-h: 44px;
+  }
+  .grim-sheet .ui-sheet__close {
+    top: calc(var(--grim-mid) - var(--grim-close-h) / 2);
+  }
+  .grim__main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .grim__head {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s4);
+    /* clear the grab handle above and the close button on the right */
+    padding: 24px calc(var(--s4) + 44px + var(--s2) + env(safe-area-inset-right)) 0 var(--s4);
+  }
+  .grim__title {
+    display: flex;
+    flex: none;
+    align-items: baseline;
+    gap: var(--s3);
+    padding-right: 0;
+    white-space: nowrap;
+  }
+  .grim__title h2 {
+    font-size: 26px;
+    line-height: 30px;
+  }
+  .grim__title p {
+    margin-top: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .grim__search {
+    flex: 1 1 0;
+    max-width: 380px;
+    margin-left: auto;
+  }
+  .grim__chips {
+    grid-column: 1 / -1;
+    padding: var(--s2) var(--s4) 4px;
+  }
+  .grim__scroll {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: var(--s2);
+    scroll-padding-bottom: var(--s2);
+  }
+  .grim__grid {
+    --cell-h: calc(var(--stage) + 117px);
+  }
+  .grim-cell {
+    --cell-pt: var(--s3);
+    --cell-pb: var(--s2);
+  }
+  .grim-cell__stage {
+    height: var(--stage);
+  }
+  .grim-cell__name {
+    margin-top: var(--s2);
+    font-size: 18px;
+    line-height: 20px;
+  }
+  .grim-cell__meta {
+    padding-top: var(--s2);
+  }
+
+  /* the bar: a column beside the index, the classic on top and Load under it */
+  .grim-bar {
+    grid-column: 2;
+    grid-row: 3;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--s3);
+    width: 188px;
+    margin-top: var(--s2);
+    padding: var(--s3);
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line-2);
+    animation-name: grim-bar-side-in;
+  }
+  .grim-bar__info {
+    flex: none;
+    min-height: 44px;
+    gap: var(--s2);
+  }
+  .grim-bar__glass {
+    width: 36px;
+    height: 48px;
+  }
+  .grim-bar__name {
+    white-space: normal;
+    font-size: 18px;
+    line-height: 20px;
+  }
+  .grim-bar .ui-btn {
+    width: 100%;
+  }
+  .grim__overlay .grim-detail__scroll {
+    padding-top: 28px;
+  }
+  .grim__overlay .grim-detail__stage {
+    height: 112px;
+  }
+}
+@keyframes grim-bar-side-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}

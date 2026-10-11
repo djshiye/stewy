@@ -285,6 +285,16 @@ export async function closeSheet(page: Page): Promise<void> {
 }
 
 /**
+ * Finishes the animations that have an end (the sheet scaling in, the cells sliding up), so geometry is measured on the
+ * settled layout. Headless WebKit in the container draws a frame only when something forces one, so they can sit pending.
+ */
+export async function finishAnimations(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    for (const a of document.getAnimations()) if (Number.isFinite(a.effect?.getComputedTiming().endTime)) a.finish();
+  });
+}
+
+/**
  * The Grimoire opens scrolled to the classic in the pot, on a whole row: no cell is cut by the top edge, and the
  * classic is in view (the whole cell when `wholeCell`, else at least its "In the pot" badge). The sheet re-aims
  * while it settles, so this polls. Tolerances are 2 to 3 px for sub-pixel zoom.

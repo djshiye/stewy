@@ -430,6 +430,28 @@ function GrimoireBody({ currentId, onLoad, unit }: { currentId: string | null; o
       for (const e of events) scroller.removeEventListener(e, stop);
     };
   }, [currentId]);
+  // A pick on a phone: the bar that appears for it takes room from the index (under it in portrait, beside it in
+  // landscape), so the tapped cell can end up cut by the index's edge. Scroll it whole into view, with the
+  // index's scroll padding (a little air below, none above). A cell taller than the room keeps its top.
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current;
+    const el = selectedId && !desktop ? listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(selectedId)}"]`) : null;
+    if (!scroller || !el) return;
+    const bring = () => {
+      const view = scroller.getBoundingClientRect();
+      const cell = el.getBoundingClientRect();
+      const scale = view.height / scroller.clientHeight || 1; // the sheet is still scaling in just after it opens
+      const pad = parseFloat(getComputedStyle(scroller).scrollPaddingBottom) || 0;
+      let by = 0;
+      if (cell.top < view.top) by = cell.top - view.top;
+      else if (cell.bottom > view.bottom - pad) by = Math.min(cell.bottom - (view.bottom - pad), cell.top - view.top);
+      if (Math.abs(by) >= 1) scroller.scrollTop += by / scale;
+    };
+    bring();
+    // the rows can still settle (content-visibility) once the scroll has moved new cells into view
+    const frame = requestAnimationFrame(bring);
+    return () => cancelAnimationFrame(frame);
+  }, [selectedId, desktop]);
   // after the pre-scroll above: draw the glasses already in view before the first paint
   useLayoutEffect(() => gate?.sweep(), [gate]);
 

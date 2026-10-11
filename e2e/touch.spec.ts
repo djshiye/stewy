@@ -1,4 +1,4 @@
-import { test, expect, EMPTY, MAI_TAI, NEGRONI, bottle, brewNamed, closeSheet, copied, dial, dialog, settled, storedPot, stubShare, toast, toastAction } from './fixtures';
+import { test, expect, EMPTY, MAI_TAI, NEGRONI, bottle, brewNamed, closeSheet, copied, dial, dialog, finishAnimations, settled, storedPot, stubShare, toast, toastAction } from './fixtures';
 import type { Page } from '@playwright/test';
 
 // Touch-only checks, run by the mobile WebKit projects (iPhone, iPhone SE, iPhone landscape, iPad, iPad landscape):
@@ -47,6 +47,85 @@ test.describe('touch contexts', { tag: '@device' }, () => {
     await expect(page.locator('#grimoire-title')).toBeFocused();
     await expect(page.getByRole('textbox', { name: /Search by name/ })).not.toBeFocused();
   });
+
+  // ------------------------------------------------------------ a classic picked in the Grimoire stays in view
+
+  // The first tap selects a classic and a bar names it (under the index, or beside it on a phone in landscape). The
+  // picked cell must then lie whole inside the index, clear of the bar, and a second tap on it must reach it (it
+  // opens the details). On an iPhone 15 in landscape the cell used to sit under the bar and the tap hit the bar.
+  for (const where of ['in the first row', 'low in the index']) {
+    test(`a classic picked ${where} stays whole above the bar, and a second tap reaches it`, async ({ page, open, openGrimoire, press, viewport }) => {
+      test.skip(!viewport || viewport.width >= 1000, 'the desktop layout shows the details in a pane, not in a bar');
+      await open(EMPTY);
+      await openGrimoire();
+      const cells = page.locator('[role=option]');
+      await expect(cells.first()).toBeVisible();
+      await finishAnimations(page);
+      const rect = (selector: string, index?: number) =>
+        page.evaluate(([s, i]) => {
+          const el = document.querySelectorAll(s as string)[(i as number | undefined) ?? 0];
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+        }, [selector, index] as const);
+
+      // the sheet slides in with a script-driven spring that finishAnimations cannot end, and headless WebKit draws a
+      // frame only on demand: ask for frames until the index has stood still for five of them
+      await page.evaluate(
+        () =>
+          new Promise<void>((done) => {
+            const el = document.querySelector('.grim__scroll')!;
+            let prev = '';
+            let still = 0;
+            const tick = () => {
+              const r = el.getBoundingClientRect();
+              const now = `${r.top}|${r.left}|${r.height}`;
+              still = now === prev ? still + 1 : 0;
+              prev = now;
+              if (still >= 5) done();
+              else requestAnimationFrame(tick);
+            };
+            tick();
+          }),
+      );
+
+      // the cell to pick: the first, or one low in the index: the last that the bottom edge cuts, else the last whose
+      // bottom the bar will take (the bar under the index shortens it by the bar's height)
+      let pick = 0;
+      if (where === 'in the first row') {
+        await press(cells.nth(pick));
+      } else {
+        pick = await page.evaluate(() => {
+          const edge = document.querySelector('.grim__scroll')!.getBoundingClientRect().bottom;
+          const rects = [...document.querySelectorAll('.grim-cell')].map((c) => c.getBoundingClientRect());
+          const tappable = (r: DOMRect) => r.top < edge - 24;
+          const cut = rects.map((r, i) => (tappable(r) && r.bottom > edge + 8 ? i : -1)).filter((i) => i >= 0);
+          const low = rects.map((r, i) => (tappable(r) && r.bottom > edge - 100 ? i : -1)).filter((i) => i >= 0);
+          return (cut.length ? cut : low).at(-1) ?? -1;
+        });
+        expect(pick, 'a cell low in the index').toBeGreaterThan(0);
+        // tap the part of it that shows, with no scrolling first, as a finger would
+        const r = (await rect('.grim-cell', pick))!;
+        const view = (await rect('.grim__scroll'))!;
+        await page.touchscreen.tap((r.left + r.right) / 2, (Math.max(r.top, view.top) + Math.min(r.bottom, view.bottom)) / 2);
+      }
+      await expect(page.locator('.grim-bar')).toBeVisible();
+      await expect(cells.nth(pick)).toHaveAttribute('aria-selected', 'true');
+      await expect.poll(async () => {
+        await finishAnimations(page);
+        const [cell, view, bar, head] = await Promise.all([
+          rect('.grim-cell[aria-selected=true]'), rect('.grim__scroll'), rect('.grim-bar'), rect('.grim__chips'),
+        ]);
+        if (!cell || !view || !bar || !head) return 'missing';
+        const inside = cell.top >= view.top - 1 && cell.bottom <= view.bottom + 1 && cell.left >= view.left - 1 && cell.right <= view.right + 1;
+        const clear = cell.bottom <= bar.top + 1 || cell.right <= bar.left + 1; // above the bar, or left of it
+        return { below: view.top >= head.bottom - 1, inside, clear };
+      }, 'the picked cell is whole, below the header and clear of the bar').toEqual({ below: true, inside: true, clear: true });
+
+      await press(cells.nth(pick)); // Playwright refuses a tap that lands on another element, such as the bar
+      await expect(page.locator('.grim__overlay')).toBeVisible();
+    });
+  }
 
   // ------------------------------------------------------------ text fields are 16px or more (iOS zooms the page into smaller ones)
 

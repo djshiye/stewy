@@ -52,8 +52,8 @@ test('selecting a classic and loading it replaces the pot, and Undo restores it'
   const negroni = options(page).filter({ hasText: 'Negroni' }).first();
   await press(negroni);
   if (viewport && viewport.width < 1000) {
-    // the sheet is one column: the first tap selects, the bar under the index names it, and tapping the bar (the cell
-    // itself can sit under it on a short screen) opens the classic over the index, where Load is
+    // the sheet is one column: the first tap selects, the bar names it, and tapping the bar (touch.spec pins that a
+    // second tap on the cell does the same) opens the classic over the index, where Load is
     await press(page.locator('.grim-bar__info'));
     await press(page.getByRole('button', { name: 'Load into the pot', exact: true }));
   } else {
