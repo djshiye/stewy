@@ -401,9 +401,16 @@ export function suggestions(h: Harmony | null, brew: BrewEntry[]): Suggestion[] 
   return out.slice(0, 3);
 }
 
-/** Closest classic recipe by cosine similarity over ingredient volumes. */
+/** A brew that clashes hard or scores below this is not "close to" any classic, whatever its volumes say. */
+const RESEMBLE_MIN_SCORE = 40;
+const RESEMBLE_MAX_CLASH = -20;
+
+/** Closest classic recipe by cosine similarity over ingredient volumes. A clashing or poorly
+    scoring brew resembles nothing, so the serve card, the UI and the coach all agree. */
 export function resemblance(brew: BrewEntry[]): { recipe: Recipe; sim: number } | null {
   if (brew.length < 2) return null;
+  const h = harmony(brew);
+  if (!h || h.parts.clash <= RESEMBLE_MAX_CLASH || h.score < RESEMBLE_MIN_SCORE) return null;
   const mine = new Map(brew.map((e) => [e.id, e.ml]));
   let best: { recipe: Recipe; sim: number } | null = null;
   for (const r of RECIPES) {

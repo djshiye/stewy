@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { BrewEntry, Recipe } from '../data/types';
 import { ING_BY_ID } from '../data/ingredients';
-import { RECIPE_BY_ID } from '../data/recipes';
+import { RECIPE_BY_ID, RECIPES } from '../data/recipes';
+import { resemblance } from './harmony';
 import {
   brewStats, DILUTION, inferGarnish, inferGlass, inferMethod, measureLines, methodLine, methodSteps, recipeText, serveCard,
 } from './serve';
@@ -148,6 +149,22 @@ describe('serveCard, methodLine and recipeText', () => {
     expect(card.verdict).toBeTruthy();
     expect(card.color).toMatch(/^rgb/);
     expect(card.stats.volumeMl).toBe(90);
+  });
+
+  it('does not serve a clashing brew like the classic it happens to resemble', () => {
+    const sludge = brew(['heavy_cream', 30], ['lime_juice', 25], ['mezcal', 30], ['ginger_beer', 120]);
+    expect(resemblance(sludge)).toBeNull();
+    const card = serveCard(sludge, 'Cursed Sludge', 'oz');
+    expect(card.match).toBeNull();
+    expect(card.glass).not.toBe('copper-mug');
+    expect(card.glass).toBe('highball');
+    expect(card.garnish).toBe('Lime wheel');
+  });
+
+  it('every classic still resembles itself, so none loses its match', () => {
+    for (const r of RECIPES) {
+      expect(resemblance(brew(...r.build))?.recipe.id, r.id).toBe(r.id);
+    }
   });
 
   it('writes instructions', () => {
