@@ -147,6 +147,7 @@ const Row = memo(function Row({ item, index, editing, onLoad, onStartRename, onE
           <IconButton
             size="sm"
             className="cellar-del"
+            data-act="delete"
             label={`Delete ${item.name}`}
             tooltip="Delete"
             icon={<Trash size={18} />}
@@ -196,13 +197,24 @@ function CellarBody({ items, onLoad, onRename, onDelete, onOpenGrimoire }: BodyP
   const [editingId, setEditingId] = useState<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  // Where focus goes once a deleted row has left: the next row's Load button, else the heading.
+  const prevIds = useRef<Set<string> | null>(null);
+  // Where focus goes once a deleted row has left: the Delete button of the row that took its place
+  // (the next one, else the previous one), else the heading. undefined means focus was not in the row.
   const focusAfterDelete = useRef<string | null | undefined>(undefined);
+  // Ids this sheet deleted while focus was on them, so an Undo can hand focus back to the restored row.
+  const deletedWithFocus = useRef(new Set<string>());
 
   const handleDelete = useCallback(
     (item: CellarItem) => {
       const i = items.findIndex((x) => x.id === item.id);
-      focusAfterDelete.current = items[i + 1]?.id ?? items[i - 1]?.id ?? null;
+      const active = document.activeElement;
+      // Only a row that holds focus (or a page that holds none) has focus to carry over. A pointer
+      // delete in an engine that does not focus clicked buttons leaves focus where it was.
+      const held = !active || active === document.body || !!active.closest(`[data-id="${CSS.escape(item.id)}"]`);
+      if (held) {
+        focusAfterDelete.current = items[i + 1]?.id ?? items[i - 1]?.id ?? null;
+        deletedWithFocus.current.add(item.id);
+      }
       setEditingId((cur) => (cur === item.id ? null : cur));
       onDelete(item);
     },
@@ -210,11 +222,28 @@ function CellarBody({ items, onLoad, onRename, onDelete, onOpenGrimoire }: BodyP
   );
 
   useEffect(() => {
+    const control = (id: string) =>
+      listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"] [data-act="delete"]`) ?? null;
+
+    // After a delete: the row that took its place, else the heading. Never the body.
     const target = focusAfterDelete.current;
-    if (target === undefined) return;
-    focusAfterDelete.current = undefined;
-    const next = target ? listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(target)}"] [data-act="load"]`) : null;
-    (next ?? headingRef.current)?.focus();
+    if (target !== undefined) {
+      focusAfterDelete.current = undefined;
+      ((target ? control(target) : null) ?? headingRef.current)?.focus();
+    }
+
+    // After an Undo: the restored row, when focus is still in the dialog. A click on the toast's Undo
+    // leaves focus on that button as it fades out, which counts as the dialog too: it is about to be nothing.
+    const before = prevIds.current;
+    prevIds.current = new Set(items.map((x) => x.id));
+    if (!before) return;
+    const restored = items.find((x) => !before.has(x.id) && deletedWithFocus.current.has(x.id));
+    if (!restored) return;
+    deletedWithFocus.current.delete(restored.id);
+    const active = document.activeElement;
+    const adrift =
+      !active || active === document.body || !!active.closest('[role="dialog"], .ui-toaster');
+    if (adrift) control(restored.id)?.focus();
   }, [items]);
 
   const startRename = useCallback((id: string) => setEditingId(id), []);
