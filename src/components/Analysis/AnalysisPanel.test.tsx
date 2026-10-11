@@ -25,6 +25,7 @@ const sug = (id: string, delta: number): CoachSuggestion => ({
   ing: ING_BY_ID[id], ml: 15, delta, score: 90, inBrew: false,
 });
 
+const SPLIT = [{ id: 'milk', ml: 20 }, { id: 'cognac', ml: 30 }, { id: 'creme_de_cacao', ml: 20 }, { id: 'lemon_juice', ml: 5 }];
 const NEGRONI = [{ id: 'gin', ml: 30 }, { id: 'campari', ml: 30 }, { id: 'sweet_vermouth', ml: 30 }];
 
 describe('suggestions', () => {
@@ -37,6 +38,11 @@ describe('suggestions', () => {
     expect(finishedNote(90)).toEqual({ done: true, text: 'Nothing on the shelf improves this by more than a point or two.' });
     expect(finishedNote(60).done).toBe(false);
     expect(finishedNote(60).text).toBe('No single addition helps much. Try adjusting the measures instead.');
+  });
+
+  it('gives a curdled pot its own line, whatever the score', () => {
+    expect(finishedNote(40, true)).toEqual({ done: false, text: 'Nothing on the shelf saves a split brew.' });
+    expect(finishedNote(90, true).text).toBe('Nothing on the shelf saves a split brew.');
   });
 });
 
@@ -52,6 +58,12 @@ describe('AnalysisPanel', () => {
     expect(screen.queryByText('Try adding')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Triple sec/ })).toBeNull();
     expect(screen.getByText(/Nothing on the shelf improves this|No single addition helps much/)).toBeTruthy();
+  });
+
+  it('says a split brew cannot be saved from the shelf, not that the measures need adjusting', () => {
+    render(<AnalysisPanel model={modelFor(SPLIT)} onAdd={vi.fn()} />);
+    expect(screen.getByText('Nothing on the shelf saves a split brew.')).toBeTruthy();
+    expect(screen.queryByText(/adjusting the measures/)).toBeNull();
   });
 
   it('offers three classics on an empty pot and loads the one picked', async () => {

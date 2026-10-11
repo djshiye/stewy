@@ -118,7 +118,8 @@ export interface Harmony {
       sharp acid): what the clash would give back with no acid in the pot. Part of `parts.clash`. */
   curdle: number;
   /** Points of the clash that come from coffee meeting acid (espresso or coffee liqueur against juice or
-      sharp mixer). Part of `parts.clash`; the tip and the tasting note name it from 5 points. */
+      sharp mixer). Part of `parts.clash`. The tip warns from 5 points (`coffeeAcidClashes`); the tasting note
+      names a juice or sharp mixer against the coffee at any amount, and any other sour liquid from 5 points. */
   coffeeAcid: number;
 }
 

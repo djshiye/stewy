@@ -457,7 +457,11 @@ the Serve button.
   (1000 to 1099 desktops, 360 phones) "after shaking" drops to a second line both columns reserve.
 - **Try adding.** The top three simulated additions from `topSuggestions()` that are worth 3
   points or more, each with its art, name, amount, a `+n` delta and an add button. One name
-  everywhere: "Try adding". When nothing helps by that much the card says so instead.
+  everywhere: "Try adding". When nothing helps by that much the card says so instead: "Nothing on the shelf
+  improves this by more than a point or two." from 80, "No single addition helps much. Try adjusting the measures
+  instead." below that, and on a curdled pot "Nothing on the shelf saves a split brew." (the headline tip already
+  says to pick one or the other, so the line does not repeat it). On phones the card's "Try adding" is hidden and
+  the chip strip under the pot is left out whole when there is nothing to add, label included.
 - **Tips.** The engine's plain-language suggestions as a short list (at most three). The first is the
   line under the verdict; on phones the verdict header is hidden, so that first tip shows under the "Why it
   scores" heading, and the rest keep their own "Tips" list. The text rules are under "Score engine" below.
@@ -542,7 +546,7 @@ the Serve button.
   by 5 points or more: then the bottle gets the red clash dot and the tooltip "Clashes with the brew (curdles
   or muddies it)". Any other addition that leaves the brew curdled is held the same way (it would only
   water the acid down while the headline still says to pick one or the other), so a curdled pot has no `+N`
-  and no "Try adding" until an addition ends the curdle. The coach skips an addition worth
+  and no "Try adding" until an addition ends the curdle (the card says "Nothing on the shelf saves a split brew."). The coach skips an addition worth
   under 2 points when the structure part supplies half or more of that gain; small gains from flavour
   pairing still show. In explanations, "gives the drink the shape of a proper X" appears only when the
   structure part went up; a label change with falling structure reads "blurs the shape of the drink".
@@ -684,6 +688,12 @@ an accent Undo button, a `Ctrl Z` hint on desktop. 6 s, pauses on hover and focu
 `role="status"`. Used for remove, clear, load, delete, save, copy, shared-link open and for
 errors (clipboard refused, a share link that cannot be opened, a sheet that failed to load,
 which offers Reload). `Ctrl/Cmd+Z` answers a visible Undo toast first.
+
+The share-failure toast: on touch devices the share sheet comes first, and when it fails for any reason other
+than the user closing it, the toast reads "Could not open sharing on this device" with a Copy link action. The
+copy runs inside that tap, not after the failed share, because Safari only allows clipboard writes during a
+user gesture and the awaited share has already used it up (see `src/app/shareBrew.ts`). The action then
+answers "Link copied", or the clipboard error toast if that is refused too. Closing the sheet shows nothing.
 
 ### Keyboard
 `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo, `/` (also with Shift, for layouts

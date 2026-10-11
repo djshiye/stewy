@@ -25,8 +25,10 @@ export function worthAdding(list: readonly CoachSuggestion[]): CoachSuggestion[]
   return list.filter((s) => s.delta >= MIN_SUGGESTION_DELTA);
 }
 
-/** The quiet line shown when a brew exists but nothing on the shelf is worth adding. */
-export function finishedNote(score: number): { done: boolean; text: string } {
+/** The quiet line shown when a brew exists but nothing on the shelf is worth adding. A curdled pot gets its
+    own line: the headline tip already says to pick one or the other, so this only says the shelf cannot help. */
+export function finishedNote(score: number, curdled = false): { done: boolean; text: string } {
+  if (curdled) return { done: false, text: 'Nothing on the shelf saves a split brew.' };
   return score >= 80
     ? { done: true, text: 'Nothing on the shelf improves this by more than a point or two.' }
     : { done: false, text: 'No single addition helps much. Try adjusting the measures instead.' };

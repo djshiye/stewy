@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { CheckCircle, Plus } from '@phosphor-icons/react';
 import type { Ingredient, Recipe } from '../../data/types';
 import type { AppModel } from '../../app/types';
-import { VERDICT } from '../../lib/harmony';
+import { curdles, VERDICT } from '../../lib/harmony';
 import {
   STRENGTH, balancePosition, balanceWord, breakdown, signed, strengthPosition, strengthZone,
   structureNote, tierTone, TIER_STOPS, METHOD_AFTER, type StrengthZone,
@@ -40,6 +40,7 @@ export function AnalysisPanel({ model, onAdd, onLoadRecipe }: AnalysisPanelProps
   const abv = model.stats.finalAbv;
   const zone = strengthZone(abv);
   const suggestions = worthAdding(model.suggestions);
+  const note = h ? finishedNote(h.score, curdles(h)) : null;
   const picks = !h && onLoadRecipe
     ? PICKS.flatMap((id) => getClassics().find((c) => c.recipe.id === id) ?? [])
     : [];
@@ -176,7 +177,7 @@ export function AnalysisPanel({ model, onAdd, onLoadRecipe }: AnalysisPanelProps
           </div>
         </div>
 
-        {h && (
+        {note && (
           <div className="ap__try">
             <h3 className="ap__h">Try adding</h3>
             {suggestions.length > 0 ? (
@@ -207,9 +208,9 @@ export function AnalysisPanel({ model, onAdd, onLoadRecipe }: AnalysisPanelProps
                 })}
               </ul>
             ) : (
-              <p className="ap__none" data-done={finishedNote(h.score).done ? '' : undefined}>
-                {finishedNote(h.score).done && <CheckCircle size={16} weight="regular" aria-hidden="true" />}
-                <span>{finishedNote(h.score).text}</span>
+              <p className="ap__none" data-done={note.done ? '' : undefined}>
+                {note.done && <CheckCircle size={16} weight="regular" aria-hidden="true" />}
+                <span>{note.text}</span>
               </p>
             )}
           </div>
