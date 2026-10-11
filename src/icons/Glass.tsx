@@ -1,6 +1,6 @@
 /* Glassware: ten glasses at true proportions in a shared 120 x 160 box (feet on the
    bottom edge), with a liquid, ice, foam, condensation and garnishes. Pure SVG paths
-   and gradients, no filters, so 55 of them can share a screen. */
+   and gradients, no filters, so 56 of them can share a screen. */
 import { memo, useId, type ReactNode } from 'react';
 import type { GlassKind } from '../data/types';
 import { shade, type RGB } from '../lib/color';

@@ -6,7 +6,7 @@ export const GARNISH_KINDS = [
   'orange-peel', 'orange-wheel', 'lime-wheel', 'lime-wedge', 'lemon-twist', 'mint-sprig',
   'cherry', 'olive-pick', 'pineapple-wedge', 'coffee-beans', 'celery', 'salt-rim', 'sugar-rim',
   'cucumber-ribbon', 'raspberry', 'blackberry', 'nutmeg',
-  // Extras that the 55 classics call for and that read differently from the ones above.
+  // Extras that the 56 classics call for and that read differently from the ones above.
   'lemon-wheel', 'grapefruit-wedge', 'ginger', 'passion-fruit', 'bitters',
 ] as const;
 

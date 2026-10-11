@@ -178,7 +178,7 @@
   animation: grim-in 460ms var(--ease-out) both;
   animation-delay: calc(var(--i) * 24ms);
   transition: background-color var(--t-hover) var(--ease-out);
-  /* 55 glasses: only the screenful in view is styled and painted. The size is the cell's real
+  /* 56 glasses: only the screenful in view is styled and painted. The size is the cell's real
      height at each breakpoint (below), so the scroll length and scrollIntoView stay true. */
   content-visibility: auto;
   contain-intrinsic-block-size: auto var(--cell-h);

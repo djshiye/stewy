@@ -53,7 +53,7 @@ describe('RecipeCard', () => {
       { id: 'heavy_cream', ml: 30 }, { id: 'lime_juice', ml: 25 }, { id: 'mezcal', ml: 30 }, { id: 'ginger_beer', ml: 120 },
     ];
     const model = modelFor(sludge, 'Cursed Sludge');
-    expect(model.match?.recipe.name).toBe('Moscow Mule');
+    expect(model.match).toBeNull();
     expect(model.h?.score).toBeLessThan(40);
     setup(model);
     expect(screen.queryByText(/Close to/)).toBeNull();
