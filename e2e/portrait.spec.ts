@@ -60,8 +60,9 @@ for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1
       await open(MAI_TAI);
       await settled(page);
       const m = await boxes(page);
-      expect(m.zoom).toBe(1);
-      expect(m.stage.w).toBeGreaterThan(w - 60);
+      // 1200 wide is where the portrait ladder starts (tokens.css, the 1.1 step); every iPad viewport stays at 1
+      expect(m.zoom).toBe(w === 1200 ? 1.1 : 1);
+      expect(m.stage.w).toBeGreaterThan(w / m.zoom - 60);
       expect(m.recipe.y).toBeGreaterThanOrEqual(m.stage.y + m.stage.h - 1);
       expect(m.analysis.y).toBeCloseTo(m.recipe.y, 0);
       expect(m.recipe.h).toBeCloseTo(m.analysis.h, 0);
@@ -99,7 +100,7 @@ for (const [w, h] of [[1000, 1200], [1024, 1266], [1024, 1292], [1032, 1280], [1
 
 // Portrait monitors: the stacked layout is scaled (zoom ladder keyed on the width) so it reads about 1080 to 1250
 // CSS pixels wide, and the pot is limited by its stage rather than by the 1280px cap while the stage has room.
-for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1], [1366, 2048, 1.2], [1300, 2311, 1.2], [1440, 2560, 1.2], [1600, 2560, 1.4], [1750, 3111, 1.6], [2160, 3840, 1.8]]) {
+for (const [w, h, minZoom] of [[1080, 1920, 1], [1200, 1920, 1.1], [1366, 2048, 1.2], [1300, 2311, 1.2], [1440, 2560, 1.2], [1600, 2560, 1.4], [1750, 3111, 1.6], [2160, 3840, 1.8]]) {
   test.describe(`portrait monitor ${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 
