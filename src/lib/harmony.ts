@@ -328,7 +328,8 @@ const MIN_POT = 20;
 /** How far `x` is into a band, 0..1, the band widened to at least `2 * blur` by moving its free end. */
 function fadeIn(x: number, [lo, hi]: Band, blur: number, keep: 'lo' | 'hi'): number {
   const width = Math.max(hi - lo, 2 * blur);
-  return keep === 'lo' ? ramp(x, lo, lo + width) : ramp(x, hi - width, hi);
+  // never below zero, so a gate that starts above none of something stays shut with none of it
+  return keep === 'lo' ? ramp(x, lo, lo + width) : ramp(x, Math.max(hi - width, Math.min(lo, 0)), hi);
 }
 
 /** How far a Ramos-style emulsion holds the cream against the acid, 0..1. It is a Ramos, not a

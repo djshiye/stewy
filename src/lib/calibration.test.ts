@@ -376,6 +376,8 @@ describe('calibration', () => {
         off.push(`${r.id} at ${k}: ${a?.score} ${a?.archetype} to ${b?.score} ${b?.archetype}`);
     }
     expect(off).toEqual([]);
+    // a widened band never reaches below none: a sweet brew with no acid is no sour at any size
+    expect(score([['vodka', 15], ['maraschino', 2]])).toBe(score([['vodka', 75], ['maraschino', 10]]));
     // the Grasshopper at 20 ml each scored 77, not 83, when small pots widened its flavour bands
     expect(score([['creme_de_menthe', 20], ['creme_de_cacao', 20], ['heavy_cream', 20]])).toBe(score(RECIPES.find((r) => r.id === 'grasshopper')!.build));
   });
