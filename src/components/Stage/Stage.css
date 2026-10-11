@@ -68,7 +68,7 @@
     width: min(
       calc(100% + 24px),
       520px,
-      max(320px, calc((100dvh - var(--top-h) - var(--dock-h) - 200px) * 1.2))
+      max(320px, calc((100svh - var(--top-h) - var(--dock-h) - 200px) * 1.2))
     );
   }
 
@@ -651,7 +651,7 @@
     width: min(
       calc(100% + 24px),
       520px,
-      max(320px, calc((100dvh - var(--top-h) - var(--dock-h) - 200px) * 1.2)),
+      max(320px, calc((100svh - var(--top-h) - var(--dock-h) - 200px) * 1.2)),
       calc((100svh - var(--top-h) - var(--dock-h) - env(safe-area-inset-bottom) - 116px) * 1.2)
     );
   }
@@ -665,7 +665,7 @@
   }
 
   .stg-pot {
-    width: min(calc(100% + 24px), calc((100dvh - var(--top-h) - 56px) * 1.2));
+    width: min(calc(100% + 24px), calc((100svh - var(--top-h) - 56px) * 1.2));
   }
 
   .stg-hint {
