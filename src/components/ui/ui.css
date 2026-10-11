@@ -246,6 +246,17 @@
   .ui-sheet--cellar { width: 100%; height: min(86dvh, 640px); }
 }
 
+/* iPhone landscape: the sheet is full width, so its content steps in from the sensor housing and the corners */
+@media (max-width: 999px) and (orientation: landscape) and (max-height: 500px) {
+  .ui-sheet {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .ui-sheet__close {
+    right: calc(var(--s4) + env(safe-area-inset-right));
+  }
+}
+
 /* tablets (portrait or landscape, tall enough): centred cards with a sensible measure instead
    of full-bleed bottom sheets. They still slide up and can be dragged away by the handle. */
 @media (min-width: 700px) and (max-width: 999px) and (min-height: 600px) {

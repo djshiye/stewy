@@ -93,6 +93,8 @@
   .topbar {
     grid-template-columns: 1fr auto;
     gap: var(--s2);
+    /* clear an iPhone's sensor housing and rounded corners in landscape (the insets are 0 elsewhere) */
+    padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
   }
   .topbar__mark {
     width: 32px;
