@@ -62,17 +62,22 @@ test('the unit control is reachable by touch', async ({ page, open }) => {
 });
 
 for (const [name, key] of [['Grimoire', 'g'], ['Cellar', 'c']] as const) {
-  test(`a wheel over the ${name} scrim does not scroll the page behind it, and the position survives closing`, async ({ page, open }) => {
+  test(`a wheel over the ${name} scrim does not scroll the page behind it, and the position survives closing`, async ({ page, open, browserName }) => {
     await open(NEGRONI);
     await page.evaluate(() => window.scrollTo(0, 300));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(300);
     await page.keyboard.press(key);
     await expect(dialog(page)).toBeVisible();
-    await page.mouse.move(195, 30);
-    await page.mouse.wheel(0, 400);
-    await page.waitForTimeout(250);
+    // the root itself is locked (html clips x on phones, so body alone no longer reaches the viewport)
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), 'the root is locked').toBe('hidden');
+    if (browserName !== 'webkit') { // mobile WebKit has no mouse wheel
+      await page.mouse.move(195, 30);
+      await page.mouse.wheel(0, 400);
+      await page.waitForTimeout(250);
+    }
     expect(await page.evaluate(() => window.scrollY), 'the page stays where it was').toBe(300);
     await closeSheet(page);
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), 'and unlocked again').toBe('visible');
     expect(await page.evaluate(() => window.scrollY), 'and is still there after closing').toBe(300);
   });
 }
