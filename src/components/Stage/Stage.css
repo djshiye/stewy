@@ -621,6 +621,20 @@
   }
 }
 
+/* portrait tablets: the pot gives way so the summary row and about three recipe rows clear the dock
+   on the first screen. The 470px is everything under the pot (hint pill, summary row, gap and the
+   recipe card's header and three rows); the pot stays at least 320px wide and at most 520px, so a
+   tall tablet (820 x 1180 and up) keeps its full-size pot. */
+@media (min-width: 700px) and (max-width: 999px) and (orientation: portrait) {
+  .stg-pot {
+    width: min(
+      calc(100% + 24px),
+      520px,
+      max(320px, calc((100svh - var(--top-h) - var(--dock-h) - env(safe-area-inset-bottom) - 470px) * 1.2))
+    );
+  }
+}
+
 /* short portrait phones (iPhone SE and the like, below 700 tall): the pot is capped by the small
    viewport height so the summary row (68px plus its 16px gap) and a little air sit above the
    dock on the first screen. The 116px is the stage padding, hint pill, gap, summary and air. */
