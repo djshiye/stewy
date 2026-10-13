@@ -7,5 +7,7 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
-  }
+  },
+  // branch builds run `wrangler preview`, which needs this block (empty: assets and settings stay above)
+  "previews": {}
 }
